@@ -1,43 +1,106 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
-#include "sceneimpl.h"
+//#include <GL/glew.h>
 
 #include <QGLWidget>
 #include <QScopedPointer>
 #include <QMatrix4x4>
+#include <QMouseEvent>
+
+#include "renderer.h"
+#include "view_manager.h"
+#include <vector>
+#include "scene_manager.h"
+#include "constants.h"
+
+#include <atomic>
+#include <thread>
 
 class QSurface;
 class QMouseEvent;
+
+struct MouseTracker{
+    float start_point_x, start_point_y, start_point_z;
+    float end_point_x, end_point_y, end_point_z;
+
+    float getDiffX() {return end_point_x-start_point_x;}
+    float getDiffY() {return end_point_y-start_point_y;}
+    float getDiffZ() {return end_point_z-start_point_z;}
+
+    bool ctrl_pressed;
+};
+
+enum ControlStyle {
+    SoftImage,
+    FPS,
+    Experimental1
+};
 
 class GLWidget : public QGLWidget
 {
     Q_OBJECT
 
 public:
-    GLWidget(QWidget * parent = NULL);
-
-signals:
-    void transformationMatrixChanged(QMatrix4x4 mat);
-    void selectedObjId(int id);
-    void signal_newSceneObject(int objId, float scale, float xTranslation, float yTranslation,float zTranslation, int xRotation, int yRotation, int zRotation);
+    GLWidget(const QGLFormat& format, QWidget * parent = NULL);
+    ~GLWidget();
+    void loadTerrain(QString filename);
 
 public slots:
-    void setTransformation(float scale, float xTranslation, float yTranslation,float zTranslation, int xRotation, int yRotation, int zRotation);
-    void setTransformationMatrix(QMatrix4x4 mat);
-    void setSelectedObjId(int id);
-    void slot_newSceneObject(int objId, float scale, float xTranslation, float yTranslation,float zTranslation, int xRotation, int yRotation, int zRotation);
+    void render_grid(bool enabled);
+    void render_assets(bool enabled);
+    void render_terrain(bool enabled);
+    void setControlStyle(ControlStyle control_style);
+    void disableOverlays();
+    void enableSlopeOverlay();
+    void enableAltitudeOverlay();
 
 protected:
     void initializeGL(); // Override
     void paintGL(); // Override
-    void resizeGL(int width, int height); // Override
+    void resizeGL(int p_width, int p_height); // Override
     QSize minimumSizeHint() const; //Override
-    void mousePressEvent(QMouseEvent* event); // Override
     QSize sizeHint() const;//Override
 
+    void focusInEvent ( QFocusEvent * event );
+    void focusOutEvent ( QFocusEvent * event );
+
+    // Mouse input stuff
+    void mousePressEvent(QMouseEvent *event);
+//    void mouseDoubleClickEvent(QMouseEvent *event);
+//    void mouseReleaseEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void wheelEvent(QWheelEvent * wheel);
+
+    void keyPressEvent ( QKeyEvent * event );
+
 private:
-    QScopedPointer<AbstractScene> mScene;
+    void normalizeScreenCoordinates(float & p_x, float & p_y);
+    void setNavigationEnabled(bool enabled);
+    void reset_fps_cursor();
+
+    Renderer* m_renderer;
+    ViewManager* m_view_manager;
+    SceneManager* m_scene_manager;
+    MouseTracker m_mouse_position_tracker;
+
+    void enable_continuous_mouse_tracking(bool enabled);
+    void mouse_tracking_callback();
+    void show_cursor(bool show);
+
+    std::thread * m_mouse_tracking_thread;
+    std::atomic<float> m_width;
+    std::atomic<float> m_height;
+    std::atomic<float> m_mouse_x;
+    std::atomic<float> m_mouse_y;
+    std::atomic<bool> m_mouse_tracking_thread_run;
+
+    bool m_draw_grid;
+    bool m_draw_assets;
+    bool m_draw_terrain;
+    bool m_navigation_enabled;
+
+    ControlStyle m_control_style;
 };
 
 #endif

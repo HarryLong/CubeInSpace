@@ -1,11 +1,16 @@
 #ifndef GLHEADERS_H_
 #define GLHEADERS_H_
+
+//#include <glew.h>
+
 //#define QT_NO_OPENGL_ES_2
 #ifdef _WIN32
 #include <GL/glew.h>
 #else
 #define GL3_PROTOTYPES
-#include <gl3.h>
+#define GL_GLEXT_PROTOTYPES
+#include <gl.h>
+#include <glext.h>
 #endif
 #include <GL/glu.h>
 #include <QDebug>

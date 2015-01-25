@@ -2,14 +2,12 @@
 #include <string>
 #include <iostream>
 
-void Utils::printMatrix4x4(const float* mat)
+void Utils::printMatrix4x4(const glm::mat4x4 & mat)
 {
-    std::string space("   ");
-    for(int i = 0; i < 4; ++i)
-    {
-        int startIdx = i*4;
-        std::cout << "|  " << mat[startIdx] << space << mat[startIdx+1] << space << mat[startIdx+2] << space << mat[startIdx+3] << " |" << std::endl;
-    }
+    static const std::string space("   ");
+    std::cout << "|  " << mat[0][0] << space << mat[0][1] << space << mat[0][2] << space << std::endl <<
+                     "|  " << mat[1][0] << space << mat[1][1] << space << mat[1][2] << space << std::endl <<
+                     "|  " << mat[2][0] << space << mat[2][1] << space << mat[2][2] << space << std::endl;
 }
 
 float Utils::convertTranslation (int translation)
@@ -22,12 +20,12 @@ float Utils::convertScale(int scale)
     return scale/10.f;
 }
 
-void Utils::normalizeAngle(int& angle)
+void Utils::normalizeAngle(float& p_angle)
 {
-    while(angle < 0)
-        angle += 360;
-
-    angle %= 360;
+    while(p_angle > 360.f)
+        p_angle -= 360;
+    while(p_angle < -360.f)
+        p_angle += 360;
 }
 
 

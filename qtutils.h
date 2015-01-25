@@ -10,9 +10,10 @@ namespace QTUTILS{
     enum Font {
         bold
     };
-    QFont getFont(Font font);
-    QMatrix4x4 buildTransformationMatrix(float scale, float xTranslation, float yTranslation,float zTranslation, int xRotation, int yRotation, int zRotation);
-    std::string toString(QVector4D& matrix);
+    QFont getFont();
+    static QMatrix4x4 buildTransformationMatrix(float p_scale, float p_x_translation, float p_y_translation,float p_z_translation, int p_x_rotation, int p_y_rotation,
+                                         int p_z_rotation);
+    static std::string toString(QVector4D& p_matrix);
 }
 
 #endif
