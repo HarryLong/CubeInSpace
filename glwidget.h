@@ -16,6 +16,7 @@
 
 #include <atomic>
 #include <thread>
+#include "settings.h"
 
 class QSurface;
 class QMouseEvent;
@@ -42,9 +43,10 @@ class GLWidget : public QGLWidget
     Q_OBJECT
 
 public:
-    GLWidget(const QGLFormat& format, QWidget * parent = NULL);
+    GLWidget(const Settings & settings, const QGLFormat& format, QWidget * parent = NULL);
     ~GLWidget();
     void loadTerrain(QString filename);
+    void updateSettings(const Settings & settings);
 
 public slots:
     void render_grid(bool enabled);

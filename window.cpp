@@ -1,10 +1,13 @@
 #include "window.h"
 #include "glwidget.h"
-
+#include "settings.h"
 #include <QtWidgets>
 
-Window::Window(const QGLFormat& format) : m_glwidget(new GLWidget(format, this))
+Window::Window(const QGLFormat& format)
 {
+    SettingsEditor settings_editor(this);
+    m_glwidget = new GLWidget(settings_editor.getSettings(), format, this);
+
     init_menu();
     refresh_control_style();
     setCentralWidget(m_glwidget); // Takes ownership of widget
@@ -15,6 +18,7 @@ Window::~Window()
 {
     delete m_file_menu;
     delete m_action_close;
+    delete m_action_open_settings_dialog;
     delete m_action_load_terrain;
     delete m_action_render_grid;
     delete m_action_render_assets;
@@ -29,7 +33,15 @@ Window::~Window()
     delete m_terrain_options_overlay_none;
     delete m_terrain_options_overlay_slope;
     delete m_terrain_options_overlay_altitude;
+}
 
+void Window::open_settings_dialog()
+{
+    SettingsEditor settings_editor(this);
+    settings_editor.setModal(true);
+
+    settings_editor.exec();
+    m_glwidget->updateSettings(settings_editor.getSettings());
 }
 
 void Window::init_menu()
@@ -39,12 +51,16 @@ void Window::init_menu()
 
     m_action_load_terrain = new QAction("Load terrain", NULL);
 
+    m_action_open_settings_dialog = new QAction("Open settings", NULL);
+
     connect(m_action_close, SIGNAL(triggered()), this, SLOT(close()));
     connect(m_action_load_terrain, SIGNAL(triggered()), this, SLOT(load_terrain_file()));
+    connect(m_action_open_settings_dialog, SIGNAL(triggered()), this, SLOT(open_settings_dialog()));
 
     m_file_menu = menuBar()->addMenu("File");
     m_file_menu->addAction(m_action_close);
     m_file_menu->addAction(m_action_load_terrain);
+    m_file_menu->addAction(m_action_open_settings_dialog);
 
     // RENDERING MENU
     m_action_render_grid = new QAction("Grid", NULL);

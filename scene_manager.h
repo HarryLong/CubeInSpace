@@ -16,13 +16,14 @@ struct SceneAsset{
 class SceneManager{
 
 public:
-    SceneManager() : m_scene_objects(), m_terrain_ready(false) {}
+    SceneManager(int terrain_dim) : m_scene_objects(), m_terrain_ready(false), m_terrain_dim(terrain_dim) {}
     std::vector<SceneAsset> getSceneAssets() {return m_scene_objects; }
     DrawData getGridData() { return m_grid_holder.getDrawData(); }
     Terrain& getTerrain() { return m_terrain; }
     void initScene();
     void loadTerrain(QString filename);
     bool terrainReady() { return m_terrain_ready; }
+    void setTerrainDim(int dim);
 
 private:
     std::vector<SceneAsset> m_scene_objects;
@@ -30,6 +31,9 @@ private:
     ShapesHolder m_shape_holder;
     Terrain m_terrain;
     bool m_terrain_ready;
+    QString current_terrain_file;
+
+    int m_terrain_dim;
 };
 
 #endif //SCENE_MANAGER_H

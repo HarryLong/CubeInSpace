@@ -28,37 +28,19 @@ void main()
     if(overlay.none)
     {
         outputColor = ambient;
-        float normal_dot_lightdir = dot(camera_space_normal.xyz, light_direction);
+//        float normal_dot_lightdir = dot(camera_space_normal.xyz, light_direction);
 
-        if(normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
-        {
-            outputColor += diffuse * normal_dot_lightdir;
+//        if(normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
+//        {
+//            outputColor += diffuse * normal_dot_lightdir;
 
-            float normal_dot_half_vector = dot(camera_space_normal, half_vector);
+//            float normal_dot_half_vector = dot(camera_space_normal, half_vector);
 
-            if(normal_dot_half_vector > 0.0)
-            {
-                outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
-            }
-
-//            if(camera_space_normal.xyz == 0.0)
-//            {
-//                outputColor = vec4(1.0,0.0,0.0,1.0);
-//            }
-//            else if(half_vector.xyz == 0.0)
-//            {
-//                outputColor = vec4(0.0,1.0,0.0,1.0);
-//            }
-//            else
+//            if(normal_dot_half_vector > 0.0)
 //            {
 //                outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
 //            }
 //        }
-//        else
-//        {
-//            outputColor = vec4(0.0,0.0,1.0,1.0);
-//        }
-        }
     }
     else if(overlay.altitude)
     {

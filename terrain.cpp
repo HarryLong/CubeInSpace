@@ -146,7 +146,6 @@ bool Terrain::bindBuffers()
         const int sz = 3*sizeof(GLfloat);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
 
-
         // set up index buffer
         glGenBuffers(1, &m_ibo_constraints);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();

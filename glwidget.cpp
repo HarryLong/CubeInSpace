@@ -10,9 +10,11 @@
 #include "constants.h"
 #include <math.h>
 
-GLWidget::GLWidget(const QGLFormat& format, QWidget * p_parent) : QGLWidget(format, p_parent),
+GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget * p_parent) : QGLWidget(format, p_parent),
   m_draw_grid(true), m_draw_assets(true), m_draw_terrain(true), m_control_style(SoftImage),
-  m_mouse_tracking_thread(NULL), m_navigation_enabled(true)
+  m_mouse_tracking_thread(NULL), m_navigation_enabled(true),
+  m_view_manager(new ViewManager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity)),
+  m_scene_manager(new SceneManager(settings.terrain_dimension))
 {
     m_mouse_tracking_thread_run.store(true);
     setFocusPolicy(Qt::ClickFocus);
@@ -26,6 +28,12 @@ GLWidget::~GLWidget()
     delete m_view_manager;
     delete m_scene_manager;
     delete m_mouse_tracking_thread;
+}
+
+void GLWidget::updateSettings(const Settings & settings)
+{
+    m_view_manager->setNavigationProperties(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity);
+    m_scene_manager->setTerrainDim(settings.terrain_dimension);
 }
 
 void GLWidget::setControlStyle(ControlStyle control_style)
@@ -70,8 +78,6 @@ void GLWidget::initializeGL() // Override
     // Initialize rendered, view, etc...
     m_renderer = new Renderer(SHADER_DIR);
     m_renderer->printShaders();
-    m_view_manager = new ViewManager();
-    m_scene_manager = new SceneManager();
     m_scene_manager->initScene();
 }
 
@@ -185,8 +191,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
             if(m_control_style == FPS)
             {
-                m_view_manager->rotate( MOUSE_SENSITIVITY_FACTOR * diff_y,
-                                         MOUSE_SENSITIVITY_FACTOR * diff_x);
+                m_view_manager->rotate( diff_y,
+                                         diff_x);
 
                 reset_fps_cursor();
                 update();
@@ -194,12 +200,12 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             else // SoftImage
             {
                 if(m_mouse_position_tracker.ctrl_pressed)
-                    m_view_manager->rotate( -MOUSE_SENSITIVITY_FACTOR * diff_y,
-                                            -MOUSE_SENSITIVITY_FACTOR * diff_x);
+                    m_view_manager->rotate( -diff_y,
+                                            -diff_x);
                 else
                 {
-                    m_view_manager->sideStep(MOUSE_SENSITIVITY_FACTOR * diff_x);
-                    m_view_manager->up(MOUSE_SENSITIVITY_FACTOR * diff_y);
+                    m_view_manager->sideStep(diff_x);
+                    m_view_manager->up(diff_y);
                 }
                 m_mouse_position_tracker.start_point_x = m_mouse_position_tracker.end_point_x;
                 m_mouse_position_tracker.start_point_y = m_mouse_position_tracker.end_point_y;
@@ -229,7 +235,7 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         else if(!deg.isNull()) // mouse wheel instead
             delta = deg.y() / 360.f;
 
-        m_view_manager->forward(MOUSE_SENSITIVITY_FACTOR * delta);
+        m_view_manager->forward(-delta);
         update();
     }
     else
@@ -294,8 +300,6 @@ void GLWidget::enableAltitudeOverlay()
     update();
 }
 
-#define TRANSLATION_SENSITIVITY .5f
-#define ROTATION_SENSITIVITY 1.f
 void GLWidget::keyPressEvent ( QKeyEvent * event )
 {
     if(event->key() == Qt::Key_R)
@@ -314,16 +318,16 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
     {
         switch(event->key()){
         case Qt::Key_W:
-            m_view_manager->forward(TRANSLATION_SENSITIVITY);
+            m_view_manager->forward(1);
             break;
         case Qt::Key_S:
-            m_view_manager->forward(-TRANSLATION_SENSITIVITY);
+            m_view_manager->forward(-1);
             break;
         case Qt::Key_A:
-            m_view_manager->sideStep(TRANSLATION_SENSITIVITY);
+            m_view_manager->sideStep(1);
             break;
         case Qt::Key_D:
-            m_view_manager->sideStep(-TRANSLATION_SENSITIVITY);
+            m_view_manager->sideStep(-1);
             break;
         }
     }
@@ -331,37 +335,20 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
     {
         switch(event->key()){
         case Qt::Key_Up:
-            m_view_manager->up(TRANSLATION_SENSITIVITY);
+            m_view_manager->up(1);
             break;
         case Qt::Key_Down:
-            m_view_manager->up(-TRANSLATION_SENSITIVITY);
+            m_view_manager->up(-1);
             break;
         case Qt::Key_Right:
-            m_view_manager->sideStep(-TRANSLATION_SENSITIVITY);
+            m_view_manager->sideStep(-1);
             break;
         case Qt::Key_Left:
-            m_view_manager->sideStep(TRANSLATION_SENSITIVITY);
+            m_view_manager->sideStep(1);
             break;
         }
         update();
     }
-
-//    case Qt::Key_A:
-//        m_view_manager->rotate(0,-ROTATION_SENSITIVITY);
-//        break;
-//    case Qt::Key_D:
-//        m_view_manager->rotate(0,ROTATION_SENSITIVITY);
-//        break;
-//    case Qt::Key_S:
-//        m_view_manager->rotate(ROTATION_SENSITIVITY,0);
-//        break;
-//    case Qt::Key_W:
-//        m_view_manager->rotate(-ROTATION_SENSITIVITY,0);
-//        break;
-//    case Qt::Key_R:
-//        m_view_manager->reset_camera();
-//        break;
-//    }
     update();
     QGLWidget::keyPressEvent(event);
 }

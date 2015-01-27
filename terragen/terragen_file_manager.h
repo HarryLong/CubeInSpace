@@ -13,7 +13,7 @@
 /**
  * Load a Terragen file.
  */
-TerragenFile readTerragen(const std::string &filename);
+TerragenFile readTerragen(const std::string &filename, int terrain_dimension);
 
 /**
  * Save a Terragen file.

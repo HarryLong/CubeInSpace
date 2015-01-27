@@ -21,6 +21,7 @@ private slots:
     void render_grid_toggled();
     void render_assets_toggled();
     void render_terrain_toggled();
+    void open_settings_dialog();
 
 private slots:
     void refresh_control_style();
@@ -36,6 +37,7 @@ private:
     // Actions
     QAction * m_action_close;
     QAction * m_action_load_terrain;
+    QAction * m_action_open_settings_dialog;
     // Render actions
     QAction * m_action_render_grid;
     QAction * m_action_render_assets;

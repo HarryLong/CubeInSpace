@@ -77,7 +77,7 @@ static void writeInt16(std::ostream &out, std::int16_t v)
 
 
 #include "../constants.h"
-TerragenFile readTerragen(const std::string &filename)
+TerragenFile readTerragen(const std::string &filename, int terrain_dimension)
 {
     std::ifstream in(filename, std::ios::binary);
     if (!in)
@@ -150,7 +150,7 @@ TerragenFile readTerragen(const std::string &filename)
                 ret.m_header_data.depth = height;
                 ret.m_header_data.width = width;
                 ret.m_header_data.raw_scale = scale;
-                ret.m_header_data.dynamic_scale = ((float)TERRAIN_DIM) / width;
+                ret.m_header_data.dynamic_scale = ((float)terrain_dimension) / width;
                 ret.m_height_data = (float*) malloc(sizeof(float) * width * height);
                 float min_height(FLT_MAX);
                 float max_height(FLT_MIN);

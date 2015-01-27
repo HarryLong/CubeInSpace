@@ -45,30 +45,27 @@ struct CameraTransformationMatrices{
 struct TransformationMatrices{
     glm::mat4x4 projection;
     CameraTransformationMatrices view;
-
-    //CameraTransformationMatrices view;
-    //CameraTransformationMatrices tmp_camera;
 };
 
 
 class ViewManager {
 public:
-    ViewManager();
+    ViewManager(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);
     glm::mat4x4 getViewMatrix() const; // Model View Matrix
     glm::mat4x4 getProjMtx() const; // Projection Matrix
-    //glm::mat4x4 getTmpCameraMtx() const; // Projection Matrix
 
     void sideStep(float p_amount);
     void forward(float p_amount);
     void up(float p_amount);
     void rotate(float pitch, float yaw);
     void reset_camera();
+    void setNavigationProperties(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);
 
 private:
     void translateCamera(float p_x, float p_y, float p_z);
-    void apply(const glm::mat4x4 & p_transformation);
     TransformationMatrices m_transformation_matrices;
     CameraOrientation m_camera_orientation;
+    int m_z_movement_sensitivity, m_x_y_movement_sensitivity, m_camera_sensitivity;
 };
 
 #endif //VIEW_H

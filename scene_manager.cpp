@@ -28,5 +28,17 @@ void SceneManager::initScene()
 
 void SceneManager::loadTerrain(QString filename)
 {
-    m_terrain_ready = m_terrain.setTerrain(readTerragen(filename.toStdString()));
+    current_terrain_file = filename;
+    m_terrain_ready = m_terrain.setTerrain(readTerragen(filename.toStdString(), m_terrain_dim));
+}
+
+void SceneManager::setTerrainDim(int dim)
+{
+    if(m_terrain_dim != dim)
+    {
+        m_terrain_dim = dim;
+        // Reload the terrain
+        if(!current_terrain_file.isNull())
+            loadTerrain(current_terrain_file);
+    }
 }

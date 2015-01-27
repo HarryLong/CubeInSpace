@@ -91,7 +91,6 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
         glBindFramebuffer(GL_FRAMEBUFFER, terrain.getNormals().getNormalsFBO()); CE();
 
         // set shader program to normal map gen
-
         glBindVertexArray(terrain.getNormals().getDrawData().m_vao); CE();
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
@@ -144,7 +143,10 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
     glUniform4fv(glGetUniformLocation(prog_id, m_lighting_uniforms[LIGHT_AMBIENT_COLOR]), 1, glm::value_ptr(m_lighting_properties.light_color_ambient)); CE();
 
     // Calculate the light position
-    glm::vec4 light_pos2 = glm::vec4(((float)TERRAIN_DIM)/2, terrain.getMaxHeight() * 10, (float) -TERRAIN_DIM, 1.0f);
+//    glm::vec4 light_pos2 = glm::vec4((terrain.getWidth() * terrain.getDynamicScale()) / 2, terrain.getMaxHeight() * 10,
+//                                      -terrain.getWidth() * terrain.getDynamicScale(), 1.0f);
+
+    glm::vec4 light_pos2 = glm::vec4(500.0f, terrain.getMaxHeight() * 10.0f, -500.0f, 1.0f);
     glUniform4fv(glGetUniformLocation(prog_id, m_lighting_uniforms[LIGHT_POS]), 1, glm::value_ptr(light_pos2)); CE();
 
     // Lets Draw !

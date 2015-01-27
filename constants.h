@@ -9,8 +9,4 @@
 #define TOP 1.f
 #define BOTTOM -TOP
 
-#define MOUSE_SENSITIVITY_FACTOR 25.f
-
-#define TERRAIN_DIM 1000
-
 #define SHADER_DIR "/home/harry/workspaces/qt-workspace/CubeInSpace/shaders/"
