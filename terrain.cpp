@@ -24,8 +24,6 @@ void TerrainNormals::init()
     {
         m_verticies.push_back(coordinate);
     }
-
-    bindBuffers(); // This never changes
 }
 
 bool TerrainNormals::bindBuffers()
@@ -48,12 +46,17 @@ bool TerrainNormals::bindBuffers()
 bool TerrainNormals::setTerrainDim(int width, int depth)
 {
     m_valid = false;
+    bindBuffers();
     if( m_normalsTexture == 0 || m_width != width || m_depth != depth )
     {
+//        delete_buffers();
+
+//        if (m_normalsTexture != 0)
+//            glDeleteTextures(1, &m_normalsTexture);  CE();
+
         glGenFramebuffers(1, &m_fbo_normal_map); CE();
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_normal_map); CE();
         // create texture target for normal map computation
-
 
         glActiveTexture(m_normalsTexUnit); // normal map is bound to this TIU
         glGenTextures(1, &m_normalsTexture); CE();
@@ -94,6 +97,12 @@ bool TerrainNormals::setTerrainDim(int width, int depth)
     return true;
 }
 
+void TerrainNormals::delete_buffers()
+{
+    if (m_fbo_normal_map != 0) glDeleteFramebuffers(1, &m_fbo_normal_map);  CE();
+    GlDrawable::delete_buffers();
+}
+
 // END OF TERRAIN NORMALS
 
 /***********
@@ -119,16 +128,6 @@ bool Terrain::bindBuffers()
 {
     if(m_indicies.size() > 0)
     {
-        if (m_vbo_constraints != 0)
-        {
-            glDeleteVertexArrays(1, &m_vao_constraints);
-            glDeleteBuffers(1, &m_vbo_constraints);
-            glDeleteBuffers(1, &m_ibo_constraints);
-            m_vao_constraints = 0;
-            m_vbo_constraints = 0;
-            m_ibo_constraints = 0;
-        }
-
         glGenVertexArrays(1, &m_vao_constraints); CE();
         glBindVertexArray(m_vao_constraints); CE();
 
@@ -157,10 +156,11 @@ bool Terrain::bindBuffers()
 bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 {
     parsed_terrangen_file.summarize();
+    delete_buffers();
 
     if(m_heightmapTexture != 0 &&
-            (m_header_data.width != parsed_terrangen_file.m_header_data.width ||
-             m_header_data.depth != parsed_terrangen_file.m_header_data.depth))
+            (m_parsed_data.m_header_data.width != parsed_terrangen_file.m_header_data.width ||
+             m_parsed_data.m_header_data.depth != parsed_terrangen_file.m_header_data.depth))
     {
         // std::cerr << "- Delete texture\n";
         glDeleteTextures(1, &m_heightmapTexture);  CE();
@@ -192,9 +192,9 @@ bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
                         parsed_terrangen_file.m_header_data.depth, GL_RED, GL_FLOAT, (GLfloat*)parsed_terrangen_file.m_height_data); CE();
     }
 
-    m_header_data = parsed_terrangen_file.m_header_data;
+    m_parsed_data = parsed_terrangen_file;
 
-    m_terrain_normals.setTerrainDim(m_header_data.width, m_header_data.depth);
+    m_terrain_normals.setTerrainDim(m_parsed_data.m_header_data.width, m_parsed_data.m_header_data.depth);
     prepare_terrain_geometry();
     return bindBuffers();
 }
@@ -204,36 +204,36 @@ void Terrain::prepare_terrain_geometry()
 {
     // Vertices
     m_verticies.clear();
-    for (int z = 0; z < m_header_data.depth; z++)
+    for (int z = 0; z < m_parsed_data.m_header_data.depth; z++)
     {
-        for (int x = 0; x < m_header_data.width; x++)
+        for (int x = 0; x < m_parsed_data.m_header_data.width; x++)
         {
             // 3D Vertex coordinate
-            m_verticies.push_back(((float) x) * m_header_data.dynamic_scale /*- (m_header_data.width/2 * m_header_data.dynamic_scale )*/); // X
+            m_verticies.push_back(((float) x) * m_parsed_data.m_header_data.dynamic_scale /*- (m_header_data.width/2 * m_header_data.dynamic_scale )*/); // X
             m_verticies.push_back(.0f); // Y (stored in heightmap texture)
-            m_verticies.push_back(((float) z) * m_header_data.dynamic_scale /*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/); // Z
+            m_verticies.push_back(((float) z) * m_parsed_data.m_header_data.dynamic_scale /*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/); // Z
 
             // 2D texture coordinate
-            m_verticies.push_back((float) x / (float) (m_header_data.width - 1)); // X
-            m_verticies.push_back((float) z / (float) (m_header_data.depth - 1)); // Y
+            m_verticies.push_back((float) x / (float) (m_parsed_data.m_header_data.width - 1)); // X
+            m_verticies.push_back((float) z / (float) (m_parsed_data.m_header_data.depth - 1)); // Y
         }
     }
 
     // Indices
     m_indicies.clear();
-    for (int z = 0; z < m_header_data.width - 1; z++)
+    for (int z = 0; z < m_parsed_data.m_header_data.width - 1; z++)
     {
         if (z > 0) // Degenerate begin: repeat first vertex
-            m_indicies.push_back((GLuint) (z * m_header_data.width));
+            m_indicies.push_back((GLuint) (z * m_parsed_data.m_header_data.width));
 
-        for (int x = 0; x < m_header_data.width; x++)
+        for (int x = 0; x < m_parsed_data.m_header_data.width; x++)
         {
             // One part of the strip
-            m_indicies.push_back((GLuint) ((z * m_header_data.width) + x));
-            m_indicies.push_back((GLuint) (((z + 1) * m_header_data.width) + x));
+            m_indicies.push_back((GLuint) ((z * m_parsed_data.m_header_data.width) + x));
+            m_indicies.push_back((GLuint) (((z + 1) * m_parsed_data.m_header_data.width) + x));
         }
 
-        if (z <  m_header_data.depth - 2)   // Degenerate end: repeat last vertex
-            m_indicies.push_back((GLuint) (((z + 1) * m_header_data.width) + (m_header_data.width - 1)));
+        if (z <  m_parsed_data.m_header_data.depth - 2)   // Degenerate end: repeat last vertex
+            m_indicies.push_back((GLuint) (((z + 1) * m_parsed_data.m_header_data.width) + (m_parsed_data.m_header_data.width - 1)));
     }
 }

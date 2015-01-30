@@ -17,6 +17,7 @@
 #include <atomic>
 #include <thread>
 #include "settings.h"
+#include "ray_drawer.h"
 
 class QSurface;
 class QMouseEvent;
@@ -80,11 +81,13 @@ private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
     void setNavigationEnabled(bool enabled);
     void reset_fps_cursor();
+    glm::vec3 getWorldPosition(int sx, int sy, float sz);
 
     Renderer* m_renderer;
     ViewManager* m_view_manager;
     SceneManager* m_scene_manager;
     MouseTracker m_mouse_position_tracker;
+    RayDrawer * m_ray_drawer;
 
     void enable_continuous_mouse_tracking(bool enabled);
     void mouse_tracking_callback();

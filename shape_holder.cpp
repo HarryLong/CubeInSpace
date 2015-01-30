@@ -85,9 +85,7 @@ const GLushort g_index_data[] =
     22,23,20,  22,23,20,
 };
 
-/* END TODO */
-
-void ShapesHolder::genCube()
+CubeDrawable::CubeDrawable()
 {
     BOOST_FOREACH(GLfloat v, g_vertex_data)
     {
@@ -95,11 +93,12 @@ void ShapesHolder::genCube()
     }
     BOOST_FOREACH(GLushort i, g_index_data)
     {
-        m_indicies.push_back(i);
+    m_indicies.push_back(i);
     }
+    bindBuffers();
 }
 
-bool ShapesHolder::bindBuffers()
+bool CubeDrawable::bindBuffers()
 {
     if(m_indicies.size() > 0)
     {
@@ -141,6 +140,25 @@ bool ShapesHolder::bindBuffers()
     {
         PRINT_POSITION()
         return false;
+    }
+}
+
+
+/* END TODO */
+
+ShapesHolder::~ShapesHolder()
+{
+    delete m_cube;
+}
+
+GlDrawable * ShapesHolder::get(Shape shape)
+{
+    if(!m_cube)
+        m_cube = new CubeDrawable();
+    switch(shape)
+    {
+    case Cube:
+        return m_cube;
     }
 }
 

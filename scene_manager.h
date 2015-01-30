@@ -24,6 +24,7 @@ public:
     void loadTerrain(QString filename);
     bool terrainReady() { return m_terrain_ready; }
     void setTerrainDim(int dim);
+    void genCube(int x, int y, int z);
 
 private:
     std::vector<SceneAsset> m_scene_objects;

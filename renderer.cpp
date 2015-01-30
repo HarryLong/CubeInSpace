@@ -91,6 +91,7 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
         glBindFramebuffer(GL_FRAMEBUFFER, terrain.getNormals().getNormalsFBO()); CE();
 
         // set shader program to normal map gen
+        std::cout << "Binding VAO: " << terrain.getNormals().getDrawData().m_vao << std::endl;
         glBindVertexArray(terrain.getNormals().getDrawData().m_vao); CE();
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
@@ -187,6 +188,31 @@ void Renderer::drawAsset(const ViewManager * p_view, DrawData & p_asset_data, gl
 
     glBindVertexArray(0); // Unbind
     glUseProgram(0); // unbind
+}
+
+void Renderer::drawRays(const ViewManager * p_view, DrawData & p_ray_data)
+{
+    if(p_ray_data.m_vertex_buffer_size> 0)
+    {
+        GLuint prog_id = m_shaders[GRID]->getProgramID(); // Use the same shader as for the grid
+
+        glUseProgram(prog_id); CE()
+
+        Transform transform;
+        transform.projection_mat = p_view->getProjMtx();
+        transform.view_mat = p_view->getViewMatrix();
+
+        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
+        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
+
+        // Lets Draw !
+        glBindVertexArray(p_ray_data.m_vao); CE();
+
+        glDrawArrays(GL_LINES, 0, p_ray_data.m_vertex_buffer_size); CE();
+
+        glBindVertexArray(0); // Unbind
+        glUseProgram(0); // unbind
+    }
 }
 
 void Renderer::drawGrid(const ViewManager * p_view, DrawData & p_grid_data)

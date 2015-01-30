@@ -18,10 +18,12 @@ public:
 
 private:
     void init();
-    GLfloat m_screen_quad[16] = {-1.0f, -1.0f,
+    virtual void delete_buffers();
+
+    GLfloat m_screen_quad[8] = {-1.0f, -1.0f,
                               1.0f, -1.0f,
                               1.0f, 1.0f,
-                              -1.0f, 1.0f,
+                              -1.0f, 1.0f
                              };                        // for postprocessing: screen aligned quad
     GLuint m_normalsTexture;
     GLuint m_normalsTexUnit;
@@ -39,13 +41,13 @@ public:
     ~Terrain();
     virtual bool bindBuffers();
     bool setTerrain(TerragenFile parsed_terrangen_file);
-    float getMaxHeight() const { return m_header_data.max_height; }
-    float getDynamicScale() const { return m_header_data.dynamic_scale; }
-    float getBaseHeight() const { return m_header_data.base_height; }
+    float getMaxHeight() const { return m_parsed_data.m_header_data.max_height; }
+    float getDynamicScale() const { return m_parsed_data.m_header_data.dynamic_scale; }
+    float getBaseHeight() const { return m_parsed_data.m_header_data.base_height; }
     GLenum getHeightMapTextureUnit() const { return m_htmapTexUnit; }
     const TerrainNormals & getNormals() const {return m_terrain_normals; }
-    int getWidth() const {return m_header_data.width; }
-    int getDepth() const {return m_header_data.depth; }
+    int getWidth() const {return m_parsed_data.m_header_data.width; }
+    int getDepth() const {return m_parsed_data.m_header_data.depth; }
     void normalsRecalculated() { m_terrain_normals.setValid(true); }
 
 private:
@@ -56,10 +58,7 @@ private:
     GLuint m_heightmapTexture; // id of heightmap texture; generated outside class
     GLenum m_htmapTexUnit; // height/normal map - texture units reserved
 
-    GLuint m_normals_vao;    // openGL handles for various buffers
-    GLuint m_normals_vbo;
-
-    TerragenFileHeaderData m_header_data;
+    TerragenFile m_parsed_data;
     TerrainNormals m_terrain_normals;
 };
 

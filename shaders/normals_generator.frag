@@ -22,16 +22,10 @@ void main(void)
 
     pos = (gl_FragCoord.xy + 0.5 ) / terrain_size.xy; // Round up
 
-//    dfdx.y = (texture(height_map, vec2(pos.x+delta.x, pos.y)).r -
-//              texture(height_map, vec2(pos.x-delta.x, pos.y)).r)/(2.0 * terrain_scale);
-//    dfdy.y = (texture(height_map, vec2(pos.x, pos.y+delta.y) ).r -
-//              texture(height_map, vec2(pos.x, pos.y-delta.y) ).r)/(2.0 * terrain_scale);
-
-        dfdx.y = (texture(height_map, vec2(pos.x+delta.x, pos.y)).r -
-                  texture(height_map, vec2(pos.x-delta.x, pos.y)).r)/(2.0 * terrain_scale);
-
-        dfdy.y = (texture(height_map, vec2(pos.x, pos.y+delta.y) ).r -
-                    texture(height_map, vec2(pos.x, pos.y-delta.y) ).r)/(2.0 * terrain_scale);
+    dfdx.y = (texture(height_map, vec2(pos.x+delta.x, pos.y)).r -
+              texture(height_map, vec2(pos.x-delta.x, pos.y)).r)/(2.0 * terrain_scale);
+    dfdy.y = (texture(height_map, vec2(pos.x, pos.y+delta.y) ).r -
+              texture(height_map, vec2(pos.x, pos.y-delta.y) ).r)/(2.0 * terrain_scale);
 
     /*
     pos = gl_FragCoord.xy;
@@ -46,6 +40,7 @@ void main(void)
 
     vec3 n = -cross(dfdx, dfdy);
 
-    //norm = vec4(normalize(n), 0.0);
-    norm = vec4(n, 0.0);
+    norm = vec4(normalize(n), 0.0);
+
+//    norm = vec4(0.0, .0, 0.0, 0.0);
 }

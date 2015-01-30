@@ -9,6 +9,7 @@ struct DrawData
 public:
     GLuint m_vao;             // vertex array object id
     GLuint m_index_buffer_size;    // index buffer size - as required by DrawElements
+    GLuint m_vertex_buffer_size;    // index buffer size - as required by DrawElements
 };
 
 class GlDrawable{
@@ -18,6 +19,7 @@ public:
     virtual DrawData getDrawData() const;
 
 protected:
+    virtual void delete_buffers();
 
     std::vector<GLfloat> m_verticies;   // vertex, texture and normal data
     std::vector<GLint> m_indicies;   // vertex indices for triangles

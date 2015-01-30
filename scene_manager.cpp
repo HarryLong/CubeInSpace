@@ -9,21 +9,17 @@ void SceneManager::initScene()
     m_grid_holder.genGrid();
     m_grid_holder.bindBuffers();
 
-    //Generate two cubes
-    m_shape_holder.genCube();
-    m_shape_holder.bindBuffers();
-//    {
-//        SceneAsset scene_object;
-//        scene_object.m_mtw_matrix = glm::translate(glm::mat4x4(), glm::vec3(-2,0,-2));
-//        scene_object.m_draw_data = m_shape_holder.getDrawData();
-//        m_scene_objects.push_back(scene_object);
-//    }
-    {
-        SceneAsset scene_object;
-        scene_object.m_mtw_matrix = glm::translate(glm::mat4x4(), glm::vec3(2,0,-2));
-        scene_object.m_draw_data = m_shape_holder.getDrawData();
-        m_scene_objects.push_back(scene_object);
-    }
+    genCube(0,0,0);
+    genCube(-10,0,0);
+    genCube(10,0,0);
+}
+
+void SceneManager::genCube(int x, int y, int z)
+{
+    SceneAsset scene_object;
+    scene_object.m_mtw_matrix = glm::translate(glm::mat4x4(), glm::vec3(x,y,0));
+    scene_object.m_draw_data = m_shape_holder.get(Shape::Cube)->getDrawData();
+    m_scene_objects.push_back(scene_object);
 }
 
 void SceneManager::loadTerrain(QString filename)

@@ -14,7 +14,8 @@ GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget *
   m_draw_grid(true), m_draw_assets(true), m_draw_terrain(true), m_control_style(SoftImage),
   m_mouse_tracking_thread(NULL), m_navigation_enabled(true),
   m_view_manager(new ViewManager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity)),
-  m_scene_manager(new SceneManager(settings.terrain_dimension))
+  m_scene_manager(new SceneManager(settings.terrain_dimension)),
+  m_ray_drawer(new RayDrawer())
 {
     m_mouse_tracking_thread_run.store(true);
     setFocusPolicy(Qt::ClickFocus);
@@ -28,6 +29,7 @@ GLWidget::~GLWidget()
     delete m_view_manager;
     delete m_scene_manager;
     delete m_mouse_tracking_thread;
+    delete m_ray_drawer;
 }
 
 void GLWidget::updateSettings(const Settings & settings)
@@ -105,6 +107,9 @@ void GLWidget::paintGL() // Override
             m_renderer->drawAsset(m_view_manager, scene_asset.m_draw_data, scene_asset.m_mtw_matrix);
         }
     }
+
+    DrawData ray_data ( m_ray_drawer->getDrawData() );
+    m_renderer->drawRays(m_view_manager, ray_data);
 }
 
 void GLWidget::resizeGL(int width, int height) // Override
@@ -147,21 +152,25 @@ void GLWidget::normalizeScreenCoordinates(float & p_x, float & p_y)
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    if(m_navigation_enabled)
+    if(m_navigation_enabled && m_control_style == SoftImage)
     {
-        if(m_control_style == SoftImage)
-        {
-            float x = event->x(); float y = event->y();
-            normalizeScreenCoordinates(x,y);
+        float x = event->x(); float y = event->y();
+        normalizeScreenCoordinates(x,y);
 
-            m_mouse_position_tracker.start_point_x = x;
-            m_mouse_position_tracker.start_point_y = y;
-            m_mouse_position_tracker.ctrl_pressed = (event->modifiers() == Qt::ControlModifier);
-        }
+        m_mouse_position_tracker.start_point_x = x;
+        m_mouse_position_tracker.start_point_y = y;
+        m_mouse_position_tracker.ctrl_pressed = (event->modifiers() == Qt::ControlModifier);
     }
     else
     {
+        glm::vec3 p1(getWorldPosition(event->x(), event->y(), .0f));
+        glm::vec3 p2(getWorldPosition(event->x(), event->y(), 1.0f));
 
+//        m_scene_manager->genCube(p1[0], p1[0], 0);
+
+        m_ray_drawer->add(p1, p2) ;
+        m_ray_drawer->bindBuffers();
+        update();
     }
 
     QGLWidget::mousePressEvent(event);
@@ -375,6 +384,23 @@ void GLWidget::render_terrain(bool enabled)
 {
     m_draw_terrain = enabled;
     update();
+}
+
+glm::vec3 GLWidget::getWorldPosition(int sx, int sy, float sz)
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    int width = viewport[2];
+    int height = viewport[3];
+
+    // unproject screen point to derive world coordinates
+    int realy = height - sy - 1;
+    int realx = sx;
+    glm::vec3 window_pos = glm::vec3((float) realx, (float) realy, sz); // Actual window position
+
+    glm::vec3 world_pos = glm::unProject(window_pos, m_view_manager->getViewMatrix(), m_view_manager->getProjMtx(),
+                                         glm::vec4(viewport[0], viewport[1], viewport[2], viewport[3]));
+    return glm::vec3(world_pos.x, world_pos.y, world_pos.z);
 }
 
 // THREAD

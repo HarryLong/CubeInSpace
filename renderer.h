@@ -1,3 +1,6 @@
+#ifndef RENDERER_H
+#define RENDERER_H
+
 #include "shader_program.h"
 #include <string>
 #include <map>
@@ -88,6 +91,8 @@ public:
     void drawTerrain(const ViewManager * p_view, Terrain& terrain);
     void drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix);
     void drawGrid(const ViewManager * p_view, DrawData & p_grid_data);
+    void drawRays(const ViewManager * p_view, DrawData & p_ray_data);
+
     void printShaders();
     void setOverlay(TerrainOverlayUniforms overlay);
 
@@ -106,3 +111,5 @@ private:
 
     TerrainOverlayUniforms m_active_terrain_overlay;
 };
+
+#endif // RENDERER_H
