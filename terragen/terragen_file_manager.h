@@ -10,10 +10,15 @@
 #include <string>
 #include "terragen_file_spec.h"
 
-/**
- * Load a Terragen file.
- */
-TerragenFile readTerragen(const std::string &filename, int terrain_dimension);
+namespace TerragenFileManager{
+    /**
+     * Load a Terragen file.
+     */
+    TerragenFile readTerragen(const std::string &filename);
+
+    void scale(TerragenFile & file, float scale);
+}
+
 
 /**
  * Save a Terragen file.

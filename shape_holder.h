@@ -15,6 +15,7 @@ public:
 
 class ShapesHolder{
 public:
+    ShapesHolder();
     ~ShapesHolder();
     GlDrawable * get(Shape shape);
 private:

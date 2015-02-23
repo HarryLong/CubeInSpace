@@ -60,6 +60,7 @@ public:
     void rotate(float pitch, float yaw);
     void reset_camera();
     void setNavigationProperties(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);
+    glm::vec3 toWorld(const glm::vec3 & camera_position, const GLint * viewport);
 
 private:
     void translateCamera(float p_x, float p_y, float p_z);

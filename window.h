@@ -21,6 +21,9 @@ private slots:
     void render_grid_toggled();
     void render_assets_toggled();
     void render_terrain_toggled();
+    void render_acceleration_structure_toggled();
+    void render_rays_toggled();
+
     void open_settings_dialog();
 
 private slots:
@@ -42,6 +45,9 @@ private:
     QAction * m_action_render_grid;
     QAction * m_action_render_assets;
     QAction * m_action_render_terrain;
+    QAction * m_action_render_acceleration_structure;
+    QAction * m_action_render_rays;
+
     // Control actions
     QActionGroup* m_control_action_group;
     QAction * m_action_control_softimage;

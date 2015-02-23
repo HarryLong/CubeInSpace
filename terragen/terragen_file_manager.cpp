@@ -77,7 +77,7 @@ static void writeInt16(std::ostream &out, std::int16_t v)
 
 
 #include "../constants.h"
-TerragenFile readTerragen(const std::string &filename, int terrain_dimension)
+TerragenFile TerragenFileManager::readTerragen(const std::string &filename)
 {
     std::ifstream in(filename, std::ios::binary);
     if (!in)
@@ -149,8 +149,7 @@ TerragenFile readTerragen(const std::string &filename, int terrain_dimension)
                 ret.m_header_data.height_scale = heightScale;
                 ret.m_header_data.depth = height;
                 ret.m_header_data.width = width;
-                ret.m_header_data.raw_scale = scale;
-                ret.m_header_data.dynamic_scale = ((float)terrain_dimension) / width;
+                ret.m_header_data.scale = scale;
                 ret.m_height_data = (float*) malloc(sizeof(float) * width * height);
                 float min_height(FLT_MAX);
                 float max_height(FLT_MIN);
@@ -159,7 +158,7 @@ TerragenFile readTerragen(const std::string &filename, int terrain_dimension)
                     for (int x = 0; x < width; x++)
                     {
                         float h = readInt16(in);
-                        h = (baseHeight + heightScale * h) * ret.m_header_data.dynamic_scale;
+                        h = baseHeight + heightScale * h;
                         //h = h * scale;
 
                         if(h < min_height)
@@ -183,6 +182,29 @@ TerragenFile readTerragen(const std::string &filename, int terrain_dimension)
         throw std::runtime_error("Failed to read " + filename + ": " + e.what());
     }
     return ret;
+}
+
+void TerragenFileManager::scale(TerragenFile & file, float scale_factor)
+{
+    int width(file.m_header_data.width * scale_factor);
+    int depth(file.m_header_data.depth * scale_factor);
+
+    float* height_data = (float*) malloc(sizeof(float) * width * depth);
+
+    for(int y(0); y < depth; y++)
+    {
+        for(int x(0); x < width; x++)
+        {
+            int xx(x/scale_factor);
+            int yy(y/scale_factor);
+            height_data[y*width+x] = file(x/scale_factor, y/scale_factor);
+        }
+    }
+
+//    free(file.m_height_data);
+    file.m_height_data = height_data;
+    file.m_header_data.depth = depth;
+    file.m_header_data.width = width;
 }
 
 //void writeTerragen(const uts::string &filename, const MemMap<height_tag> &map, const Region &region)

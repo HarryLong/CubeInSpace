@@ -66,8 +66,6 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
 {
     if(!terrain.getNormals().valid()) // Need to recalculate normals
     {
-        std::cout << "Recalculating normals" << std::endl;
-
         // Save the viewport
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport); // save current viewport
@@ -80,10 +78,6 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
         GLuint heightmap_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_MAP_TEXTURE]); CE();
         glUniform1i(heightmap_texture, (GLint)(terrain.getHeightMapTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
 
-        // Heightmap scale
-        std::cout << "Setting terrain scale to: " << terrain.getDynamicScale() << std::endl;
-        glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[TERRAIN_SCALE]), (GLfloat) terrain.getDynamicScale()); CE();
-
         GLfloat imgDims[2] = {float(terrain.getWidth()), float(terrain.getDepth())};
         glUniform2fv(glGetUniformLocation(prog_id, m_terrain_uniforms[TERRAIN_SIZE]), 1, imgDims); CE();
 
@@ -91,7 +85,6 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
         glBindFramebuffer(GL_FRAMEBUFFER, terrain.getNormals().getNormalsFBO()); CE();
 
         // set shader program to normal map gen
-        std::cout << "Binding VAO: " << terrain.getNormals().getDrawData().m_vao << std::endl;
         glBindVertexArray(terrain.getNormals().getDrawData().m_vao); CE();
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
@@ -127,7 +120,7 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
     glUniform1i(normals_texture, (GLint)(terrain.getNormals().getNormalsTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
 
     // Heightmap maximum height
-    glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[MAX_HEIGHT]), (GLfloat) terrain.getMaxHeight()); CE();
+    glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[MAX_HEIGHT]), (GLfloat) terrain.getMaxHeight() ); CE();
 
     // Heightmap base height
     glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[BASE_HEIGHT]), (GLfloat) terrain.getBaseHeight()); CE();
@@ -159,13 +152,8 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain)
     glUseProgram(0); // unbind
 }
 
-void Renderer::drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix)
+void Renderer::drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix, float p_scale)
 {
-//    glm::mat4x4 translation_matrix(glm::mat4x4() * p_view->getViewMatrix());
-//    glm::vec4 translation_vector(glm::vec4(1,1,1,0) * translation_matrix);
-
-    glm::mat4x4 view_matrix(p_view->getViewMatrix());
-
     GLuint prog_id = m_shaders[ASSET]->getProgramID();
 
     glUseProgram(prog_id); CE()
@@ -180,6 +168,7 @@ void Renderer::drawAsset(const ViewManager * p_view, DrawData & p_asset_data, gl
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.model_mat)); CE();
+    glUniform1f(glGetUniformLocation(prog_id, m_transformation_uniforms[SCALE]), (GLfloat) p_scale); CE();
 
     // Lets Draw !
     glBindVertexArray(p_asset_data.m_vao); CE();
@@ -243,11 +232,11 @@ void Renderer::initUniforms()
     m_transformation_uniforms.insert(std::pair<TransformationUniforms,const char *>(TransformationUniforms::PROJECTION_MAT,"transform.projMat"));
     m_transformation_uniforms.insert(std::pair<TransformationUniforms,const char *>(TransformationUniforms::VIEW_MAT,"transform.viewMat"));
     m_transformation_uniforms.insert(std::pair<TransformationUniforms,const char *>(TransformationUniforms::MODEL_MAT,"transform.modelMat"));
+    m_transformation_uniforms.insert(std::pair<TransformationUniforms,const char *>(TransformationUniforms::SCALE,"transform.scale"));
 
     // Terrain uniforms
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::HEIGHT_MAP_TEXTURE,"height_map_texture"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::NORMALS_TEXTURE,"normals_texture"));
-    m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::TERRAIN_SCALE,"terrain_scale"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::MAX_HEIGHT,"max_height"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::BASE_HEIGHT,"base_height"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::TERRAIN_SIZE,"terrain_size"));

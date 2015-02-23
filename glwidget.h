@@ -50,9 +50,11 @@ public:
     void updateSettings(const Settings & settings);
 
 public slots:
-    void render_grid(bool enabled);
-    void render_assets(bool enabled);
-    void render_terrain(bool enabled);
+    void renderGrid(bool enabled);
+    void renderAssets(bool enabled);
+    void renderTerrain(bool enabled);
+    void renderAccelerationStructure(bool enabled);
+    void renderRays(bool enabled);
     void setControlStyle(ControlStyle control_style);
     void disableOverlays();
     void enableSlopeOverlay();
@@ -81,7 +83,6 @@ private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
     void setNavigationEnabled(bool enabled);
     void reset_fps_cursor();
-    glm::vec3 getWorldPosition(int sx, int sy, float sz);
 
     Renderer* m_renderer;
     ViewManager* m_view_manager;
@@ -103,6 +104,9 @@ private:
     bool m_draw_grid;
     bool m_draw_assets;
     bool m_draw_terrain;
+    bool m_draw_rays;
+    bool m_draw_acceleration_structure;
+
     bool m_navigation_enabled;
 
     ControlStyle m_control_style;

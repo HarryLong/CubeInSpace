@@ -65,12 +65,12 @@ void Window::init_menu()
     // RENDERING MENU
     m_action_render_grid = new QAction("Grid", NULL);
     m_action_render_grid->setCheckable(true);
-    m_action_render_grid->setChecked(true);
+    m_action_render_grid->setChecked(false);
     connect(m_action_render_grid, SIGNAL(triggered()), this, SLOT(render_grid_toggled()));
 
     m_action_render_assets = new QAction("Assets", NULL);
     m_action_render_assets->setCheckable(true);
-    m_action_render_assets->setChecked(true);
+    m_action_render_assets->setChecked(false);
     connect(m_action_render_assets, SIGNAL(triggered()), this, SLOT(render_assets_toggled()));
 
     m_action_render_terrain = new QAction("Terrain", NULL);
@@ -78,10 +78,22 @@ void Window::init_menu()
     m_action_render_terrain->setChecked(true);
     connect(m_action_render_terrain, SIGNAL(triggered()), this, SLOT(render_terrain_toggled()));
 
+    m_action_render_acceleration_structure = new QAction("Acceleration structure", NULL);
+    m_action_render_acceleration_structure->setCheckable(true);
+    m_action_render_acceleration_structure->setChecked(false);
+    connect(m_action_render_acceleration_structure, SIGNAL(triggered()), this, SLOT(render_acceleration_structure_toggled()));
+
+    m_action_render_rays = new QAction("Projected rays", NULL);
+    m_action_render_rays->setCheckable(true);
+    m_action_render_rays->setChecked(false);
+    connect(m_action_render_rays, SIGNAL(triggered()), this, SLOT(render_rays_toggled()));
+
     m_file_menu = menuBar()->addMenu("Render");
     m_file_menu->addAction(m_action_render_grid);
     m_file_menu->addAction(m_action_render_assets);
     m_file_menu->addAction(m_action_render_terrain);
+    m_file_menu->addAction(m_action_render_acceleration_structure);
+    m_file_menu->addAction(m_action_render_rays);
 
     // CONTROLS MENU
     m_control_action_group = new QActionGroup( this );
@@ -139,17 +151,27 @@ void Window::init_menu()
 
 void Window::render_grid_toggled()
 {
-    m_glwidget->render_grid(m_action_render_grid->isChecked());
+    m_glwidget->renderGrid(m_action_render_grid->isChecked());
 }
 
 void Window::render_assets_toggled()
 {
-    m_glwidget->render_assets(m_action_render_assets->isChecked());
+    m_glwidget->renderAssets(m_action_render_assets->isChecked());
 }
 
 void Window::render_terrain_toggled()
 {
-    m_glwidget->render_terrain(m_action_render_terrain->isChecked());
+    m_glwidget->renderTerrain(m_action_render_terrain->isChecked());
+}
+
+void Window::render_acceleration_structure_toggled()
+{
+    m_glwidget->renderAccelerationStructure(m_action_render_acceleration_structure->isChecked());
+}
+
+void Window::render_rays_toggled()
+{
+    m_glwidget->renderRays(m_action_render_rays->isChecked());
 }
 
 void Window::load_terrain_file()

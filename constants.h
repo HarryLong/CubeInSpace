@@ -9,4 +9,7 @@
 #define TOP 1.f
 #define BOTTOM -TOP
 
+// SPHERE ACCELERATION STRUCTURE
+#define SPHERE_ACCELERATION_STRUCTURE_STEP_SIZE 10
+
 #define SHADER_DIR "/home/harry/workspaces/qt-workspace/CubeInSpace/shaders/"

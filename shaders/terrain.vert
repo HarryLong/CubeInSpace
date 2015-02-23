@@ -8,6 +8,7 @@ struct Transformation
 {
   mat4 projMat;
   mat4 viewMat;
+  float scale;
 };
 
 struct OverlayMode

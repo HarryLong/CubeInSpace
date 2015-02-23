@@ -40,7 +40,7 @@ void SceneManager::loadTerrain(QString filename)
 
 void SceneManager::refreshAccelerationStructureViewer()
 {
-    m_acceleration_structure_viewer.clear();
+    m_acceleration_structure_viewer.clear();  
     for(std::vector<Sphere> spheres : m_terrain.getSphereAccelerationStructure().m_spheres)
     {
         for(Sphere sphere : spheres)

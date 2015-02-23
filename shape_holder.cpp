@@ -113,19 +113,19 @@ bool CubeDrawable::bindBuffers()
         }
 
         // vao
-        glGenVertexArrays(1, &m_vao_constraints);
-        glBindVertexArray(m_vao_constraints);
+        glGenVertexArrays(1, &m_vao_constraints); CE()
+        glBindVertexArray(m_vao_constraints);CE()
 
         // vbo
         // set up vertex buffer and copy in data
-        glGenBuffers(1, &m_vbo_constraints);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW);
+        glGenBuffers(1, &m_vbo_constraints);CE()
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints);CE()
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW);CE()
 
         // ibo
-        glGenBuffers(1, &m_ibo_constraints);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW);
+        glGenBuffers(1, &m_ibo_constraints);CE()
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints);CE()
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW);CE()
 
         // enable position attribute
         GLsizei stride = sizeof(GLfloat) * 7;
@@ -133,6 +133,8 @@ bool CubeDrawable::bindBuffers()
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(0));
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(GLfloat) * 3));
+
+        glBindVertexArray(0);CE()
 
         return true;
     }
@@ -143,8 +145,10 @@ bool CubeDrawable::bindBuffers()
     }
 }
 
-
 /* END TODO */
+ShapesHolder::ShapesHolder() : m_cube(NULL)
+{
+}
 
 ShapesHolder::~ShapesHolder()
 {
@@ -153,12 +157,12 @@ ShapesHolder::~ShapesHolder()
 
 GlDrawable * ShapesHolder::get(Shape shape)
 {
-    if(!m_cube)
-        m_cube = new CubeDrawable();
     switch(shape)
     {
     case Cube:
+        if(!m_cube)
+            m_cube = new CubeDrawable;
+
         return m_cube;
     }
 }
-

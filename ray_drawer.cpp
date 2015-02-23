@@ -41,10 +41,6 @@ bool RayDrawer::bindBuffers()
 
 void RayDrawer::add(const glm::vec3 &start_point, const glm::vec3 &end_point)
 {
-    std::cout << "ADDING" << std::endl;
-    std::cout << "P1: " << start_point[0] << ", " << start_point[1] << ", " << start_point[2] << std::endl;
-    std::cout << "P2: " << end_point[0] << ", " << end_point[1] << ", " << end_point[2] << std::endl;
-
     m_verticies.push_back((GLfloat) start_point[0]);
     m_verticies.push_back(start_point[1]);
     m_verticies.push_back(start_point[2]);
@@ -68,7 +64,6 @@ void RayDrawer::add(const glm::vec3 &start_point, const glm::vec3 &end_point)
 //    m_verticies.push_back(0.0f);
 
 //    insertRayColor(m_verticies, RAY_COLOR);
-    std::cout << "ADDED" << std::endl;
 }
 
 void RayDrawer::insertRayColor(std::vector<GLfloat> & p_vector, float p_red, float p_green, float p_blue, float p_alpha)

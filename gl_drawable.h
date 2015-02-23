@@ -17,6 +17,7 @@ class GlDrawable{
 public:
     virtual bool bindBuffers() = 0;
     virtual DrawData getDrawData() const;
+    virtual void clearData();
 
 protected:
     virtual void delete_buffers();

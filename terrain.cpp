@@ -1,6 +1,11 @@
 ﻿#include "terrain.h"
 #include <iostream>
 #include <cfloat>
+#include "geom.h"
+#include <math.h>
+
+#include "utils/utils.h"
+#include <cfloat>
 
 /*******************
  * TERRAIN NORMALS *
@@ -45,7 +50,6 @@ bool TerrainNormals::bindBuffers()
 
 bool TerrainNormals::setTerrainDim(int width, int depth)
 {
-    m_valid = false;
     bindBuffers();
     if( m_normalsTexture == 0 || m_width != width || m_depth != depth )
     {
@@ -158,9 +162,64 @@ bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
     parsed_terrangen_file.summarize();
     delete_buffers();
 
+    refresh_heightmap_texture(parsed_terrangen_file);
+
+    m_terragen_file = parsed_terrangen_file;
+
+    m_terrain_normals.setTerrainDim(m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
+    m_terrain_normals.setValid(false);
+
+    prepare_terrain_geometry();
+
+    build_sphere_acceleration_structure();
+
+    return bindBuffers();
+}
+
+#include "constants.h"
+void Terrain::prepare_terrain_geometry()
+{
+    // Vertices
+    m_verticies.clear();
+    for (int z = 0; z < m_terragen_file.m_header_data.depth; z++)
+    {
+        for (int x = 0; x < m_terragen_file.m_header_data.width; x++)
+        {
+            // 3D Vertex coordinate
+            m_verticies.push_back((float) x);/*- (m_header_data.width/2 * m_header_data.dynamic_scale )*/ // X
+            m_verticies.push_back(.0f); // Y (stored in heightmap texture)
+            m_verticies.push_back((float) z);/*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/ // Z
+
+            // 2D texture coordinate
+            m_verticies.push_back((float) x / (float) (m_terragen_file.m_header_data.width - 1)); // X
+            m_verticies.push_back((float) z / (float) (m_terragen_file.m_header_data.depth - 1)); // Y
+        }
+    }
+
+    // Indices
+    m_indicies.clear();
+    for (int z = 0; z < m_terragen_file.m_header_data.width - 1; z++)
+    {
+        if (z > 0) // Degenerate begin: repeat first vertex
+            m_indicies.push_back((GLuint) (z * m_terragen_file.m_header_data.width));
+
+        for (int x = 0; x < m_terragen_file.m_header_data.width; x++)
+        {
+            // One part of the strip
+            m_indicies.push_back((GLuint) ((z * m_terragen_file.m_header_data.width) + x));
+            m_indicies.push_back((GLuint) (((z + 1) * m_terragen_file.m_header_data.width) + x));
+        }
+
+        if (z <  m_terragen_file.m_header_data.depth - 2)   // Degenerate end: repeat last vertex
+            m_indicies.push_back((GLuint) (((z + 1) * m_terragen_file.m_header_data.width) + (m_terragen_file.m_header_data.width - 1)));
+    }
+}
+
+void Terrain::refresh_heightmap_texture(TerragenFile & parsed_terrangen_file)
+{
     if(m_heightmapTexture != 0 &&
-            (m_parsed_data.m_header_data.width != parsed_terrangen_file.m_header_data.width ||
-             m_parsed_data.m_header_data.depth != parsed_terrangen_file.m_header_data.depth))
+            (m_terragen_file.m_header_data.width != parsed_terrangen_file.m_header_data.width ||
+             m_terragen_file.m_header_data.depth != parsed_terrangen_file.m_header_data.depth))
     {
         // std::cerr << "- Delete texture\n";
         glDeleteTextures(1, &m_heightmapTexture);  CE();
@@ -192,48 +251,132 @@ bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
                         parsed_terrangen_file.m_header_data.depth, GL_RED, GL_FLOAT, (GLfloat*)parsed_terrangen_file.m_height_data); CE();
     }
 
-    m_parsed_data = parsed_terrangen_file;
-
-    m_terrain_normals.setTerrainDim(m_parsed_data.m_header_data.width, m_parsed_data.m_header_data.depth);
-    prepare_terrain_geometry();
-    return bindBuffers();
+    m_terrain_normals.setValid(false);
 }
 
-#include "constants.h"
-void Terrain::prepare_terrain_geometry()
+bool Terrain::ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point)
 {
-    // Vertices
-    m_verticies.clear();
-    for (int z = 0; z < m_parsed_data.m_header_data.depth; z++)
-    {
-        for (int x = 0; x < m_parsed_data.m_header_data.width; x++)
-        {
-            // 3D Vertex coordinate
-            m_verticies.push_back(((float) x) * m_parsed_data.m_header_data.dynamic_scale /*- (m_header_data.width/2 * m_header_data.dynamic_scale )*/); // X
-            m_verticies.push_back(.0f); // Y (stored in heightmap texture)
-            m_verticies.push_back(((float) z) * m_parsed_data.m_header_data.dynamic_scale /*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/); // Z
+    // bounding sphere accel structure
+    float scaler(.0f), distance(.0f);
+    float tolerance (((float) getWidth()) / (getDepth()-1));
+    bool found(false);
 
-            // 2D texture coordinate
-            m_verticies.push_back((float) x / (float) (m_parsed_data.m_header_data.width - 1)); // X
-            m_verticies.push_back((float) z / (float) (m_parsed_data.m_header_data.depth - 1)); // Y
+    float min_distance(FLT_MAX);
+
+    for(int x (0); x < m_sphere_acceleration_structure.n_spheres_x; x++)
+        for(int z (0); z < m_sphere_acceleration_structure.n_spheres_z; z++)
+        {
+            Sphere & sphere(m_sphere_acceleration_structure.m_spheres[x][z]);
+            Geom::rayPointDist(start, direction, sphere.center, scaler, distance);
+            if(distance <= sphere.radius) // intersects enclosing sphere so test enclosed points
+            {
+                int x_min(x * m_sphere_acceleration_structure.step_size);
+                int x_max(std::min(getWidth()-1, x_min + m_sphere_acceleration_structure.step_size));
+
+                int z_min(z * m_sphere_acceleration_structure.step_size);
+                int z_max(std::min(getDepth()-1, z_min + m_sphere_acceleration_structure.step_size));
+
+                for(int point_in_sphere_x = x_min; point_in_sphere_x < x_max; point_in_sphere_x++)
+                    for(int point_in_sphere_z = z_min; point_in_sphere_z < z_max; point_in_sphere_z++)
+                    {
+                        glm::vec3 point_in_sphere(point_in_sphere_x, m_terragen_file(point_in_sphere_x,point_in_sphere_z), point_in_sphere_z);
+                        Geom::rayPointDist(start, direction, point_in_sphere, scaler, distance);
+//                        if(distance < tolerance && distance < min_distance)
+                        if(distance < min_distance)
+                        {
+                            found = true;
+                            min_distance = distance;
+                            intersection_point = point_in_sphere;
+                        }
+                }
+            }
         }
+    std::cout << "Found intersection point: "; Utils::print(intersection_point); std::cout << std::endl;
+    return found;
+}
+
+void Terrain::build_sphere_acceleration_structure()
+{
+    m_sphere_acceleration_structure.clear();
+
+    m_sphere_acceleration_structure.n_spheres_x = (getWidth()-1) / m_sphere_acceleration_structure.step_size + 1;
+    m_sphere_acceleration_structure.n_spheres_z = (getDepth()-1) / m_sphere_acceleration_structure.step_size + 1;
+
+    for(int x(0); x < getWidth(); x += m_sphere_acceleration_structure.step_size )
+    {
+        std::vector<Sphere> column_of_spheres;
+        for(int z(0); z < getDepth(); z += m_sphere_acceleration_structure.step_size)
+        {
+            int x_max(std::min(getWidth()-1, x + m_sphere_acceleration_structure.step_size));
+            int z_max(std::min(getDepth()-1, z + m_sphere_acceleration_structure.step_size));
+
+            glm::vec3 p_min(x, m_terragen_file(x,z), z);
+            glm::vec3 p_max(x_max, m_terragen_file(x_max,z_max), z_max);
+
+            glm::vec3 sphere_center(Geom::affinecombine(0.5f, p_min, 0.5f, p_max));
+
+//            std::cout << "p_min: "; Utils::print(p_min); std::cout << std::endl;
+//            std::cout << "p_max: "; Utils::print(p_max); std::cout << std::endl;
+//            std::cout << "sphere_center: "; Utils::print(sphere_center); std::cout << std::endl;
+
+            // Calculate the maximum radius
+            float squared_radius(.0f);
+            for( int point_in_sphere_x(x); point_in_sphere_x < x_max; point_in_sphere_x++ )
+                for( int point_in_sphere_z(z); point_in_sphere_z < z_max; point_in_sphere_z++)
+                {
+                    glm::vec3 point_in_sphere(point_in_sphere_x, m_terragen_file(point_in_sphere_x, point_in_sphere_z), point_in_sphere_z);
+//                    std::cout << "point_in_sphere: "; Utils::print(point_in_sphere); std::cout << std::endl;
+
+                    // calculate the distance from the center
+                    glm::vec3 center_to_point(Geom::diff(sphere_center, point_in_sphere));
+//                    std::cout << "center_to_point: "; Utils::print(center_to_point); std::cout << std::endl;
+
+                    float squared_length(Geom::squaredLength(center_to_point));
+
+                    if(squared_length > squared_radius)
+                        squared_radius = squared_length;
+                }
+
+            // Scale & Add sphere to structure
+            float radius(sqrt(squared_radius));
+
+////            std::cout << "scaled_sphere_center: "; Utils::print(sphere_center); std::cout << std::endl;
+//            std::cout << "Sphere radius: " << radius << std::endl;
+
+            Sphere sphere(sphere_center, radius);
+////            std::cout << "Going to add sphere with center: "; Utils::print(sphere.center);
+////            std::cout << " and radius " << radius << std::endl;
+            column_of_spheres.push_back(sphere);
+        }
+        m_sphere_acceleration_structure.m_spheres.push_back(column_of_spheres);
+
+////    std::cout << "*** SPHERES ADDED ***" << std::endl;
+////    for(std::vector<Sphere> spheres : m_sphere_acceleration_structure.m_spheres)
+////    {
+////        for(Sphere sphere : spheres)
+////        {
+////            std::cout << "Center: "; Utils::print(sphere.center); std::cout << std::endl;
+////        }
+////    }
+////    std::cout << "***********************" << std::endl;
+}
+}
+
+bool Terrain::traceRay(glm::vec3 start_point, glm::vec3 direction)
+{
+    glm::vec3 intersection_point;
+
+    if(ray_intersect(start_point, direction,intersection_point))
+    {
+        m_terragen_file((int)intersection_point[0], (int) intersection_point[2]) += 10;
+        refresh_heightmap_texture(m_terragen_file);
+        build_sphere_acceleration_structure();
+        return true;
     }
-
-    // Indices
-    m_indicies.clear();
-    for (int z = 0; z < m_parsed_data.m_header_data.width - 1; z++)
+    else
     {
-        if (z > 0) // Degenerate begin: repeat first vertex
-            m_indicies.push_back((GLuint) (z * m_parsed_data.m_header_data.width));
-
-        for (int x = 0; x < m_parsed_data.m_header_data.width; x++)
-        {
-            // One part of the strip
-            m_indicies.push_back((GLuint) ((z * m_parsed_data.m_header_data.width) + x));
-            m_indicies.push_back((GLuint) (((z + 1) * m_parsed_data.m_header_data.width) + x));
-        }
-
-        if (z <  m_parsed_data.m_header_data.depth - 2)   // Degenerate end: repeat last vertex
-            m_indicies.push_back((GLuint) (((z + 1) * m_parsed_data.m_header_data.width) + (m_parsed_data.m_header_data.width - 1)));
+        std::cout << "Point not found!" << std::endl;
+        return false;
     }
 }
+

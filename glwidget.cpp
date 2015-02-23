@@ -9,12 +9,14 @@
 #include "boost/foreach.hpp"
 #include "constants.h"
 #include <math.h>
+#include "geom.h"
 
 GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget * p_parent) : QGLWidget(format, p_parent),
-  m_draw_grid(true), m_draw_assets(true), m_draw_terrain(true), m_control_style(SoftImage),
+  m_draw_grid(false), m_draw_assets(false), m_draw_terrain(true), m_draw_acceleration_structure(false), m_draw_rays(false),
+  m_control_style(ControlStyle::SoftImage),
   m_mouse_tracking_thread(NULL), m_navigation_enabled(true),
   m_view_manager(new ViewManager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity)),
-  m_scene_manager(new SceneManager(settings.terrain_dimension)),
+  m_scene_manager(new SceneManager(settings.terrain_width)),
   m_ray_drawer(new RayDrawer())
 {
     m_mouse_tracking_thread_run.store(true);
@@ -35,7 +37,7 @@ GLWidget::~GLWidget()
 void GLWidget::updateSettings(const Settings & settings)
 {
     m_view_manager->setNavigationProperties(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity);
-    m_scene_manager->setTerrainDim(settings.terrain_dimension);
+    m_scene_manager->setTerrainDim(settings.terrain_width);
 }
 
 void GLWidget::setControlStyle(ControlStyle control_style)
@@ -86,6 +88,7 @@ void GLWidget::initializeGL() // Override
 void GLWidget::paintGL() // Override
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Draw the grid
     if(m_draw_grid)
     {
@@ -99,17 +102,32 @@ void GLWidget::paintGL() // Override
         m_renderer->drawTerrain(m_view_manager, m_scene_manager->getTerrain());
     }
 
-    // Draw the objects
+    // Draw the assets
     if(m_draw_assets)
     {
-        BOOST_FOREACH(SceneAsset scene_asset, m_scene_manager->getSceneAssets())
+        std::vector<SceneAsset> scene_assets (m_scene_manager->getSceneAssets());
+        for(SceneAsset scene_asset :  scene_assets)
         {
-            m_renderer->drawAsset(m_view_manager, scene_asset.m_draw_data, scene_asset.m_mtw_matrix);
+            m_renderer->drawAsset(m_view_manager, scene_asset.m_draw_data, scene_asset.m_mtw_matrix, scene_asset.m_scale);
         }
     }
 
-    DrawData ray_data ( m_ray_drawer->getDrawData() );
-    m_renderer->drawRays(m_view_manager, ray_data);
+    // Draw the acceleration structure
+    if(m_draw_acceleration_structure)
+    {
+        std::vector<SceneAsset> cubes (m_scene_manager->getAccelerationStructure());
+        for(SceneAsset cube :  cubes)
+        {
+            m_renderer->drawAsset(m_view_manager, cube.m_draw_data, cube.m_mtw_matrix, cube.m_scale);
+        }
+    }
+
+    // Draw the rays
+    if(m_draw_rays)
+    {
+        DrawData ray_data(m_ray_drawer->getDrawData());
+        m_renderer->drawRays(m_view_manager, ray_data);
+    }
 }
 
 void GLWidget::resizeGL(int width, int height) // Override
@@ -161,15 +179,23 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         m_mouse_position_tracker.start_point_y = y;
         m_mouse_position_tracker.ctrl_pressed = (event->modifiers() == Qt::ControlModifier);
     }
-    else
+    else // Not Soft Image Or navigation disabled
     {
-        glm::vec3 p1(getWorldPosition(event->x(), event->y(), .0f));
-        glm::vec3 p2(getWorldPosition(event->x(), event->y(), 1.0f));
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        glm::vec3 start(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), .0f), viewport));
+        glm::vec3 end(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), 1.f), viewport));
 
-//        m_scene_manager->genCube(p1[0], p1[0], 0);
+        glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
 
-        m_ray_drawer->add(p1, p2) ;
-        m_ray_drawer->bindBuffers();
+        if(m_scene_manager->getTerrain().traceRay(start, direction))
+            m_scene_manager->refreshAccelerationStructureViewer();
+
+        if(m_draw_rays)
+        {
+            m_ray_drawer->add(start, end) ;
+            m_ray_drawer->bindBuffers();
+        }
         update();
     }
 
@@ -368,39 +394,35 @@ void GLWidget::loadTerrain(QString filename)
     update();
 }
 
-void GLWidget::render_grid(bool enabled)
+void GLWidget::renderGrid(bool enabled)
 {
    m_draw_grid = enabled;
    update();
 }
 
-void GLWidget::render_assets(bool enabled)
+void GLWidget::renderAssets(bool enabled)
 {
     m_draw_assets = enabled;
     update();
 }
 
-void GLWidget::render_terrain(bool enabled)
+void GLWidget::renderTerrain(bool enabled)
 {
     m_draw_terrain = enabled;
     update();
 }
 
-glm::vec3 GLWidget::getWorldPosition(int sx, int sy, float sz)
+void GLWidget::renderAccelerationStructure(bool enabled)
 {
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    int width = viewport[2];
-    int height = viewport[3];
+    m_draw_acceleration_structure = enabled;
+    update();
+}
 
-    // unproject screen point to derive world coordinates
-    int realy = height - sy - 1;
-    int realx = sx;
-    glm::vec3 window_pos = glm::vec3((float) realx, (float) realy, sz); // Actual window position
-
-    glm::vec3 world_pos = glm::unProject(window_pos, m_view_manager->getViewMatrix(), m_view_manager->getProjMtx(),
-                                         glm::vec4(viewport[0], viewport[1], viewport[2], viewport[3]));
-    return glm::vec3(world_pos.x, world_pos.y, world_pos.z);
+void GLWidget::renderRays(bool enabled)
+{
+    m_ray_drawer->clearData();
+    m_draw_rays = enabled;
+    update();
 }
 
 // THREAD

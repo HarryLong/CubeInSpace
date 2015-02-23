@@ -6,7 +6,6 @@ uniform vec2 terrain_size;
 uniform sampler2D height_map;
 
 out vec4 norm;
-uniform float terrain_scale;
 
 void main(void)
 {
@@ -23,9 +22,9 @@ void main(void)
     pos = (gl_FragCoord.xy + 0.5 ) / terrain_size.xy; // Round up
 
     dfdx.y = (texture(height_map, vec2(pos.x+delta.x, pos.y)).r -
-              texture(height_map, vec2(pos.x-delta.x, pos.y)).r)/(2.0 * terrain_scale);
+              texture(height_map, vec2(pos.x-delta.x, pos.y)).r)/2.0;
     dfdy.y = (texture(height_map, vec2(pos.x, pos.y+delta.y) ).r -
-              texture(height_map, vec2(pos.x, pos.y-delta.y) ).r)/(2.0 * terrain_scale);
+              texture(height_map, vec2(pos.x, pos.y-delta.y) ).r)/2.0;
 
     /*
     pos = gl_FragCoord.xy;

@@ -39,13 +39,13 @@ enum TransformationUniforms{
     PROJECTION_MAT, // Model-view Matrix
     VIEW_MAT, // Model-view-projection matrix
     MODEL_MAT,
+    SCALE
 };
 
 enum TerrainUniforms
 {
     HEIGHT_MAP_TEXTURE,
     NORMALS_TEXTURE,
-    TERRAIN_SCALE,
     MAX_HEIGHT,
     BASE_HEIGHT,
     TERRAIN_SIZE,
@@ -89,7 +89,7 @@ public:
     Renderer(const std::string& m_shader_dir);
     ~Renderer();
     void drawTerrain(const ViewManager * p_view, Terrain& terrain);
-    void drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix);
+    void drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix, float p_scale);
     void drawGrid(const ViewManager * p_view, DrawData & p_grid_data);
     void drawRays(const ViewManager * p_view, DrawData & p_ray_data);
 

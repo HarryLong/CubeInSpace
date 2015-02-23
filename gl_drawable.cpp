@@ -22,6 +22,12 @@ void GlDrawable::delete_buffers()
     m_ibo_constraints = 0;
 }
 
+void GlDrawable::clearData()
+{
+    m_verticies.clear();
+    m_indicies.clear();
+}
+
 // TEST METHODS
 void GlDrawable::printInfo()
 {

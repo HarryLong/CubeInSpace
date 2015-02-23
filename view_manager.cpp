@@ -77,6 +77,22 @@ void ViewManager::reset_camera()
     m_transformation_matrices.view.translation = glm::mat4x4();
 }
 
+glm::vec3 ViewManager::toWorld(const glm::vec3 & camera_position, const GLint* viewport)
+{
+    int width = viewport[2];
+    int height = viewport[3];
+
+    // unproject screen point to derive world coordinates
+    int realx = camera_position[0] ;
+    int realy = height - camera_position[1] - 1;
+    int realz = camera_position[2] ;
+    glm::vec3 window_pos = glm::vec3((float) realx, (float) realy, (float) realz); // Actual window position
+
+    glm::vec3 world_pos = glm::unProject(window_pos, getViewMatrix(), getProjMtx(),
+                                         glm::vec4(viewport[0], viewport[1], viewport[2], viewport[3]));
+    return glm::vec3(world_pos.x, world_pos.y, world_pos.z);
+}
+
 void ViewManager::setNavigationProperties(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity)
 {
     this->m_camera_sensitivity = camera_sensitivity;

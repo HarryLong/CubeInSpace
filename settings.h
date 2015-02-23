@@ -7,17 +7,17 @@
 #include <QSlider>
 #include <QSpinBox>
 
-#define DEFAULT_TERRAIN_DIM 1000
+#define DEFAULT_TERRAIN_WIDTH 1000
 #define DEFAULT_CAMERA_SENSITIVITY 5
 #define DEFAULT_MOVEMENT_SENSITIVITY 5
 struct Settings
 {
 public:
-    int terrain_dimension;
+    int terrain_width;
     int camera_sensitivity;
     int z_movement_sensitivity;
     int x_y_movement_sensitivity;
-    Settings() : terrain_dimension(DEFAULT_TERRAIN_DIM), camera_sensitivity(DEFAULT_CAMERA_SENSITIVITY),
+    Settings() : terrain_width(DEFAULT_TERRAIN_WIDTH), camera_sensitivity(DEFAULT_CAMERA_SENSITIVITY),
         z_movement_sensitivity(DEFAULT_MOVEMENT_SENSITIVITY), x_y_movement_sensitivity(DEFAULT_MOVEMENT_SENSITIVITY) {}
 };
 

@@ -39,7 +39,7 @@ SettingsFile::SettingsFile()
             else if(prefix == X_Y_MOVEMENT_SENSITIVITY_PREFIX)
                 m_settings.x_y_movement_sensitivity = split_line.at(1).toInt();
             else if(prefix == TERRAIN_DIM_PREFIX)
-                m_settings.terrain_dimension = split_line.at(1).toInt();
+                m_settings.terrain_width = split_line.at(1).toInt();
             else
                 std::cerr << "Unknown prefix: " << prefix.toStdString() << std::endl;
         }
@@ -61,7 +61,7 @@ SettingsFile::~SettingsFile()
     out << CAMERA_SENSITIVITY_PREFIX << "=" << m_settings.camera_sensitivity << "\n";
     out << Z_MOVEMENT_SENSITIVITY_PREFIX << "=" << m_settings.z_movement_sensitivity << "\n";
     out << X_Y_MOVEMENT_SENSITIVITY_PREFIX << "=" << m_settings.x_y_movement_sensitivity << "\n";
-    out << TERRAIN_DIM_PREFIX << "=" << m_settings.terrain_dimension << "\n";
+    out << TERRAIN_DIM_PREFIX << "=" << m_settings.terrain_width << "\n";
 }
 
 /*******************
@@ -95,7 +95,7 @@ void SettingsEditor::init_layout()
     m_terrain_dim_spinbox = new QSpinBox(this);
     m_terrain_dim_spinbox->setRange(100,10000);
     m_terrain_dim_spinbox->setSingleStep(100);
-    m_terrain_dim_spinbox->setValue(m_settings_file.m_settings.terrain_dimension);
+    m_terrain_dim_spinbox->setValue(m_settings_file.m_settings.terrain_width);
 
     QHBoxLayout * camera_sensitivity_hl = new QHBoxLayout();
     {
@@ -144,7 +144,7 @@ void SettingsEditor::settings_changed()
     m_settings_file.m_settings.camera_sensitivity = m_camera_sensitivity_slider->value();
     m_settings_file.m_settings.z_movement_sensitivity = m_z_movement_sensitivity_slider->value();
     m_settings_file.m_settings.x_y_movement_sensitivity = m_x_y_movement_sensitivity_slider->value();
-    m_settings_file.m_settings.terrain_dimension = m_terrain_dim_spinbox->value();
+    m_settings_file.m_settings.terrain_width = m_terrain_dim_spinbox->value();
 }
 
 SettingsEditor::~SettingsEditor()
