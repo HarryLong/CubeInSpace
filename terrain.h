@@ -3,9 +3,14 @@
 
 #include "gl_drawable.h"
 #include "terragen/terragen_file_spec.h"
+#include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
+#include "glm/mat4x4.hpp"
 #include "constants.h"
 
+/*******************
+ * TERRAIN NORMALS *
+ *******************/
 class TerrainNormals : public GlDrawable
 {
 public:
@@ -36,6 +41,17 @@ private:
     bool m_valid;
 };
 
+/*********************
+ * TERRAIN RECTANGLE *
+ *********************/
+class TerrainRect : public GlDrawable
+{
+public:
+    TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth);
+    ~TerrainRect();
+    bool bindBuffers();
+};
+
 struct Sphere {
 public:
     Sphere(glm::vec3 center, float radius) : center(center), radius(radius) {}
@@ -47,14 +63,6 @@ struct SphereAccelerationStructure
 {
 public:
     SphereAccelerationStructure() : step_size(SPHERE_ACCELERATION_STRUCTURE_STEP_SIZE), n_spheres_x(0), n_spheres_z(0) {}
-//    inline int numSpheresX() {return m_spheres.size(); }
-//    inline int numSpheresy()
-//    {
-//        if(m_spheres.size() > 0 )
-//            return m_spheres[0].size();
-
-//        return 0;
-//    }
 
     inline void clear() { m_spheres.clear(); }
 
@@ -64,6 +72,12 @@ public:
 
     // Spheres ordered as x,y
     std::vector<std::vector<Sphere> > m_spheres;
+};
+
+struct TerrainMaterialProperties{
+    const glm::vec4 diffuse = glm::vec4(0.7f, 0.6f, 0.5f, 1.0f); // colour of terrain
+    const glm::vec4 specular = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+    const glm::vec4 ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 };
 
 class Terrain : public GlDrawable
@@ -80,9 +94,17 @@ public:
     int getWidth() const {return m_terragen_file.m_header_data.width; }
     int getDepth() const {return m_terragen_file.m_header_data.depth; }
     void normalsRecalculated() { m_terrain_normals.setValid(true); }
-    bool traceRay(glm::vec3 start_point, glm::vec3 direction);
+    bool traceRay(glm::vec3 start_point, glm::vec3 direction, glm::vec3 & intersection_point);
+
+    void incrementHeights(const std::vector<glm::vec3> & points, int increment);
+    void addTerrainRect(glm::vec3 min, glm::vec3 max);
+    void clearTerrainElements();
+    const TerrainMaterialProperties & getMaterialProperties() {return m_material_properties; }
+
+    glm::vec2 getCenter();
 
     const SphereAccelerationStructure& getSphereAccelerationStructure() { return m_sphere_acceleration_structure; }
+    std::vector<DrawData> getTerrainElements();
 
 private:
     void init();
@@ -99,6 +121,12 @@ private:
     TerrainNormals m_terrain_normals;
 
     SphereAccelerationStructure m_sphere_acceleration_structure;
+
+    std::vector<TerrainRect> m_terrain_rectangles;
+
+    TerrainMaterialProperties m_material_properties;
+
+    glm::vec2 m_center;
 };
 
 

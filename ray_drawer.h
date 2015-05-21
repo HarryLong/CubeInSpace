@@ -11,7 +11,6 @@ public:
     bool bindBuffers();
     void add(const glm::vec3 & start_point, const glm::vec3 & end_point);
 private:
-    void insertRayColor(std::vector<GLfloat> & p_vector, float p_red, float p_green, float p_blue, float p_alpha);
 };
 
 #endif // RAY_DRAWER_H

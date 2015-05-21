@@ -62,3 +62,21 @@ void Geom::rayPointDist(const glm::vec3 & start, const glm::vec3 & direction, co
         dist = length(query_to_closest_point);
     }
 }
+
+bool Geom::rayPlaneIntersection(const float & plane_height, const glm::vec3 & ray_start, const glm::vec3 & ray_direction, glm::vec3 & intersection)
+{
+    glm::vec3 plane_normal(0,1,0);
+
+    if(glm::dot(plane_normal, ray_direction) != 0) // Ensure there is an intersection
+    {
+        glm::vec3 random_point_on_plane(0,plane_height,0);
+
+        float distance (glm::dot(Geom::diff(random_point_on_plane,ray_start), plane_normal)/glm::dot(ray_direction, plane_normal));
+
+        intersection = ray_start + (distance * ray_direction);
+
+        return true;
+    }
+
+   return false;
+}

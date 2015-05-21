@@ -17,6 +17,7 @@
 #include <iostream>
 #include "terragen_file_manager.h"
 #include <cfloat>
+#include <math.h>
 
 /// Reads a binary little-endian float
 static float readFloat(std::istream &in)
@@ -184,27 +185,55 @@ TerragenFile TerragenFileManager::readTerragen(const std::string &filename)
     return ret;
 }
 
-void TerragenFileManager::scale(TerragenFile & file, float scale_factor)
+void TerragenFileManager::scale_factor(TerragenFile & file, int scale_factor)
 {
+    int old_width(file.m_header_data.width);
+    int old_depth(file.m_header_data.depth);
+
     int width(file.m_header_data.width * scale_factor);
     int depth(file.m_header_data.depth * scale_factor);
 
+    float base_height(file.m_header_data.base_height);
+
     float* height_data = (float*) malloc(sizeof(float) * width * depth);
 
-    for(int y(0); y < depth; y++)
+    // In the X direction
+    for(int y(0); y < old_depth; y++)
     {
-        for(int x(0); x < width; x++)
+        for(int x(0); x < old_width; x++)
         {
-            int xx(x/scale_factor);
-            int yy(y/scale_factor);
-            height_data[y*width+x] = file(x/scale_factor, y/scale_factor);
+            float h( (file(x, y) - base_height) * scale_factor);
+            float h2( (file( std::min( x+1, file.m_header_data.width-1 ), y) - base_height) * scale_factor);
+            float height_diff( (h2 - h)); // It would be /scale_factor * scale_factor. So leave it out
+            float height_increments(height_diff/scale_factor);
+
+            for(int i(0); i < scale_factor; i++)
+                height_data[(y*scale_factor*width) + (x*scale_factor) + i] = base_height + (h + (i*height_increments));
         }
     }
 
-//    free(file.m_height_data);
+    // All necessary data has been copied
+    free(file.m_height_data);
     file.m_height_data = height_data;
     file.m_header_data.depth = depth;
     file.m_header_data.width = width;
+    file.m_header_data.max_height = base_height + ((file.m_header_data.max_height - base_height) * scale_factor);
+    file.m_header_data.min_height = base_height + ((file.m_header_data.min_height - base_height) * scale_factor);
+
+    // In the Y direction
+    for(int y(0); y < old_depth; y++)
+    {
+        for(int x(0); x < width; x++)
+        {
+            float h( file(x, y * scale_factor) - base_height);
+            float h2( file(x, std::min( (y+1) * scale_factor , depth-1)) - base_height);
+            float height_diff( (h2 - h)); // It would be /scale_factor * scale_factor. So leave it out
+            float height_increments(height_diff/scale_factor);
+
+            for(int i(0); i < scale_factor; i++)
+                file(x, (y*scale_factor) + i) = base_height + h + (i*height_increments) ;
+        }
+    }
 }
 
 //void writeTerragen(const uts::string &filename, const MemMap<height_tag> &map, const Region &region)

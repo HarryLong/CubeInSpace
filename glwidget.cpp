@@ -12,14 +12,15 @@
 #include "geom.h"
 
 GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget * p_parent) : QGLWidget(format, p_parent),
-  m_draw_grid(false), m_draw_assets(false), m_draw_terrain(true), m_draw_acceleration_structure(false), m_draw_rays(false),
-  m_control_style(ControlStyle::SoftImage),
-  m_mouse_tracking_thread(NULL), m_navigation_enabled(true),
+  m_draw_grid(true), m_draw_assets(false), m_draw_terrain(true), m_draw_acceleration_structure(false), m_draw_rays(false),
+  m_control_style(ControlStyle::SoftImage), m_active_mode(Mode::None), m_navigation_enabled(false),
+  m_mouse_tracking_thread(NULL),
   m_view_manager(new ViewManager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity)),
-  m_scene_manager(new SceneManager(settings.terrain_width)),
-  m_ray_drawer(new RayDrawer())
+  m_scene_manager(new SceneManager(settings.terrain_scaler)), m_ray_drawer(new RayDrawer), m_grid_drawer(new GridHolder),
+  m_authorise_navigation_mode_switch(true)
 {
     m_mouse_tracking_thread_run.store(true);
+    m_ctrl_pressed.store(false);
     setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -32,12 +33,13 @@ GLWidget::~GLWidget()
     delete m_scene_manager;
     delete m_mouse_tracking_thread;
     delete m_ray_drawer;
+    delete m_grid_drawer;
 }
 
 void GLWidget::updateSettings(const Settings & settings)
 {
     m_view_manager->setNavigationProperties(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity);
-    m_scene_manager->setTerrainDim(settings.terrain_width);
+    m_scene_manager->setTerrainScaler(settings.terrain_scaler);
 }
 
 void GLWidget::setControlStyle(ControlStyle control_style)
@@ -76,10 +78,11 @@ void GLWidget::initializeGL() // Override
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    grabKeyboard();
+//    grabKeyboard();
     setMouseTracking(true);
 
     // Initialize rendered, view, etc...
+
     m_renderer = new Renderer(SHADER_DIR);
     m_renderer->printShaders();
     m_scene_manager->initScene();
@@ -92,14 +95,26 @@ void GLWidget::paintGL() // Override
     // Draw the grid
     if(m_draw_grid)
     {
-        DrawData grid_data ( m_scene_manager->getGridData() );
+        if(!m_grid_drawer->binded())
+        {
+            m_grid_drawer->bindBuffers();
+        }
+        DrawData grid_data ( m_grid_drawer->getDrawData() );
         m_renderer->drawGrid(m_view_manager, grid_data);
     }
 
     // Draw the terrain
-    if(m_draw_terrain && m_scene_manager->terrainReady())
+    if(m_draw_terrain)
     {
-        m_renderer->drawTerrain(m_view_manager, m_scene_manager->getTerrain());
+        Terrain & terrain (m_scene_manager->getTerrain());
+        const LightProperties & sunlight_properties (m_scene_manager->getLightingManager().getSunlightProperties());
+
+        m_renderer->drawTerrain(m_view_manager, terrain, sunlight_properties);
+        std::vector<DrawData> terrain_elements(terrain.getTerrainElements());
+        if(terrain_elements.size() > 0)
+        {
+            m_renderer->drawTerrainElements(m_view_manager, terrain_elements, terrain.getHeightMapTextureUnit());
+        }
     }
 
     // Draw the assets
@@ -120,6 +135,19 @@ void GLWidget::paintGL() // Override
         {
             m_renderer->drawAsset(m_view_manager, cube.m_draw_data, cube.m_mtw_matrix, cube.m_scale);
         }
+    }
+
+    if(m_active_mode == Mode::OrientationEdit)
+    {
+        OrientationCompass compass (m_scene_manager->getOrientationCompass());
+        Terrain & terrain (m_scene_manager->getTerrain());
+        DrawData contour (compass.getContour());
+        DrawData arrow (compass.getNorthArrow());
+        glm::vec2 center( terrain.getCenter() );
+
+        glm::mat4x4 translation_matrix (glm::translate(glm::mat4x4(), glm::vec3(center[0], terrain.getMaxHeight() + 10, center[1])));
+
+        m_renderer->drawOrientationCompass(m_view_manager, contour, arrow, translation_matrix, compass.getNorthRotationMatrix());
     }
 
     // Draw the rays
@@ -151,7 +179,7 @@ QSize GLWidget::sizeHint() const
 
 void GLWidget::focusInEvent ( QFocusEvent * event )
 {
-    grabKeyboard();
+//    grabKeyboard();
 }
 
 void GLWidget::focusOutEvent ( QFocusEvent * event )
@@ -168,42 +196,101 @@ void GLWidget::normalizeScreenCoordinates(float & p_x, float & p_y)
     p_y = (p_y - w)/w;
 }
 
+bool GLWidget::get_intersection_point_with_terrain(int screen_x, int screen_y, glm::vec3 & intersection_point)
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glm::vec3 start(m_view_manager->toWorld(glm::vec3(screen_x, screen_y, .0f), viewport));
+    glm::vec3 end(m_view_manager->toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport));
+    glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
+    return m_scene_manager->getTerrain().traceRay(start, direction, intersection_point);
+}
+
+bool GLWidget::get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point)
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glm::vec3 start(m_view_manager->toWorld(glm::vec3(screen_x, screen_y, .0f), viewport));
+    glm::vec3 end(m_view_manager->toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport));
+    glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
+
+    return Geom::rayPlaneIntersection(m_scene_manager->getTerrain().getBaseHeight(), start, direction, intersection_point);
+}
+
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    if(m_navigation_enabled && m_control_style == SoftImage)
-    {
-        float x = event->x(); float y = event->y();
-        normalizeScreenCoordinates(x,y);
+    QGLWidget::mousePressEvent(event);
 
-        m_mouse_position_tracker.start_point_x = x;
-        m_mouse_position_tracker.start_point_y = y;
-        m_mouse_position_tracker.ctrl_pressed = (event->modifiers() == Qt::ControlModifier);
+    if(m_navigation_enabled)
+    {
+        if(m_control_style == ControlStyle::SoftImage)
+        {
+            float x = event->x(); float y = event->y();
+            normalizeScreenCoordinates(x,y);
+
+            m_mouse_position_tracker.start_point_x = x;
+            m_mouse_position_tracker.start_point_y = y;
+            m_mouse_position_tracker.ctrl_pressed = (event->modifiers() == Qt::ControlModifier);
+        }
     }
-    else // Not Soft Image Or navigation disabled
+    else // Navigation disabled - Perform ray tracing to get intersection point
     {
-        GLint viewport[4];
-        glGetIntegerv(GL_VIEWPORT, viewport);
-        glm::vec3 start(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), .0f), viewport));
-        glm::vec3 end(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), 1.f), viewport));
-
-        glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
-
-        if(m_scene_manager->getTerrain().traceRay(start, direction))
-            m_scene_manager->refreshAccelerationStructureViewer();
+        glm::vec3 intersection_point;
+        bool intersection(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point));
 
         if(m_draw_rays)
         {
+            GLint viewport[4];
+            glGetIntegerv(GL_VIEWPORT, viewport);
+            glm::vec3 start(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), .0f), viewport));
+            glm::vec3 end(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), 1.f), viewport));
             m_ray_drawer->add(start, end) ;
             m_ray_drawer->bindBuffers();
+            update();
         }
-        update();
-    }
 
-    QGLWidget::mousePressEvent(event);
+        switch(m_active_mode)
+        {
+        case Mode::TerrainEdit: {
+            int hump_size (10);
+            m_active_points.clear();
+            if(intersection)
+            {
+                for(int x(std::max(0.f, intersection_point[0]-hump_size)); x <= std::min(m_scene_manager->getTerrain().getWidth()-1,
+                                                                                         (int)intersection_point[0]+hump_size); x++)
+                {
+                    for(int z(std::max(0.f, intersection_point[2]-hump_size)); z <= std::min(m_scene_manager->getTerrain().getDepth()-1,
+                                                                                             (int)intersection_point[2]+hump_size); z++)
+                    {
+                        m_active_points.push_back(glm::vec3(x, 0, z));
+                    }
+                }
+                Terrain & terrain(m_scene_manager->getTerrain());
+                terrain.clearTerrainElements();
+                terrain.addTerrainRect(m_active_points[0], m_active_points[m_active_points.size()-1]);
+                update();
+            } break;
+        }
+        case Mode::Selection: {
+            // Remove the rectangles
+            Terrain & terrain(m_scene_manager->getTerrain());
+            terrain.clearTerrainElements();
+            if(intersection)
+            {
+                m_mouse_position_tracker.start_point_x = intersection_point[0];
+                m_mouse_position_tracker.start_point_z = intersection_point[2];
+            }
+        } break;
+        default:
+            break; // Do nothing
+        }
+    }
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    QGLWidget::mouseMoveEvent(event);
+
     if(m_navigation_enabled)
     {
         if(m_control_style == Experimental1)
@@ -251,33 +338,80 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     }
     else // navigation disabled
     {
+        switch(m_active_mode){
+        case Mode::Selection: {
+            if(event->buttons() == Qt::LeftButton)
+            {
+                Terrain & terrain (m_scene_manager->getTerrain());
+                glm::vec3 intersection_point;
+                bool intersection(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point));
+                if(intersection || get_intersection_point_with_base_plane(event->x(), event->y(), intersection_point))
+                {
+                    terrain.clearTerrainElements();
+                    glm::vec3 rect_min( std::max(0.f,std::min(m_mouse_position_tracker.start_point_x, intersection_point[0])),
+                                        0,
+                                        std::max(0.f,std::min(m_mouse_position_tracker.start_point_z, intersection_point[2])));
 
+                    glm::vec3 rect_max( std::min((float)terrain.getWidth(), std::max(m_mouse_position_tracker.start_point_x, intersection_point[0])),
+                                        0,
+                                        std::min((float)terrain.getDepth(), std::max(m_mouse_position_tracker.start_point_z, intersection_point[2])));
+
+                    terrain.addTerrainRect(rect_min, rect_max);
+                    update();
+                }
+            }
+        } break;
+        default:
+            break; // Do nothing
+        }
     }
-    QGLWidget::mouseMoveEvent(event);
 }
 
 void GLWidget::wheelEvent(QWheelEvent * wheel)
 {
+    QGLWidget::wheelEvent(wheel);
+
+    float delta = .0f;
+
+    QPoint pix = wheel->pixelDelta();
+    QPoint deg = wheel->angleDelta();
+
+    if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
+        delta = (float) pix.y() / 360.f;
+    else if(!deg.isNull()) // mouse wheel instead
+        delta = deg.y() / 360.f;
+
+
     if(m_navigation_enabled)
     {
-        float delta = .0f;
-
-        QPoint pix = wheel->pixelDelta();
-        QPoint deg = wheel->angleDelta();
-
-        if(!pix.isNull()) // screen resolution tracking, e.g., from magic mouse
-            delta = (float) pix.y() / 360.f;
-        else if(!deg.isNull()) // mouse wheel instead
-            delta = deg.y() / 360.f;
-
         m_view_manager->forward(-delta);
         update();
     }
     else
     {
-
+        switch(m_active_mode)
+        {
+        case Mode::TerrainEdit: {
+            int increment(delta * 10);
+            m_scene_manager->getTerrain().incrementHeights(m_active_points, increment);
+            m_scene_manager->refreshAccelerationStructureViewer();
+            update();
+        } break;
+        case Mode::OrientationEdit:
+            if(m_ctrl_pressed.load())
+            {
+                m_view_manager->forward(-delta);
+            }
+            else
+            {
+                m_scene_manager->getOrientationCompass().rotateNorth(delta*10);
+            }
+            update();
+            break;
+        default: // Do nothing
+            break;
+        }
     }
-    QGLWidget::wheelEvent(wheel);
 }
 
 void GLWidget::reset_fps_cursor()
@@ -337,55 +471,73 @@ void GLWidget::enableAltitudeOverlay()
 
 void GLWidget::keyPressEvent ( QKeyEvent * event )
 {
+    QGLWidget::keyPressEvent(event);
+
     if(event->key() == Qt::Key_R)
     {
         m_view_manager->reset_camera();
         update();
         return;
     }
-    if(event->key() == Qt::Key_Space)
+    if(m_authorise_navigation_mode_switch && event->key() == Qt::Key_Space)
     {
         setNavigationEnabled(!m_navigation_enabled);
         return;
     }
+    if(event->key() == Qt::Key_Control)
+    {
+        m_ctrl_pressed.store(true);
+        return;
+    }
+    if(m_navigation_enabled)
+    {
+        if(m_control_style == FPS)
+        {
+            switch(event->key()){
+            case Qt::Key_W:
+                m_view_manager->forward(1);
+                break;
+            case Qt::Key_S:
+                m_view_manager->forward(-1);
+                break;
+            case Qt::Key_A:
+                m_view_manager->sideStep(1);
+                break;
+            case Qt::Key_D:
+                m_view_manager->sideStep(-1);
+                break;
+            }
+            update();
+        }
+        else if(m_control_style == Experimental1)
+        {
+            switch(event->key()){
+            case Qt::Key_Up:
+                m_view_manager->up(1);
+                break;
+            case Qt::Key_Down:
+                m_view_manager->up(-1);
+                break;
+            case Qt::Key_Right:
+                m_view_manager->sideStep(-1);
+                break;
+            case Qt::Key_Left:
+                m_view_manager->sideStep(1);
+                break;
+            }
+            update();
+        }
+    }
+}
 
-    if(m_control_style == FPS)
+void GLWidget::keyReleaseEvent(QKeyEvent * event)
+{
+    QGLWidget::keyReleaseEvent(event);
+    if(event->key() == Qt::Key_Control)
     {
-        switch(event->key()){
-        case Qt::Key_W:
-            m_view_manager->forward(1);
-            break;
-        case Qt::Key_S:
-            m_view_manager->forward(-1);
-            break;
-        case Qt::Key_A:
-            m_view_manager->sideStep(1);
-            break;
-        case Qt::Key_D:
-            m_view_manager->sideStep(-1);
-            break;
-        }
+        m_ctrl_pressed.store(false);
+        return;
     }
-    else if(m_control_style == Experimental1)
-    {
-        switch(event->key()){
-        case Qt::Key_Up:
-            m_view_manager->up(1);
-            break;
-        case Qt::Key_Down:
-            m_view_manager->up(-1);
-            break;
-        case Qt::Key_Right:
-            m_view_manager->sideStep(-1);
-            break;
-        case Qt::Key_Left:
-            m_view_manager->sideStep(1);
-            break;
-        }
-        update();
-    }
-    update();
-    QGLWidget::keyPressEvent(event);
 }
 
 void GLWidget::loadTerrain(QString filename)
@@ -423,6 +575,42 @@ void GLWidget::renderRays(bool enabled)
     m_ray_drawer->clearData();
     m_draw_rays = enabled;
     update();
+}
+
+void GLWidget::setMode(Mode mode)
+{
+    if(mode != m_active_mode)
+    {
+        m_scene_manager->getTerrain().clearTerrainElements();
+
+        if(m_active_mode == Mode::TerrainEdit)
+        {
+            m_active_points.clear();
+        }
+        else if(m_active_mode == Mode::OrientationEdit)
+        {
+            m_view_manager->popTransforms();
+        }
+
+        m_active_mode = mode;
+
+        m_authorise_navigation_mode_switch = (m_active_mode != Mode::OrientationEdit);
+
+        if(m_active_mode == Mode::OrientationEdit)
+        {
+            // Deactivate navigation
+            setNavigationEnabled(false);
+            m_view_manager->pushTransforms();
+            m_view_manager->reset_camera();
+
+            Terrain & terrain(m_scene_manager->getTerrain());
+            m_view_manager->forward(terrain.getWidth()/2.0f, true);
+            m_view_manager->sideStep(-terrain.getDepth()/2.0f, true);
+            m_view_manager->up(std::max(terrain.getWidth(), terrain.getDepth()) * 5, true);
+            m_view_manager->rotate(90, 0, true);
+        }
+        update();
+    }
 }
 
 // THREAD

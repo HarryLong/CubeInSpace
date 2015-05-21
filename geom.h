@@ -1,8 +1,10 @@
 #ifndef GEOM_H
 #define GEOM_H
 
-#include "glm/vec3.hpp"
+#include "glm/glm.hpp"
 #include <math.h>
+#include <vector>
+#include <gl.h>
 
 namespace Geom{
     inline float squaredLength(const glm::vec3 vector)
@@ -40,7 +42,7 @@ namespace Geom{
 
     inline glm::vec3 scale(glm::vec3 & v, const float & c)
     {
-        v[0] = v[0] * c;
+        v[0] *= c;
         v[1] *= c;
         v[2] *= c;
     }
@@ -51,6 +53,7 @@ namespace Geom{
         return sqrt(length);
     }
     void rayPointDist(const glm::vec3 & start, const glm::vec3 & direction, const glm::vec3 & query_point, float &scaler, float &dist);
+    bool rayPlaneIntersection(const float & plane_height, const glm::vec3 & ray_start, const glm::vec3 & ray_direction, glm::vec3 & intersection);
 }
 
 #endif // GEOM_H

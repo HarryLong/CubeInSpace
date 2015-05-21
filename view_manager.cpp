@@ -14,7 +14,7 @@ ViewManager::ViewManager(int z_movement_sensitivity, int x_y_movement_sensitivit
     //m_transformation_matrices.view.translation = glm::mat4x4();
 
     //TMP
-    translateCamera(0,500,5);
+    translate_camera(0,500,5);
    // rotate(90,0);
 //    m_transformation_matrices.tmp_camera = m_transformation_matrices.view;
 
@@ -33,22 +33,30 @@ glm::mat4x4 ViewManager::getProjMtx() const
     return m_transformation_matrices.projection;
 }
 
-void ViewManager::sideStep(float p_amount)
+void ViewManager::sideStep(float p_amount, bool ignore_sensitivity)
 {
-    translateCamera(m_x_y_movement_sensitivity * p_amount, 0, 0);
+    translate_camera((ignore_sensitivity ? 1 : m_x_y_movement_sensitivity) * p_amount, 0, 0);
 }
 
-void ViewManager::up(float p_amount)
+void ViewManager::up(float p_amount, bool ignore_sensitivity)
 {
-    translateCamera(0, m_x_y_movement_sensitivity * p_amount, 0);
+    translate_camera(0, (ignore_sensitivity ? 1 : m_x_y_movement_sensitivity) * p_amount, 0);
 }
 
-void ViewManager::forward(float p_amount)
+void ViewManager::forward(float p_amount, bool ignore_sensitivity)
 {
-    translateCamera(0, 0, m_z_movement_sensitivity * p_amount);
+    translate_camera(0, 0, (ignore_sensitivity ? 1 : m_z_movement_sensitivity) * p_amount);
 }
 
-void ViewManager::translateCamera(float p_x, float p_y, float p_z)
+void ViewManager::rotate(float pitch, float yaw, bool ignore_sensitivity)
+{
+    m_transformation_matrices.view.rotation.pitch += (ignore_sensitivity ? 1 : m_camera_sensitivity) * pitch;
+    m_transformation_matrices.view.rotation.yaw += (ignore_sensitivity ? 1 : m_camera_sensitivity) * yaw;
+
+    m_transformation_matrices.view.rotation.calculate_rotation_matrix();
+}
+
+void ViewManager::translate_camera(float p_x, float p_y, float p_z)
 {
     glm::vec3 rotated_translation_vector;
     {
@@ -58,14 +66,6 @@ void ViewManager::translateCamera(float p_x, float p_y, float p_z)
     }
 
     m_transformation_matrices.view.translation = glm::translate(m_transformation_matrices.view.translation, rotated_translation_vector);
-}
-
-void ViewManager::rotate(float pitch, float yaw)
-{
-    m_transformation_matrices.view.rotation.pitch += m_camera_sensitivity * pitch;
-    m_transformation_matrices.view.rotation.yaw += m_camera_sensitivity * yaw;
-
-    m_transformation_matrices.view.rotation.calculate_rotation_matrix();
 }
 
 void ViewManager::reset_camera()
@@ -98,4 +98,14 @@ void ViewManager::setNavigationProperties(int z_movement_sensitivity, int x_y_mo
     this->m_camera_sensitivity = camera_sensitivity;
     this->m_z_movement_sensitivity = z_movement_sensitivity;
     this->m_x_y_movement_sensitivity = x_y_movement_sensitivity;
+}
+
+void ViewManager::pushTransforms()
+{
+    m_cached_transformation_matrices = m_transformation_matrices;
+}
+
+void ViewManager::popTransforms()
+{
+    m_transformation_matrices = m_cached_transformation_matrices;
 }

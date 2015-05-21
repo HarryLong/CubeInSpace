@@ -54,18 +54,21 @@ public:
     glm::mat4x4 getViewMatrix() const; // Model View Matrix
     glm::mat4x4 getProjMtx() const; // Projection Matrix
 
-    void sideStep(float p_amount);
-    void forward(float p_amount);
-    void up(float p_amount);
-    void rotate(float pitch, float yaw);
+    void sideStep(float p_amount, bool ignore_sensitivity = false);
+    void forward(float p_amount, bool ignore_sensitivity = false);
+    void up(float p_amount, bool ignore_sensitivity = false);
+    void rotate(float pitch, float yaw, bool ignore_sensitivity = false);
     void reset_camera();
     void setNavigationProperties(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);
     glm::vec3 toWorld(const glm::vec3 & camera_position, const GLint * viewport);
 
+    void pushTransforms();
+    void popTransforms();
+
 private:
-    void translateCamera(float p_x, float p_y, float p_z);
+    void translate_camera(float p_x, float p_y, float p_z);
     TransformationMatrices m_transformation_matrices;
-    CameraOrientation m_camera_orientation;
+    TransformationMatrices m_cached_transformation_matrices;
     int m_z_movement_sensitivity, m_x_y_movement_sensitivity, m_camera_sensitivity;
 };
 

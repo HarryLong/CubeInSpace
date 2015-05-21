@@ -16,7 +16,7 @@ namespace TerragenFileManager{
      */
     TerragenFile readTerragen(const std::string &filename);
 
-    void scale(TerragenFile & file, float scale);
+    void scale_factor(TerragenFile & file, int scale_factor);
 }
 
 

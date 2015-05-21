@@ -23,8 +23,8 @@ private slots:
     void render_terrain_toggled();
     void render_acceleration_structure_toggled();
     void render_rays_toggled();
-
     void open_settings_dialog();
+    void refresh_mode();
 
 private slots:
     void refresh_control_style();
@@ -53,13 +53,20 @@ private:
     QAction * m_action_control_softimage;
     QAction * m_action_control_fps;
     QAction * m_action_control_experimental;
+    std::map<ControlStyle, QAction*> m_control_style_to_action_map;
+
     // Terrain options
     QActionGroup* m_terrain_overlays_group;
     QAction * m_terrain_options_overlay_none;
     QAction * m_terrain_options_overlay_slope;
     QAction * m_terrain_options_overlay_altitude;
-
-    std::map<ControlStyle, QAction*> m_control_style_to_action_map;
+    // Mode options
+    QActionGroup* m_mode_action_group;
+    QAction * m_mode_none;
+    QAction * m_mode_terrain_edit;
+    QAction * m_mode_selection;
+    QAction * m_mode_terrain_orientation_edit;
+    std::map<Mode, QAction*> m_mode_to_action_map;
 };
 
 #endif

@@ -41,26 +41,26 @@ out vec4 ambient;
 
 out float slope;
 out float altitude;
-out vec3 pos;
 
 void main()
 {
-    // Fetch the y coordinate from the texture
-    vec3 v = vec3(vPos.x, texture(height_map_texture, textureCoord).r, vPos.z);
-    pos = v;
+    // Fetch the y coordinate from the heightmap texture
+    vec3 world_space_pos = vec3(vPos.x, texture(height_map_texture, textureCoord).r, vPos.z);
 
-    // Calculate the slope
+    // Get the normal
     vec3 normal = texture(normals_texture, textureCoord).rgb;
-    vec3 x_y_plane = vec3(1,0,0);
-    slope = abs(dot(normal, x_y_plane));
-
-    // Calculate the altitude
-    altitude = ((v.y-base_height)/max_height-base_height);
-
     // map normal to camera space for lighting calculations
     camera_space_normal = normalize(mat3(transform.viewMat) * normal);
 
-    vec4 camera_space_pos = transform.viewMat * vec4(v, 1.0);
+    // Calculate slop
+    vec3 x_y_plane = vec3(0,1,0);
+    slope = 1 - abs(dot(normal, x_y_plane));
+
+    // Calculate the altitude
+    altitude = ((world_space_pos.y-base_height)/max_height-base_height);
+
+    // Lighting
+    vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);
     vec4 camera_space_light_pos = transform.viewMat * light_position;
 
     light_direction = normalize(camera_space_light_pos.xyz - camera_space_pos.xyz);

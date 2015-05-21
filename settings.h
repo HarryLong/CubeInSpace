@@ -5,19 +5,19 @@
 #include <QFile>
 #include <QDialog>
 #include <QSlider>
-#include <QSpinBox>
+#include <QComboBox>
 
-#define DEFAULT_TERRAIN_WIDTH 1000
+#define DEFAULT_TERRAIN_SCALE 1
 #define DEFAULT_CAMERA_SENSITIVITY 5
 #define DEFAULT_MOVEMENT_SENSITIVITY 5
 struct Settings
 {
 public:
-    int terrain_width;
+    int terrain_scaler;
     int camera_sensitivity;
     int z_movement_sensitivity;
     int x_y_movement_sensitivity;
-    Settings() : terrain_width(DEFAULT_TERRAIN_WIDTH), camera_sensitivity(DEFAULT_CAMERA_SENSITIVITY),
+    Settings() : terrain_scaler(DEFAULT_TERRAIN_SCALE), camera_sensitivity(DEFAULT_CAMERA_SENSITIVITY),
         z_movement_sensitivity(DEFAULT_MOVEMENT_SENSITIVITY), x_y_movement_sensitivity(DEFAULT_MOVEMENT_SENSITIVITY) {}
 };
 
@@ -53,7 +53,7 @@ private:
     QSlider * m_camera_sensitivity_slider;
     QSlider * m_z_movement_sensitivity_slider;
     QSlider * m_x_y_movement_sensitivity_slider;
-    QSpinBox * m_terrain_dim_spinbox;
+    QComboBox * m_terrain_scaler_cb;
 };
 
 #endif // SETTINGS_H

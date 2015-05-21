@@ -19,7 +19,8 @@ in vec4 diffuse;
 in vec4 ambient;
 in float slope;
 in float altitude; // ratio over max
-in vec3 pos;
+
+in float increment_intensity;
 
 out vec4 outputColor;
 

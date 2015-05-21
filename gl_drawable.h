@@ -15,6 +15,7 @@ public:
 class GlDrawable{
 
 public:
+    GlDrawable() : m_vao_constraints(0), m_vbo_constraints(0), m_ibo_constraints(0) {}
     virtual bool bindBuffers() = 0;
     virtual DrawData getDrawData() const;
     virtual void clearData();

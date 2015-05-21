@@ -44,6 +44,6 @@ add_subdirectory(shaders)
 #add_subdirectory(common)
 add_subdirectory(terragen)
 
-add_executable(CubeInSpace terrain terrain_manager glwidget window main glheader qtutils view_manager renderer shape_holder shader_program debug grid_manager helper gl_drawable constants settings ray_drawer geom scene_manager)
+add_executable(CubeInSpace lighting_manager light_properties shape_factory terrain orientation_compass terrain_manager glwidget window main glheader qtutils view_manager renderer shape_holder shader_program debug grid_manager helper gl_drawable constants settings ray_drawer geom scene_manager)
 # Use the Widgets module from Qt 5.
 target_link_libraries(CubeInSpace "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU Utils TerragenFileManager)

@@ -13,6 +13,7 @@
 #include <vector>
 #include "scene_manager.h"
 #include "constants.h"
+#include "grid_manager.h"
 
 #include <atomic>
 #include <thread>
@@ -39,6 +40,13 @@ enum ControlStyle {
     Experimental1
 };
 
+enum Mode {
+    None,
+    TerrainEdit,
+    Selection,
+    OrientationEdit
+};
+
 class GLWidget : public QGLWidget
 {
     Q_OBJECT
@@ -59,6 +67,7 @@ public slots:
     void disableOverlays();
     void enableSlopeOverlay();
     void enableAltitudeOverlay();
+    void setMode(Mode mode);
 
 protected:
     void initializeGL(); // Override
@@ -78,17 +87,21 @@ protected:
     void wheelEvent(QWheelEvent * wheel);
 
     void keyPressEvent ( QKeyEvent * event );
+    void keyReleaseEvent(QKeyEvent * event);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
     void setNavigationEnabled(bool enabled);
     void reset_fps_cursor();
+    bool get_intersection_point_with_terrain(int screen_x, int screen_y, glm::vec3 & intersection_point);
+    bool get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point);
 
     Renderer* m_renderer;
     ViewManager* m_view_manager;
     SceneManager* m_scene_manager;
     MouseTracker m_mouse_position_tracker;
     RayDrawer * m_ray_drawer;
+    GridHolder * m_grid_drawer;
 
     void enable_continuous_mouse_tracking(bool enabled);
     void mouse_tracking_callback();
@@ -100,16 +113,20 @@ private:
     std::atomic<float> m_mouse_x;
     std::atomic<float> m_mouse_y;
     std::atomic<bool> m_mouse_tracking_thread_run;
+    std::atomic<bool> m_ctrl_pressed;
 
+    bool m_navigation_enabled;
     bool m_draw_grid;
     bool m_draw_assets;
     bool m_draw_terrain;
     bool m_draw_rays;
     bool m_draw_acceleration_structure;
-
-    bool m_navigation_enabled;
+    bool m_authorise_navigation_mode_switch;
 
     ControlStyle m_control_style;
+    Mode m_active_mode;
+
+    std::vector<glm::vec3> m_active_points;
 };
 
 #endif

@@ -37,7 +37,10 @@ void main(void)
               texelFetch(htMap, ivec2(p.x, p.y-1), 0 ).r)/(0.004);
     */
 
-    vec3 n = -cross(dfdx, dfdy);
+    vec3 n = cross(dfdx, dfdy);
+
+    if(n[1] < 0)
+        n = -n;
 
     norm = vec4(normalize(n), 0.0);
 

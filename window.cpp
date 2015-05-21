@@ -11,19 +11,23 @@ Window::Window(const QGLFormat& format)
     init_menu();
     refresh_control_style();
     setCentralWidget(m_glwidget); // Takes ownership of widget
-    setWindowTitle("CUBES IN SPACE");
+    setWindowTitle("");
 }
 
 Window::~Window()
 {
+    // Misc actions
     delete m_file_menu;
     delete m_action_close;
     delete m_action_open_settings_dialog;
+
+    // Render actions
     delete m_action_load_terrain;
     delete m_action_render_grid;
     delete m_action_render_assets;
     delete m_action_render_terrain;
 
+    // Control style actions
     for(auto it (m_control_style_to_action_map.begin()); it != m_control_style_to_action_map.end(); it++)
         delete it->second;
     delete m_control_action_group;
@@ -33,6 +37,11 @@ Window::~Window()
     delete m_terrain_options_overlay_none;
     delete m_terrain_options_overlay_slope;
     delete m_terrain_options_overlay_altitude;
+
+    // Mode actions
+    for(auto it (m_mode_to_action_map.begin()); it != m_mode_to_action_map.end(); it++)
+        delete it->second;
+    delete m_mode_action_group;
 }
 
 void Window::open_settings_dialog()
@@ -65,7 +74,7 @@ void Window::init_menu()
     // RENDERING MENU
     m_action_render_grid = new QAction("Grid", NULL);
     m_action_render_grid->setCheckable(true);
-    m_action_render_grid->setChecked(false);
+    m_action_render_grid->setChecked(true);
     connect(m_action_render_grid, SIGNAL(triggered()), this, SLOT(render_grid_toggled()));
 
     m_action_render_assets = new QAction("Assets", NULL);
@@ -147,6 +156,41 @@ void Window::init_menu()
     m_file_menu->addAction(m_terrain_options_overlay_none);
     m_file_menu->addAction(m_terrain_options_overlay_slope);
     m_file_menu->addAction(m_terrain_options_overlay_altitude);
+
+    // Mode options
+    m_mode_action_group = new QActionGroup( this );
+
+    m_mode_none = new QAction("None", NULL);
+    m_mode_none->setCheckable(true);
+    m_mode_none->setActionGroup(m_mode_action_group);
+    connect(m_mode_none, SIGNAL(triggered()), this, SLOT(refresh_mode()));
+    m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::None, m_mode_none));
+
+    m_mode_terrain_edit = new QAction("Terrain Edit", NULL);
+    m_mode_terrain_edit->setCheckable(true);
+    m_mode_terrain_edit->setActionGroup(m_mode_action_group);
+    connect(m_mode_terrain_edit, SIGNAL(triggered()), this, SLOT(refresh_mode()));
+    m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::TerrainEdit, m_mode_terrain_edit));
+
+    m_mode_selection = new QAction("Selection", NULL);
+    m_mode_selection->setCheckable(true);
+    m_mode_selection->setActionGroup(m_mode_action_group);
+    connect(m_mode_selection, SIGNAL(triggered()), this, SLOT(refresh_mode()));
+    m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::Selection, m_mode_selection));
+
+    m_mode_terrain_orientation_edit = new QAction("Terrain orientation", NULL);
+    m_mode_terrain_orientation_edit->setCheckable(true);
+    m_mode_terrain_orientation_edit->setActionGroup(m_mode_action_group);
+    connect(m_mode_terrain_orientation_edit, SIGNAL(triggered()), this, SLOT(refresh_mode()));
+    m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::OrientationEdit, m_mode_terrain_orientation_edit));
+
+    m_mode_none->setChecked(true);
+
+    m_file_menu = menuBar()->addMenu("Mode");
+    m_file_menu->addAction(m_mode_none);
+    m_file_menu->addAction(m_mode_terrain_edit);
+    m_file_menu->addAction(m_mode_selection);
+    m_file_menu->addAction(m_mode_terrain_orientation_edit);
 }
 
 void Window::render_grid_toggled()
@@ -197,5 +241,14 @@ void Window::refresh_control_style()
     {
         if(it->second->isChecked())
             m_glwidget->setControlStyle(it->first);
+    }
+}
+
+void Window::refresh_mode()
+{
+    for(auto it (m_mode_to_action_map.begin()); it != m_mode_to_action_map.end(); it++)
+    {
+        if(it->second->isChecked())
+            m_glwidget->setMode(it->first);
     }
 }

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     // To run on laptop
     QGLFormat glFormat;
     glFormat.setVersion( 4, 0 );
-    glFormat.setProfile( QGLFormat::CoreProfile ); // Requires >=Qt-4.8.0
+//    glFormat.setProfile( QGLFormat::CoreProfile ); // Requires >=Qt-4.8.0
     glFormat.setSampleBuffers( true );
     Window w(glFormat);
     w.resize(w.sizeHint());
