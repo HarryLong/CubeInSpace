@@ -1,14 +1,17 @@
 #ifndef RAY_DRAWER_H
 #define RAY_DRAWER_H
 
-#include "gl_drawable.h"
+#include "asset.h"
 #include "glm/vec3.hpp"
 
-class RayDrawer : public GlDrawable
+class RayDrawer : public Asset
 {
 public:
     RayDrawer();
-    bool bindBuffers();
+    ~RayDrawer();
+    virtual bool bindBuffers();
+    virtual void render() const;
+
     void add(const glm::vec3 & start_point, const glm::vec3 & end_point);
 private:
 };

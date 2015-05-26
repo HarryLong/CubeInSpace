@@ -32,11 +32,14 @@ link_directories(
     ${ImageMagick_LIBRARY_DIRS}
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCC_GL_DEBUG_ -DDEBUG_ON -Wall -g -std=c++11") #DEBUG
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -std=c++11")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO} "-O2 -g")
-SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} "-O2")
-SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} "-O0 -g")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -std=c++11 ")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -DGL_DEBUG -std=c++11")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -std=c++11")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DGL_DEBUG -std=c++11")
+
+SET(CMAKE_BUILD_TYPE Debug)
+SET(CMAKE_VERBOSE_MAKEFILE true )
 
 # The utils library
 add_subdirectory(utils)
@@ -44,6 +47,6 @@ add_subdirectory(shaders)
 #add_subdirectory(common)
 add_subdirectory(terragen)
 
-add_executable(CubeInSpace lighting_manager light_properties shape_factory terrain orientation_compass terrain_manager glwidget window main glheader qtutils view_manager renderer shape_holder shader_program debug grid_manager helper gl_drawable constants settings ray_drawer geom scene_manager)
+add_executable(CubeInSpace asset time_controller_dialog lighting_manager light_properties shape_factory terrain orientation_compass glwidget window main glheader qtutils view_manager renderer shader_program debug grid helper gl_drawable constants settings ray_drawer geom scene_manager)
 # Use the Widgets module from Qt 5.
 target_link_libraries(CubeInSpace "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU Utils TerragenFileManager)

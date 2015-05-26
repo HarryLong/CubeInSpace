@@ -67,16 +67,15 @@ SettingsFile::~SettingsFile()
 /*******************
  * SETTINGS EDITOR *
  *******************/
-SettingsEditor::SettingsEditor ( QWidget * parent, Qt::WindowFlags f) : QDialog(parent,f)
+SettingsEditorDialog::SettingsEditorDialog ( QWidget * parent, Qt::WindowFlags f) : QDialog(parent,f)
 {
     setModal(true);
     setWindowTitle("Settings");
     init_layout();
     init_signals();
-    grabKeyboard();
 }
 
-void SettingsEditor::init_layout()
+void SettingsEditorDialog::init_layout()
 {
     m_camera_sensitivity_slider = new QSlider(Qt::Horizontal, this);
     m_camera_sensitivity_slider->setRange(1,50);
@@ -136,7 +135,7 @@ void SettingsEditor::init_layout()
     setLayout(main_layout);
 }
 
-void SettingsEditor::init_signals()
+void SettingsEditorDialog::init_signals()
 {
     connect(m_camera_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(settings_changed()));
     connect(m_z_movement_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(settings_changed()));
@@ -144,7 +143,7 @@ void SettingsEditor::init_signals()
     connect(m_terrain_scaler_cb, SIGNAL(currentIndexChanged(int)), this, SLOT(settings_changed()));
 }
 
-void SettingsEditor::settings_changed()
+void SettingsEditorDialog::settings_changed()
 {
     m_settings_file.m_settings.camera_sensitivity = m_camera_sensitivity_slider->value();
     m_settings_file.m_settings.z_movement_sensitivity = m_z_movement_sensitivity_slider->value();
@@ -152,7 +151,7 @@ void SettingsEditor::settings_changed()
     m_settings_file.m_settings.terrain_scaler = m_terrain_scaler_cb->currentText().toInt();
 }
 
-SettingsEditor::~SettingsEditor()
+SettingsEditorDialog::~SettingsEditorDialog()
 {
 
 }

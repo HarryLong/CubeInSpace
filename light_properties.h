@@ -9,6 +9,7 @@ public:
     ~LightProperties();
 
     glm::vec4 getPosition() const;
+    void setPosition(glm::vec4 position);
 
     const glm::vec4 m_diffuse_color;
     const glm::vec4 m_specular_color;
@@ -18,13 +19,26 @@ private:
     glm::vec4 m_position;
 };
 
-#define SUNLIGHT_DIFFUSE glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
-#define SUNLIGHT_SPECULAR glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
-#define SUNLIGHT_AMBIANT glm::vec4(0.4f, 0.4f, 0.4f, 1.0f)
-#define SUNLIGHT_BASE_POSITION glm::vec4(500.0f, 500.0f, -500.0f, 1.0f)
 class SunLightProperties : public LightProperties {
 public:
-    SunLightProperties() : LightProperties (SUNLIGHT_BASE_POSITION, SUNLIGHT_DIFFUSE, SUNLIGHT_SPECULAR, SUNLIGHT_AMBIANT) {}
+    SunLightProperties();
+    ~SunLightProperties();
+
+    void setLatitude(int latitude);
+    void setMonth(int month);
+    void setTime(int hour_of_day);
+    void setTerrainDimensions(int width, int depth);
+
+private:
+    void refresh_position();
+    float hour_to_angle(int hour);
+
+    int m_latitude;
+    int m_month;
+    int m_hour_of_day;
+
+    int m_terrain_width;
+    int m_terrain_depth;
 };
 
 #endif //LIGHT_PROPERTIES_H

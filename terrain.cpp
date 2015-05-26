@@ -6,8 +6,6 @@
 
 #include "utils/utils.h"
 #include <cfloat>
-#include <glm/gtc/matrix_transform.hpp>
-
 
 /*******************
  * TERRAIN NORMALS *
@@ -47,12 +45,14 @@ bool TerrainNormals::bindBuffers()
     glEnableVertexAttribArray(0); CE();
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(GLfloat), (void*)(0)); CE();
 
+    // Unbinding
+    glBindVertexArray(0);CE()
+
     return true;
 }
 
 bool TerrainNormals::setTerrainDim(int width, int depth)
 {
-    bindBuffers();
     if( m_normalsTexture == 0 || m_width != width || m_depth != depth )
     {
 //        delete_buffers();
@@ -100,7 +100,7 @@ bool TerrainNormals::setTerrainDim(int width, int depth)
         m_width = width;
         m_depth = depth;
     }
-    return true;
+    return bindBuffers();
 }
 
 void TerrainNormals::delete_buffers()
@@ -109,10 +109,24 @@ void TerrainNormals::delete_buffers()
     GlDrawable::delete_buffers();
 }
 
+void TerrainNormals::render() const
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_normal_map); CE();
+
+    // set shader program to normal map gen
+    glBindVertexArray(m_vao_constraints); CE();
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
+
+    // unbind everthing
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
+    glBindVertexArray(0);  CE();
+}
+
 /*********************
  * TERRAIN RECTANGLE *
  *********************/
-TerrainRect::TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth)
+TerrainRect::TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth) : Asset(true, glm::vec4(0.3, 0.3, 0.3, 0.5))
 {
     int rect_width(max[0] - min[0]);
     int rect_depth(max[2] - min[2]);
@@ -153,47 +167,6 @@ TerrainRect::TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int te
     bindBuffers();
 }
 
-//TerrainRect::TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth)
-//{
-//    int rect_width(10);
-//    int rect_depth(10);
-
-//    // Vertices
-//    for (int z (0); z < rect_depth; z++)
-//    {
-//        for (int x (0); x < rect_width; x++)
-//        {
-//            // 3D Vertex coordinate
-//            m_verticies.push_back((float) x);
-//            m_verticies.push_back(.0f); // Y (stored in heightmap texture)
-//            m_verticies.push_back((float) z);
-
-//            // 2D texture coordinate
-//            m_verticies.push_back((float) x / (float) (terrain_width - 1)); // X
-//            m_verticies.push_back((float) z / (float) (terrain_depth - 1)); // Y
-//        }
-//    }
-
-//    // Indices
-//    for (int z (0); z < rect_depth-1; z++)
-//    {
-//        if (z > 0) // Degenerate begin: repeat first vertex
-//            m_indicies.push_back((GLuint) (z * rect_width));
-
-//        for (int x = 0; x < rect_width; x++)
-//        {
-//            // One part of the strip
-//            m_indicies.push_back((GLuint) ((z * rect_width) + x));
-//            m_indicies.push_back((GLuint) (((z + 1) * rect_width) + x));
-//        }
-
-//        if (z <  rect_depth - 2)   // Degenerate end: repeat last vertex
-//            m_indicies.push_back((GLuint) (((z + 1) * rect_width) + (rect_width - 1)));
-//    }
-
-//    bindBuffers();
-//}
-
 TerrainRect::~TerrainRect()
 {
 
@@ -223,54 +196,78 @@ bool TerrainRect::bindBuffers()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW); CE();
 
+    // Unbinding
+    glBindVertexArray(0);CE()
+
     return true;
+}
+
+void TerrainRect::render() const
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBindVertexArray(m_vao_constraints); CE();
+    glDrawElements(GL_TRIANGLE_STRIP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+
+    glDisable(GL_BLEND);
+
+    glBindVertexArray(0); // Unbind
 }
 
 /***********
  * TERRAIN *
  ***********/
-
-Terrain::Terrain()
+Terrain::Terrain() : m_heightmapTexture(0), m_htmapTexUnit(GL_TEXTURE0)
 {
     init();
 }
 
 Terrain::~Terrain()
 {
+    clearTerrainElements();
 }
 
 void Terrain::init()
 {
-    // Initialize texture units
-    m_htmapTexUnit = GL_TEXTURE0;
+}
+
+void Terrain::render() const
+{
+    glBindVertexArray(m_vao_constraints); CE();
+
+    glDrawElements(GL_TRIANGLE_STRIP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+
+    glBindVertexArray(0); // Unbind
 }
 
 bool Terrain::bindBuffers()
 {
-    if(m_indicies.size() > 0)
-    {
-        glGenVertexArrays(1, &m_vao_constraints); CE();
-        glBindVertexArray(m_vao_constraints); CE();
+    glGenVertexArrays(1, &m_vao_constraints); CE();
+    glBindVertexArray(m_vao_constraints); CE();
 
-        // set up vertex buffer an copy in data
-        glGenBuffers(1, &m_vbo_constraints); CE();
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints); CE();
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW); CE();
+    // set up vertex buffer an copy in data
+    glGenBuffers(1, &m_vbo_constraints); CE();
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints); CE();
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW); CE();
 
-        // enable position attribute
-        // Vertex position
-        glEnableVertexAttribArray(0); CE();
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
-        // Texture coordinate
-        glEnableVertexAttribArray(1); CE();
-        const int sz = 3*sizeof(GLfloat);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
+    // enable position attribute
+    // Vertex position
+    glEnableVertexAttribArray(0); CE();
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    // Texture coordinate
+    glEnableVertexAttribArray(1); CE();
+    const int sz = 3*sizeof(GLfloat);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
 
-        // set up index buffer
-        glGenBuffers(1, &m_ibo_constraints);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW); CE();
-    }
+    // set up index buffer
+    glGenBuffers(1, &m_ibo_constraints);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW); CE();
+
+    // Unbinding
+    glBindVertexArray(0);CE()
+
     return true;
 }
 
@@ -281,7 +278,8 @@ bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 
     refresh_heightmap_texture(parsed_terrangen_file);
 
-    free(m_terragen_file.m_height_data);
+    if(m_terragen_file.m_height_data)
+        free(m_terragen_file.m_height_data);
     m_terragen_file = parsed_terrangen_file;
 
     m_terrain_normals.setTerrainDim(m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
@@ -334,6 +332,8 @@ void Terrain::prepare_terrain_geometry()
         if (z <  m_terragen_file.m_header_data.depth - 2)   // Degenerate end: repeat last vertex
             m_indicies.push_back((GLuint) (((z + 1) * m_terragen_file.m_header_data.width) + (m_terragen_file.m_header_data.width - 1)));
     }
+
+    std::cout << "Indicies : " << m_indicies.size() << std::endl;
 }
 
 void Terrain::refresh_heightmap_texture(TerragenFile & parsed_terrangen_file)
@@ -387,7 +387,7 @@ bool Terrain::ray_intersect(const glm::vec3 & start, const glm::vec3 & direction
     for(int x (0); x < m_sphere_acceleration_structure.n_spheres_x; x++)
         for(int z (0); z < m_sphere_acceleration_structure.n_spheres_z; z++)
         {
-            Sphere & sphere(m_sphere_acceleration_structure.m_spheres[x][z]);
+            SphereAccelerationStructure::Sphere & sphere(m_sphere_acceleration_structure.m_spheres[x][z]);
             Geom::rayPointDist(start, direction, sphere.center, scaler, distance);
             if(distance <= sphere.radius) // intersects enclosing sphere so test enclosed points
             {
@@ -423,7 +423,7 @@ void Terrain::build_sphere_acceleration_structure()
 
     for(int x(0); x < getWidth(); x += m_sphere_acceleration_structure.step_size )
     {
-        std::vector<Sphere> column_of_spheres;
+        std::vector<SphereAccelerationStructure::Sphere > column_of_spheres;
         for(int z(0); z < getDepth(); z += m_sphere_acceleration_structure.step_size)
         {
             int x_max(std::min(getWidth()-1, x + m_sphere_acceleration_structure.step_size));
@@ -462,7 +462,7 @@ void Terrain::build_sphere_acceleration_structure()
 ////            std::cout << "scaled_sphere_center: "; Utils::print(sphere_center); std::cout << std::endl;
 //            std::cout << "Sphere radius: " << radius << std::endl;
 
-            Sphere sphere(sphere_center, radius);
+            SphereAccelerationStructure::Sphere  sphere(sphere_center, radius);
 ////            std::cout << "Going to add sphere with center: "; Utils::print(sphere.center);
 ////            std::cout << " and radius " << radius << std::endl;
             column_of_spheres.push_back(sphere);
@@ -493,25 +493,13 @@ void Terrain::incrementHeights(const std::vector<glm::vec3> & points, int increm
 
 void Terrain::addTerrainRect(glm::vec3 min, glm::vec3 max)
 {
-    m_terrain_rectangles.push_back(TerrainRect(min,max, m_terragen_file.m_header_data.width,
+    m_terrain_rectangles.push_back(new TerrainRect(min, max, m_terragen_file.m_header_data.width,
                                                m_terragen_file.m_header_data.depth));
 }
 
 void Terrain::clearTerrainElements()
 {
-    m_terrain_rectangles.clear();
-}
-
-std::vector<DrawData> Terrain::getTerrainElements()
-{
-    std::vector<DrawData> terrain_elements;
-    // Rectangles
-    for(TerrainRect rectangle : m_terrain_rectangles)
-    {
-        terrain_elements.push_back(rectangle.getDrawData());
-    }
-
-    return terrain_elements;
+    clear_terrain_rectangles();
 }
 
 bool Terrain::traceRay(glm::vec3 start_point, glm::vec3 direction, glm::vec3 & intersection_point)
@@ -523,3 +511,18 @@ glm::vec2 Terrain::getCenter()
 {
     return m_center;
 }
+
+void Terrain::clear_terrain_rectangles()
+{
+    for(TerrainRect * rect : m_terrain_rectangles)
+        delete rect;
+
+    m_terrain_rectangles.clear();
+}
+
+const std::vector<const Asset*> Terrain::getTerrainElements()
+{
+    return std::vector<const Asset*>(m_terrain_rectangles.begin(), m_terrain_rectangles.end());
+//    return m_terrain_rectangles;
+}
+

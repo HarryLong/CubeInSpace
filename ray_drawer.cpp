@@ -1,7 +1,12 @@
 #include "ray_drawer.h"
 #include <vector>
 
-RayDrawer::RayDrawer()
+RayDrawer::RayDrawer() : Asset(true, glm::vec4(.294f, .0f, .51f, 1.f))
+{
+
+}
+
+RayDrawer::~RayDrawer()
 {
 
 }
@@ -31,7 +36,20 @@ bool RayDrawer::bindBuffers()
     // enable position attribute;
     glEnableVertexAttribArray(0);CE()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));CE()
+
+    // Unbinding
+    glBindVertexArray(0);CE()
+
     return true;
+}
+
+void RayDrawer::render() const
+{
+    glBindVertexArray(m_vao_constraints); CE();
+
+    glDrawArrays(GL_LINES, 0, m_verticies.size()); CE();
+
+    glBindVertexArray(0); // Unbind
 }
 
 void RayDrawer::add(const glm::vec3 &start_point, const glm::vec3 &end_point)
@@ -43,6 +61,8 @@ void RayDrawer::add(const glm::vec3 &start_point, const glm::vec3 &end_point)
     m_verticies.push_back(end_point[0]);
     m_verticies.push_back(end_point[1]);
     m_verticies.push_back(end_point[2]);
+
+    bindBuffers();
 
 //    m_verticies.push_back(-10.0f);
 //    m_verticies.push_back(10.0f);

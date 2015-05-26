@@ -7,6 +7,7 @@
 #include "glm/vec3.hpp"
 #include "glm/mat4x4.hpp"
 #include "constants.h"
+#include "asset.h"
 
 /*******************
  * TERRAIN NORMALS *
@@ -16,12 +17,14 @@ class TerrainNormals : public GlDrawable
 public:
     TerrainNormals();
     ~TerrainNormals();
-    bool bindBuffers();
     bool setTerrainDim(int width, int depth);
     GLenum getNormalsTextureUnit() const { return m_normalsTexUnit; }
-    GLuint getNormalsFBO() const { return m_fbo_normal_map; }
+//    GLuint getNormalsFBO() const { return m_fbo_normal_map; }
     bool valid() const { return m_valid; }
     void setValid( bool valid ) { m_valid = valid; }
+
+    virtual bool bindBuffers();
+    virtual void render() const;
 
 private:
     void init();
@@ -44,24 +47,25 @@ private:
 /*********************
  * TERRAIN RECTANGLE *
  *********************/
-class TerrainRect : public GlDrawable
+class TerrainRect : public Asset
 {
 public:
     TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth);
     ~TerrainRect();
     bool bindBuffers();
-};
-
-struct Sphere {
-public:
-    Sphere(glm::vec3 center, float radius) : center(center), radius(radius) {}
-    glm::vec3 center;
-    float radius;
+    virtual void render() const;
 };
 
 struct SphereAccelerationStructure
 {
 public:
+    struct Sphere {
+    public:
+        Sphere(glm::vec3 center, float radius) : center(center), radius(radius) {}
+        glm::vec3 center;
+        float radius;
+    };
+
     SphereAccelerationStructure() : step_size(SPHERE_ACCELERATION_STRUCTURE_STEP_SIZE), n_spheres_x(0), n_spheres_z(0) {}
 
     inline void clear() { m_spheres.clear(); }
@@ -86,6 +90,10 @@ public:
     Terrain();
     ~Terrain();
     virtual bool bindBuffers();
+    virtual void render() const;
+
+    const std::vector<const Asset*> getTerrainElements();
+
     bool setTerrain(TerragenFile parsed_terrangen_file);
     float getMaxHeight() const { return m_terragen_file.m_header_data.max_height; }
     float getBaseHeight() const { return m_terragen_file.m_header_data.base_height; }
@@ -104,7 +112,6 @@ public:
     glm::vec2 getCenter();
 
     const SphereAccelerationStructure& getSphereAccelerationStructure() { return m_sphere_acceleration_structure; }
-    std::vector<DrawData> getTerrainElements();
 
 private:
     void init();
@@ -113,6 +120,7 @@ private:
     bool ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point);
     void refresh_heightmap_texture(TerragenFile & parsed_terrangen_file);
 
+    void clear_terrain_rectangles();
     // Textures
     GLuint m_heightmapTexture; // id of heightmap texture; generated outside class
     GLenum m_htmapTexUnit; // height/normal map - texture units reserved
@@ -122,7 +130,7 @@ private:
 
     SphereAccelerationStructure m_sphere_acceleration_structure;
 
-    std::vector<TerrainRect> m_terrain_rectangles;
+    std::vector<TerrainRect*> m_terrain_rectangles;
 
     TerrainMaterialProperties m_material_properties;
 

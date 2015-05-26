@@ -8,12 +8,13 @@ struct Transformation
 {
   mat4 projMat;
   mat4 viewMat;
-  float scale;
+  mat4 modelMat;
 };
 
 uniform Transformation transform;
-
 uniform sampler2D height_map_texture;
+uniform vec4 uniform_color;
+
 out vec4 theColor;
 
 void main()
@@ -22,8 +23,8 @@ void main()
     vec3 world_space_pos = vec3(vPos.x, texture(height_map_texture, textureCoord).r + 1, vPos.z);
 //    vec3 world_space_pos = vec3(vPos.x, 5, vPos.z);
 
-    gl_Position = transform.projMat * transform.viewMat * vec4(world_space_pos, 1.0);;
+    gl_Position = transform.projMat * transform.viewMat * transform.modelMat * vec4(world_space_pos, 1.0);;
 
-    theColor = vec4(0.3, 0.3, 0.3, 0.5);
+    theColor = uniform_color;
 }
 

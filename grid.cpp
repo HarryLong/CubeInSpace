@@ -1,16 +1,17 @@
-#include "grid_manager.h"
+#include "grid.h"
 #include "view_manager.h"
 #include "constants.h"
 
 #define GRID_SEPERATION 5
 #define GRID_COUNT 1500
 
-GridHolder::GridHolder() : m_binded(false)
+Grid::Grid() : Asset(true, glm::vec4(.2f, .2f, .2f, 1.f))
 {
-    genGrid();
+    init();
+    bindBuffers();
 }
 
-void GridHolder::genGrid()
+void Grid::init()
 {
     // The grid
     // Along the z axis
@@ -42,7 +43,7 @@ void GridHolder::genGrid()
     }
 }
 
-bool GridHolder::bindBuffers()
+bool Grid::bindBuffers()
 {
     if (m_vbo_constraints != 0)
     {
@@ -60,16 +61,28 @@ bool GridHolder::bindBuffers()
 
     // vbo
     // set up vertex buffer and copy in data
-    glGenBuffers(1, &m_vbo_constraints);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW);
+    glGenBuffers(1, &m_vbo_constraints);  CE()
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints);  CE()
+
+    int size (sizeof(GLfloat) * (m_verticies.size()));
+    std::cout << "Buffering " << size << " vertices" << std::endl;
+    glBufferData(GL_ARRAY_BUFFER, size, &m_verticies[0], GL_STATIC_DRAW);  CE()
 
     // enable position attribute;
     glEnableVertexAttribArray(0);CE()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));CE()
 
-    m_binded = true;
+    // Unbinding
+    glBindVertexArray(0);CE()
+
     return true;
 }
 
+void Grid::render() const
+{
+    glBindVertexArray(m_vao_constraints); CE(); // Bind VAO
 
+    glDrawArrays(GL_LINES, 0, (GLuint) m_verticies.size()); CE();
+
+    glBindVertexArray(0); CE(); // Unbind VAO
+}

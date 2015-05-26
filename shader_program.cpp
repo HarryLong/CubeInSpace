@@ -1,5 +1,6 @@
 #include "shader_program.h"
 #include <fstream>
+#include <iostream>
 #include "glheader.h"
 
 #define FailGLError(X) {int err = (int)glGetError(); \

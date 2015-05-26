@@ -19,7 +19,6 @@ namespace TerragenFileManager{
     void scale_factor(TerragenFile & file, int scale_factor);
 }
 
-
 /**
  * Save a Terragen file.
  */

@@ -9,6 +9,9 @@ struct TerragenFileHeaderData{
 class TerragenFile
 {
 public:
+    TerragenFile();
+    ~TerragenFile();
+
     void summarize();
 
     float & operator()(int x, int y){

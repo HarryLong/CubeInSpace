@@ -4,30 +4,23 @@
 #include <vector>
 #include "glheader.h"
 
-struct DrawData
-{
-public:
-    GLuint m_vao;             // vertex array object id
-    GLuint m_index_buffer_size;    // index buffer size - as required by DrawElements
-    GLuint m_vertex_buffer_size;    // index buffer size - as required by DrawElements
-};
-
 class GlDrawable{
 
 public:
-    GlDrawable() : m_vao_constraints(0), m_vbo_constraints(0), m_ibo_constraints(0) {}
+    GlDrawable();
+    virtual ~GlDrawable();
     virtual bool bindBuffers() = 0;
-    virtual DrawData getDrawData() const;
-    virtual void clearData();
+    virtual void render() const = 0;
 
-protected:
-    virtual void delete_buffers();
+    virtual void clear();
 
     std::vector<GLfloat> m_verticies;   // vertex, texture and normal data
     std::vector<GLint> m_indicies;   // vertex indices for triangles
     GLuint m_vao_constraints;    // openGL handles for various buffers
     GLuint m_vbo_constraints;
     GLuint m_ibo_constraints;
+protected:
+    virtual void delete_buffers();
 
     // Test methods
     void printInfo();

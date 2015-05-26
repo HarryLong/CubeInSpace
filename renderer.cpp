@@ -23,10 +23,10 @@ void Renderer::initShaders()
 {
     // BASE SHADER
     {
-        const std::string fragment_shader_path(m_shader_dir.filePath(g_fragment_shader_files[ShaderType::ASSET]).toStdString());
-        const std::string vertex_shader_path(m_shader_dir.filePath(g_vertex_shader_files[ShaderType::ASSET]).toStdString());
+        const std::string fragment_shader_path(m_shader_dir.filePath(g_fragment_shader_files[ShaderType::BASE]).toStdString());
+        const std::string vertex_shader_path(m_shader_dir.filePath(g_vertex_shader_files[ShaderType::BASE]).toStdString());
 
-        m_shaders.insert( std::pair<ShaderType, ShaderProgram *>(ASSET, new ShaderProgram(fragment_shader_path, vertex_shader_path, "Base Shader Program")) );
+        m_shaders.insert( std::pair<ShaderType, ShaderProgram *>(BASE, new ShaderProgram(fragment_shader_path, vertex_shader_path, "Base Shader Program")) );
     }
 
     // GRID SHADER
@@ -78,7 +78,7 @@ void Renderer::initShaders()
     }
 }
 
-void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain, const LightProperties & sunlight_properties)
+void Renderer::renderTerrain(const ViewManager * p_view, Terrain& terrain, const LightProperties & sunlight_properties)
 {
     if(!terrain.getNormals().valid()) // Need to recalculate normals
     {
@@ -97,17 +97,9 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain, const L
         GLfloat imgDims[2] = {float(terrain.getWidth()), float(terrain.getDepth())};
         glUniform2fv(glGetUniformLocation(prog_id, m_terrain_uniforms[TERRAIN_SIZE]), 1, imgDims); CE();
 
-        // Render to our framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, terrain.getNormals().getNormalsFBO()); CE();
+        // Calculate normals
+        terrain.getNormals().render();
 
-        // set shader program to normal map gen
-        glBindVertexArray(terrain.getNormals().getDrawData().m_vao); CE();
-
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
-
-        // unbind everthing
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
-        glBindVertexArray(0);  CE();
         glUseProgram(0);  CE();
 
         // reset viewport
@@ -120,12 +112,9 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain, const L
 
     glUseProgram(prog_id); CE()
 
-    Transform transform;
-    transform.projection_mat = p_view->getProjMtx();
-    transform.view_mat = p_view->getViewMatrix();
-
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
+    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
+    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
     // Heightmap
     GLuint heightmap_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_MAP_TEXTURE]); CE();
@@ -148,7 +137,6 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain, const L
 //    std::cout << "Material diffuse: "; Utils::print(terrain_material_properties.diffuse); std::cout << std::endl;
 //    std::cout << "Material ambient: "; Utils::print(terrain_material_properties.ambient); std::cout << std::endl;
 
-
     // Overlay
     glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[OVERLAY_DISABLED]), m_active_terrain_overlay == OVERLAY_DISABLED); CE();
     glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[SLOPE_OVERLAY]), m_active_terrain_overlay == SLOPE_OVERLAY); CE();
@@ -159,151 +147,272 @@ void Renderer::drawTerrain(const ViewManager * p_view, Terrain& terrain, const L
     glUniform4fv(glGetUniformLocation(prog_id, m_lighting_uniforms[LIGHT_AMBIENT_COLOR]), 1, glm::value_ptr(sunlight_properties.m_ambient_color)); CE();
     glUniform4fv(glGetUniformLocation(prog_id, m_lighting_uniforms[LIGHT_POS]), 1, glm::value_ptr(sunlight_properties.getPosition())); CE();
 
-    // Lets Draw !
-    DrawData draw_data(terrain.getDrawData());
-    glBindVertexArray(draw_data.m_vao); CE();
+    terrain.render();
 
-    glDrawElements(GL_TRIANGLE_STRIP, draw_data.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
-
-    glBindVertexArray(0); // Unbind
     glUseProgram(0); // unbind
 }
 
-void Renderer::drawTerrainElements(const ViewManager * p_view, const std::vector<DrawData> & terrain_elements, GLint terrain_heightmap_texture_unit)
+void Renderer::renderTerrainElements(const ViewManager * p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit)
 {
     GLuint prog_id = m_shaders[TERRAIN_ELEMENTS]->getProgramID();
 
     glUseProgram(prog_id); CE()
 
     // The transformation matrices
-    Transform transform;
-    transform.projection_mat = p_view->getProjMtx();
-    transform.view_mat = p_view->getViewMatrix();
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
+    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
+    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
     // The heightmap texture
     GLuint heightmap_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_MAP_TEXTURE]); CE();
     glUniform1i(heightmap_texture, terrain_heightmap_texture_unit - GL_TEXTURE0);  CE(); // assumes texture unit 0 is bound to heightmap texture
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    for(DrawData draw_data : terrain_elements)
+    // Draw all the assets
+    for(const Asset * asset : p_assets)
     {
-        glBindVertexArray(draw_data.m_vao); CE();
-        glDrawElements(GL_TRIANGLE_STRIP, draw_data.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
-    }
+        transform.m_mtw_mat = asset->getMtwMat();
 
-    glDisable(GL_BLEND);
+        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_mtw_mat)); CE();
+
+        glUniform1i(glGetUniformLocation(prog_id, m_asset_uniforms[USE_UNIFORM_COLOR]), asset->m_uniform_color );
+
+        if(asset->m_uniform_color) // Color data attached with verticies
+        {
+            glm::vec4 color(asset->m_color);
+            glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[UNIFORM_COLOR]),1, glm::value_ptr(color) );
+        }
+
+        asset->render();
+    }
 
     glBindVertexArray(0); // Unbind
     glUseProgram(0); // unbind
 }
 
-void Renderer::drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix, float p_scale)
+void Renderer::renderAssets(const ViewManager * p_view, const std::vector<const Asset*> & p_assets)
 {
-    GLuint prog_id = m_shaders[ASSET]->getProgramID();
+    GLuint prog_id = m_shaders[BASE]->getProgramID();
 
     glUseProgram(prog_id); CE()
 
-    Transform transform;
-    transform.projection_mat = p_view->getProjMtx();
-    //transform.view_mat = p_view->getViewMatrix();
-    transform.view_mat = p_view->getViewMatrix();
-    transform.model_mat = p_mtw_matrix; // For now it is the identity matrix
-    //transform.model_mat = p_view->getViewMatrix();; // For now it is the identity matrix
+    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
 
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.model_mat)); CE();
-    glUniform1f(glGetUniformLocation(prog_id, m_transformation_uniforms[SCALE]), (GLfloat) p_scale); CE();
+    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
-    // Lets Draw !
-    glBindVertexArray(p_asset_data.m_vao); CE();
+    // Draw all the assets
+    for(const Asset * asset : p_assets)
+    {
+        transform.m_mtw_mat = asset->getMtwMat();
+        transform.m_scale = asset->getScale();
 
-    glDrawElements(GL_TRIANGLES, p_asset_data.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
+        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_mtw_mat)); CE();
+        glUniform1f(glGetUniformLocation(prog_id, m_transformation_uniforms[SCALE]), (GLfloat) transform.m_scale); CE();
 
-    glBindVertexArray(0); // Unbind
+        glUniform1i(glGetUniformLocation(prog_id, m_asset_uniforms[USE_UNIFORM_COLOR]), asset->m_uniform_color );
+
+        if(asset->m_uniform_color) // Color data attached with verticies
+        {
+            glm::vec4 color(asset->m_color);
+            glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[UNIFORM_COLOR]),1, glm::value_ptr(color) );
+        }
+
+        asset->render();
+    }
+
     glUseProgram(0); // unbind
 }
 
-void Renderer::drawOrientationCompass(const ViewManager * p_view, DrawData & contour, DrawData & arrow, const glm::mat4x4 & compass_translation_matrix,
-                                      const glm::mat4x4 & north_rotation_matrix)
-{
-    std::cout << "Drawing orientation compass with vao " << contour.m_vao << std::endl;
+//void Renderer::renderAssets(const ViewManager * p_view, std::vector<Asset*> & p_assets)
+//{
+//    GLuint prog_id = m_shaders[BASE]->getProgramID();
 
-    GLuint prog_id = m_shaders[ORIENTATION_COMPASS]->getProgramID();
+//    glUseProgram(prog_id); CE()
 
-    glUseProgram(prog_id); CE()
+//    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
 
-    Transform transform;
-    transform.projection_mat = p_view->getProjMtx();
-    //transform.view_mat = p_view->getViewMatrix();
-    transform.view_mat = p_view->getViewMatrix() * compass_translation_matrix * north_rotation_matrix;
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
-    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
+//    // Draw all the assets
+//    for(Asset * asset : p_assets)
+//    {
+//        Grid * grid (dynamic_cast<Grid*>(asset));
 
-    GLfloat base_line_width;
-    glGetFloatv(GL_LINE_WIDTH, &base_line_width);
-    glLineWidth(5);
+//        transform.m_mtw_mat = asset->getMtwMat();
+//        transform.m_scale = asset->getScale();
 
-    static const glm::vec4 contour_colour(0,0,0,0);
-    // Draw contour
-    {
-        glUniform4fv(glGetUniformLocation(prog_id, m_compass_uniforms[COLOR]),1, glm::value_ptr(contour_colour) );
-        glBindVertexArray(contour.m_vao); CE();
-        glDrawElements(GL_LINE_LOOP, contour.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
-    }
-    static const glm::vec4 arrow_colour(1,0,0,0);
-    // Draw arrow
-    {
-        glUniform4fv(glGetUniformLocation(prog_id, m_compass_uniforms[COLOR]),1, glm::value_ptr(arrow_colour) );
-        glBindVertexArray(arrow.m_vao); CE();
-        glDrawElements(GL_LINES, arrow.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
-    }
-    glLineWidth(base_line_width);
+//        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_mtw_mat)); CE();
+//        glUniform1f(glGetUniformLocation(prog_id, m_transformation_uniforms[SCALE]), (GLfloat) transform.m_scale); CE();
 
-    glBindVertexArray(0); // Unbind
-    glUseProgram(0); // unbind
-}
+//        glUniform1i(glGetUniformLocation(prog_id, m_asset_uniforms[USE_UNIFORM_COLOR]), asset->m_uniform_color );
 
-void Renderer::drawRays(const ViewManager * p_view, DrawData & p_ray_data)
-{
-    drawLines(p_view, p_ray_data);
-}
+//        if(asset->m_uniform_color) // Color data attached with verticies
+//        {
+//            glm::vec4 color(asset->m_color);
+//            glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[UNIFORM_COLOR]),1, glm::value_ptr(color) );
+//        }
 
-void Renderer::drawLines(const ViewManager * p_view, DrawData & p_line_data, bool grid)
-{
-    if(p_line_data.m_vertex_buffer_size> 0)
-    {
-        GLuint prog_id = m_shaders[GRID]->getProgramID(); // Use the same shader as for the grid
+//        grid->render();
+////        glBindVertexArray(grid->m_vao_constraints); CE(); // Bind VAO
 
-        glUseProgram(prog_id); CE()
+////        GLuint size((GLuint) (grid->m_verticies.size()));
+////        glDrawArrays(GL_LINES, 0, 3); CE();
 
-        Transform transform;
-        transform.projection_mat = p_view->getProjMtx();
-        transform.view_mat = p_view->getViewMatrix();
+////        glBindVertexArray(0); CE(); // Unbind VAO
 
-        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.projection_mat)); CE();
-        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.view_mat)); CE();
-        glUniform1i(glGetUniformLocation(prog_id, m_options_uniforms[DRAWING_GRID]), grid ? 1 : 0); CE();
+////        asset->render();
+//    }
 
-        // Lets Draw !
-        glBindVertexArray(p_line_data.m_vao); CE();
+//    glUseProgram(0); // unbind
+//}
 
-        glDrawArrays(GL_LINES, 0, p_line_data.m_vertex_buffer_size); CE();
+//void Renderer::drawAsset(const ViewManager * p_view, SceneAsset p_asset_data, glm::vec4 color)
+//{
+//    GLuint prog_id = m_shaders[BASE]->getProgramID();
 
-        glBindVertexArray(0); // Unbind
-        glUseProgram(0); // unbind
-    }
-}
+//    glUseProgram(prog_id); CE()
 
-void Renderer::drawGrid(const ViewManager * p_view, DrawData & p_grid_data)
-{
-    drawLines(p_view, p_grid_data, true);
-}
+//    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix(), p_asset_data.m_mtw_matrix, p_asset_data.m_scale);
+
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_mtw_mat)); CE();
+//    glUniform1f(glGetUniformLocation(prog_id, m_transformation_uniforms[SCALE]), (GLfloat) transform.m_scale); CE();
+
+//    bool uniform_color( color != no_color );
+//    glUniform1i(glGetUniformLocation(prog_id, m_asset_uniforms[USE_UNIFORM_COLOR]), uniform_color );
+
+//    if(uniform_color) // Color data attached with verticies
+//    {
+//        glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[UNIFORM_COLOR]),1, glm::value_ptr(color) );
+//    }
+
+//    // Lets Draw !
+//    glBindVertexArray(p_asset_data.m_draw_data.m_vao); CE();
+//    glDrawElements(p_asset_data.m_draw_data.m_draw_mode, p_asset_data.m_draw_data.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
+
+//    glBindVertexArray(0); // Unbind
+//    glUseProgram(0); // unbind
+//}
+
+//void Renderer::drawAsset(const ViewManager * p_view, DrawData & p_asset_data, glm::mat4x4 & p_mtw_matrix, float p_scale, glm::vec4 color)
+//{
+//    GLuint prog_id = m_shaders[BASE]->getProgramID();
+
+//    glUseProgram(prog_id); CE()
+
+//    Transform transform;
+//    transform.m_projection_mat = p_view->getProjMtx();
+//    //transform.view_mat = p_view->getViewMatrix();
+//    transform.m_view_mat = p_view->getViewMatrix();
+//    transform.m_mtw_mat = p_mtw_matrix; // For now it is the identity matrix
+//    transform.m_scale = p_scale;
+//    //transform.model_mat = p_view->getViewMatrix();; // For now it is the identity matrix
+
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[MODEL_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_mtw_mat)); CE();
+//    glUniform1f(glGetUniformLocation(prog_id, m_transformation_uniforms[SCALE]), (GLfloat) transform.m_scale); CE();
+
+//    if(color != no_color) // Color data attached with verticies
+//    {
+//        glUniform4fv(glGetUniformLocation(prog_id, m_compass_uniforms[COLOR]),1, glm::value_ptr(arrow_colour) );
+
+//    }
+
+//    // Lets Draw !
+//    glBindVertexArray(p_asset_data.m_vao); CE();
+
+//    glDrawElements(GL_TRIANGLES, p_asset_data.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
+
+//    glBindVertexArray(0); // Unbind
+//    glUseProgram(0); // unbind
+//}
+
+//void Renderer::drawOrientationCompass(const ViewManager * p_view, DrawData & contour, DrawData & arrow, const glm::mat4x4 & mtw_matrix,
+//                                      const glm::mat4x4 & north_rotation_matrix)
+//{
+//    std::cout << "Drawing orientation compass with vao " << contour.m_vao << std::endl;
+
+//    GLuint prog_id = m_shaders[BASE]->getProgramID();
+
+//    glUseProgram(prog_id); CE()
+
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(p_view->getProjMtx())); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(p_view->getViewMatrix() * mtw_matrix * north_rotation_matrix)); CE();
+
+//    GLfloat base_line_width;
+//    glGetFloatv(GL_LINE_WIDTH, &base_line_width);
+//    glLineWidth(5);
+
+//    static const glm::vec4 contour_colour(0,0,0,0);
+//    // Draw contour
+//    {
+//        glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[USE_UNIFORM_COLOR]),1, glm::value_ptr(contour_colour) );
+//        glBindVertexArray(contour.m_vao); CE();
+//        glDrawElements(GL_LINE_LOOP, contour.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
+//    }
+//    static const glm::vec4 arrow_colour(1,0,0,0);
+//    // Draw arrow
+//    {
+//        glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[USE_UNIFORM_COLOR]),1, glm::value_ptr(arrow_colour) );
+//        glBindVertexArray(arrow.m_vao); CE();
+//        glDrawElements(GL_LINES, arrow.m_index_buffer_size, GL_UNSIGNED_INT, (void*)(0)); CE();
+//    }
+//    glLineWidth(base_line_width);
+
+//    glBindVertexArray(0); // Unbind
+//    glUseProgram(0); // unbind
+//}
+
+//void Renderer::drawRays(const ViewManager * p_view, DrawData & p_ray_data)
+//{
+//    drawLines(p_view, p_ray_data);
+//}
+
+//void Renderer::drawLines(const ViewManager * p_view, Grid* p_grid)
+//{
+//        GLuint prog_id = m_shaders[GRID]->getProgramID(); // Use the same shader as for the grid
+
+//        glUseProgram(prog_id); CE()
+
+//        Transform transform(p_view->getProjMtx(), p_view->getViewMatrix(), glm::mat4x4());
+
+//        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+//        glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
+//        glUniform1i(glGetUniformLocation(prog_id, m_options_uniforms[DRAWING_GRID]), 1); CE();
+
+//        // Lets Draw !
+//        glBindVertexArray(p_grid->m_vao_constraints); CE();
+
+//        glDrawArrays(GL_LINES, 0, p_grid->m_verticies.size()); CE();
+
+//        glBindVertexArray(0); // Unbind
+//        glUseProgram(0); // unbind
+//}
+
+//void Renderer::drawGrid(const ViewManager * p_view, DrawData & p_grid_data)
+//{
+//    drawLines(p_view, p_grid_data, true);
+//}
+
+//void Renderer::drawGrid(const ViewManager * p_view, Grid * grid)
+//{
+//    GLuint prog_id = m_shaders[GRID]->getProgramID(); // Use the same shader as for the grid
+
+//    glUseProgram(prog_id); CE()
+
+//    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
+
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
+//    glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
+//    glUniform1i(glGetUniformLocation(prog_id, m_options_uniforms[DRAWING_GRID]), grid ? 1 : 0); CE();
+
+//    // Lets Draw !
+//    grid->render();
+//}
+
 
 void Renderer::initUniforms()
 {
@@ -335,8 +444,9 @@ void Renderer::initUniforms()
     // Option uniforms
     m_options_uniforms.insert(std::pair<OptionUniforms,const char *>(OptionUniforms::DRAWING_GRID,"drawing_grid"));
 
-    // Compass uniforms
-    m_compass_uniforms.insert(std::pair<CompassUniforms,const char *>(CompassUniforms::COLOR, "color"));
+    // Asset uniforms
+    m_asset_uniforms.insert(std::pair<AssetUniforms,const char *>(AssetUniforms::UNIFORM_COLOR, "uniform_color"));
+    m_asset_uniforms.insert(std::pair<AssetUniforms,const char *>(AssetUniforms::USE_UNIFORM_COLOR, "use_uniform_color"));
 }
 
 void Renderer::setOverlay(TerrainOverlayUniforms overlay)

@@ -1,10 +1,51 @@
 #include "scene_manager.h"
+
+#define GLM_FORCE_RADIANS
+
 #include <glm/gtc/matrix_transform.hpp>
-#include "grid_manager.h"
+#include "grid.h"
 #include "terragen/terragen_file_manager.h"
 
 #include "utils/utils.h"
 
+SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale), m_grid(NULL)
+{
+
+}
+
+SceneManager::~SceneManager()
+{
+    clear_acceleration_structure_viewer();
+    delete m_grid;
+}
+
+const std::vector<const Asset*> SceneManager::getAccelerationStructure() const
+{
+    return std::vector<const Asset*>(m_acceleration_structure_viewer.begin(), m_acceleration_structure_viewer.end());
+}
+
+Asset* SceneManager::getGrid()
+{
+    if(!m_grid)
+        m_grid = new Grid;
+
+    return m_grid;
+}
+
+Terrain& SceneManager::getTerrain()
+{
+    return m_terrain;
+}
+
+LightingManager & SceneManager::getLightingManager()
+{
+    return m_lighting_manager;
+}
+
+OrientationCompass & SceneManager::getOrientationCompass()
+{
+    return m_orientation_compass;
+}
 
 void SceneManager::initScene()
 {
@@ -12,15 +53,20 @@ void SceneManager::initScene()
     refresh_base_terrain();
 }
 
-SceneAsset SceneManager::genCube(const glm::vec3 & center, float scale)
-{
-    SceneAsset cube_asset(
-                m_shape_holder.get(Shape::Cube)->getDrawData(), // Draw data
-                glm::translate(glm::mat4x4(), center), // MTW matrix
-                scale);
+#define SUN_RADIUS 10
+#define SUN_SLICES 10
+#define SUN_STACKS 10
+//SceneAsset * SceneManager::getSun()
+//{
+//    if(m_sun_asset == NULL)
+//        m_sun_asset = new SceneAsset(ShapeFactory::getSphere(SUN_RADIUS, SUN_SLICES, SUN_STACKS));
 
-    return cube_asset;
-}
+//    // Sun position
+//    glm::vec4 sun_position(m_lighting_manager.getSunlightProperties().getPosition());
+//    m_sun_asset->m_mtw_matrix = glm::translate(glm::mat4x4(), glm::vec3(sun_position[0], sun_position[1], sun_position[2]);
+
+//    return m_sun_asset;
+//}
 
 void SceneManager::loadTerrain(QString filename)
 {
@@ -35,16 +81,20 @@ void SceneManager::loadTerrain(QString filename)
 
     m_terrain.setTerrain(terragen_file);
     refreshAccelerationStructureViewer();
+    m_lighting_manager.setTerrainDimensions(terragen_file.m_header_data.width, terragen_file.m_header_data.depth);
 }
 
 void SceneManager::refreshAccelerationStructureViewer()
 {
-    m_acceleration_structure_viewer.clear();
-    for(std::vector<Sphere> spheres : m_terrain.getSphereAccelerationStructure().m_spheres)
+    clear_acceleration_structure_viewer();
+
+    for(std::vector<SphereAccelerationStructure::Sphere> spheres : m_terrain.getSphereAccelerationStructure().m_spheres)
     {
-        for(Sphere sphere : spheres)
+        for(SphereAccelerationStructure::Sphere sphere : spheres)
         {
-            m_acceleration_structure_viewer.push_back(genCube(sphere.center, sphere.radius * 2));
+            GlCube * cube ( new GlCube(ShapeFactory::getCube(sphere.radius*2)));
+            cube->setMtwMat(glm::translate(glm::mat4x4(), sphere.center));
+            m_acceleration_structure_viewer.push_back(cube);
         }
     }
 }
@@ -83,4 +133,16 @@ void SceneManager::refresh_base_terrain()
     m_terrain.setTerrain(dummy_terragen_file);
 
     refreshAccelerationStructureViewer();
+
+    m_lighting_manager.setTerrainDimensions(dummy_terragen_file.m_header_data.width, dummy_terragen_file.m_header_data.depth);
+}
+
+/***********
+ * DELETES *
+ ***********/
+void SceneManager::clear_acceleration_structure_viewer()
+{
+    for(GlCube * cube : m_acceleration_structure_viewer)
+        delete cube;
+    m_acceleration_structure_viewer.clear();
 }

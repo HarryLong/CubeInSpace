@@ -1,8 +1,7 @@
 #ifndef VIEW_H
 #define VIEW_H
 
-#define PI 3.14159265
-#define RADIANS_TO_DEGREES 57.2
+#define GLM_FORCE_RADIANS
 
 #include "glheader.h"
 #include <glm/glm.hpp>
@@ -31,9 +30,12 @@ struct CameraOrientation
         Utils::normalizeAngle(pitch);
         Utils::normalizeAngle(yaw);
 
-        rotation_mat = glm::rotate(glm::mat4x4(), pitch, glm::vec3(1,0,0));
-        glm::fvec3 y_rotation_axis(glm::rotateY(glm::fvec3(0.f,1.f,0.f), -pitch));
-        rotation_mat = glm::rotate( rotation_mat, yaw, y_rotation_axis );
+        float pitch_radians(Utils::toRadians(pitch));
+        float yaw_radians(Utils::toRadians(yaw));
+
+        rotation_mat = glm::rotate(glm::mat4x4(), pitch_radians, glm::vec3(1,0,0));
+        glm::fvec3 y_rotation_axis(glm::rotateY(glm::fvec3(0.f,1.f,0.f), -pitch_radians));
+        rotation_mat = glm::rotate( rotation_mat, yaw_radians, y_rotation_axis );
     }
 };
 

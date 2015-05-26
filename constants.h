@@ -13,3 +13,6 @@
 #define SPHERE_ACCELERATION_STRUCTURE_STEP_SIZE 10
 
 #define SHADER_DIR "/home/harry/workspaces/qt-workspace/CubeInSpace/shaders/"
+
+#define DEFAULT_HOUR_OF_DAY 12
+#define DEFAULT_MONTH_OF_YEAR 6

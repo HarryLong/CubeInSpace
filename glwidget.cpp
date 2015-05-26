@@ -12,11 +12,11 @@
 #include "geom.h"
 
 GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget * p_parent) : QGLWidget(format, p_parent),
-  m_draw_grid(true), m_draw_assets(false), m_draw_terrain(true), m_draw_acceleration_structure(false), m_draw_rays(false),
+  m_draw_grid(true), m_draw_terrain(true), m_draw_acceleration_structure(false), m_draw_rays(false),
   m_control_style(ControlStyle::SoftImage), m_active_mode(Mode::None), m_navigation_enabled(false),
   m_mouse_tracking_thread(NULL),
   m_view_manager(new ViewManager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity)),
-  m_scene_manager(new SceneManager(settings.terrain_scaler)), m_ray_drawer(new RayDrawer), m_grid_drawer(new GridHolder),
+  m_scene_manager(new SceneManager(settings.terrain_scaler)), m_ray_drawer(new RayDrawer),
   m_authorise_navigation_mode_switch(true)
 {
     m_mouse_tracking_thread_run.store(true);
@@ -33,7 +33,6 @@ GLWidget::~GLWidget()
     delete m_scene_manager;
     delete m_mouse_tracking_thread;
     delete m_ray_drawer;
-    delete m_grid_drawer;
 }
 
 void GLWidget::updateSettings(const Settings & settings)
@@ -92,16 +91,11 @@ void GLWidget::paintGL() // Override
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    std::vector<const Asset*> assets_to_render;
+
     // Draw the grid
     if(m_draw_grid)
-    {
-        if(!m_grid_drawer->binded())
-        {
-            m_grid_drawer->bindBuffers();
-        }
-        DrawData grid_data ( m_grid_drawer->getDrawData() );
-        m_renderer->drawGrid(m_view_manager, grid_data);
-    }
+        assets_to_render.push_back(m_scene_manager->getGrid());
 
     // Draw the terrain
     if(m_draw_terrain)
@@ -109,53 +103,44 @@ void GLWidget::paintGL() // Override
         Terrain & terrain (m_scene_manager->getTerrain());
         const LightProperties & sunlight_properties (m_scene_manager->getLightingManager().getSunlightProperties());
 
-        m_renderer->drawTerrain(m_view_manager, terrain, sunlight_properties);
-        std::vector<DrawData> terrain_elements(terrain.getTerrainElements());
+        m_renderer->renderTerrain(m_view_manager, terrain, sunlight_properties);
+        const std::vector<const Asset*> terrain_elements(terrain.getTerrainElements());
         if(terrain_elements.size() > 0)
         {
-            m_renderer->drawTerrainElements(m_view_manager, terrain_elements, terrain.getHeightMapTextureUnit());
-        }
-    }
-
-    // Draw the assets
-    if(m_draw_assets)
-    {
-        std::vector<SceneAsset> scene_assets (m_scene_manager->getSceneAssets());
-        for(SceneAsset scene_asset :  scene_assets)
-        {
-            m_renderer->drawAsset(m_view_manager, scene_asset.m_draw_data, scene_asset.m_mtw_matrix, scene_asset.m_scale);
+            m_renderer->renderTerrainElements(m_view_manager, terrain_elements, terrain.getHeightMapTextureUnit());
         }
     }
 
     // Draw the acceleration structure
     if(m_draw_acceleration_structure)
     {
-        std::vector<SceneAsset> cubes (m_scene_manager->getAccelerationStructure());
-        for(SceneAsset cube :  cubes)
-        {
-            m_renderer->drawAsset(m_view_manager, cube.m_draw_data, cube.m_mtw_matrix, cube.m_scale);
-        }
+        std::vector<const Asset*> sphere_acceleration_structure (m_scene_manager->getAccelerationStructure());
+        assets_to_render.insert(assets_to_render.end(), sphere_acceleration_structure.begin(), sphere_acceleration_structure.end());
     }
 
     if(m_active_mode == Mode::OrientationEdit)
     {
-        OrientationCompass compass (m_scene_manager->getOrientationCompass());
+        OrientationCompass & compass (m_scene_manager->getOrientationCompass());
+        std::vector<Asset*> compass_assets(compass.getAssets());
+
         Terrain & terrain (m_scene_manager->getTerrain());
-        DrawData contour (compass.getContour());
-        DrawData arrow (compass.getNorthArrow());
-        glm::vec2 center( terrain.getCenter() );
+        glm::vec2 center(terrain.getCenter());
 
-        glm::mat4x4 translation_matrix (glm::translate(glm::mat4x4(), glm::vec3(center[0], terrain.getMaxHeight() + 10, center[1])));
+        glm::mat4x4 translation_mat (glm::translate(glm::mat4x4(), glm::vec3(center[0], terrain.getMaxHeight() + 10, center[1])));
+        glm::mat4x4 rotation_mat( compass.getNorthRotationMatrix() );
+        glm::mat4x4 transformation_mat( translation_mat * rotation_mat );
 
-        m_renderer->drawOrientationCompass(m_view_manager, contour, arrow, translation_matrix, compass.getNorthRotationMatrix());
+        for(Asset * asset : compass_assets)
+            asset->setMtwMat(transformation_mat);
+
+        assets_to_render.insert(assets_to_render.end(), compass_assets.begin(), compass_assets.end());
     }
 
     // Draw the rays
     if(m_draw_rays)
-    {
-        DrawData ray_data(m_ray_drawer->getDrawData());
-        m_renderer->drawRays(m_view_manager, ray_data);
-    }
+        assets_to_render.push_back(m_ray_drawer);
+
+    m_renderer->renderAssets(m_view_manager, assets_to_render);
 }
 
 void GLWidget::resizeGL(int width, int height) // Override
@@ -314,7 +299,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             if(m_control_style == FPS)
             {
                 m_view_manager->rotate( diff_y,
-                                         diff_x);
+                                        diff_x);
 
                 reset_fps_cursor();
                 update();
@@ -552,12 +537,6 @@ void GLWidget::renderGrid(bool enabled)
    update();
 }
 
-void GLWidget::renderAssets(bool enabled)
-{
-    m_draw_assets = enabled;
-    update();
-}
-
 void GLWidget::renderTerrain(bool enabled)
 {
     m_draw_terrain = enabled;
@@ -572,7 +551,7 @@ void GLWidget::renderAccelerationStructure(bool enabled)
 
 void GLWidget::renderRays(bool enabled)
 {
-    m_ray_drawer->clearData();
+    m_ray_drawer->clear();
     m_draw_rays = enabled;
     update();
 }
@@ -611,6 +590,18 @@ void GLWidget::setMode(Mode mode)
         }
         update();
     }
+}
+
+void GLWidget::setMonth(int month)
+{
+    m_scene_manager->getLightingManager().setMonth(month);
+    update();
+}
+
+void GLWidget::setTime(int hour_of_day)
+{
+    m_scene_manager->getLightingManager().setTime(hour_of_day);
+    update();
 }
 
 // THREAD

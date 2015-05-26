@@ -1,14 +1,14 @@
 #include "gl_drawable.h"
+#include <iostream>
 
-DrawData GlDrawable::getDrawData() const
+GlDrawable::GlDrawable() : m_vao_constraints(0), m_vbo_constraints(0), m_ibo_constraints(0)
 {
-    DrawData draw_data;
 
-    draw_data.m_vao = m_vao_constraints;
-    draw_data.m_index_buffer_size = (int) m_indicies.size();
-    draw_data.m_vertex_buffer_size = (int) m_verticies.size();
+}
 
-    return draw_data;
+GlDrawable::~GlDrawable()
+{
+    delete_buffers();
 }
 
 void GlDrawable::delete_buffers()
@@ -22,7 +22,7 @@ void GlDrawable::delete_buffers()
     m_ibo_constraints = 0;
 }
 
-void GlDrawable::clearData()
+void GlDrawable::clear()
 {
     m_verticies.clear();
     m_indicies.clear();

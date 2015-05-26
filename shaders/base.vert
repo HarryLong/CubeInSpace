@@ -16,11 +16,15 @@ uniform Transformation transform;
 
 out vec4 theColor;
 
+uniform bool use_uniform_color;
+uniform vec4 uniform_color;
+
 void main()
 {
     gl_Position = transform.projMat * transform.viewMat * transform.modelMat * vec4(vPos.x * transform.scale, vPos.y * transform.scale, vPos.z * transform.scale,1);;
-//    theColor = vec4(vColor,1);
-    theColor = color;
-//    theColor = vec4(1,0,0,1);
-}
 
+    if(use_uniform_color)
+        theColor = uniform_color;
+    else
+        theColor = color;
+}

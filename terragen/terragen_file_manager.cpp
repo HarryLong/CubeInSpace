@@ -76,7 +76,6 @@ static void writeInt16(std::ostream &out, std::int16_t v)
     writeUint16(out, static_cast<std::uint16_t>(v));
 }
 
-
 #include "../constants.h"
 TerragenFile TerragenFileManager::readTerragen(const std::string &filename)
 {

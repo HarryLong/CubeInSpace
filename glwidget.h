@@ -13,7 +13,6 @@
 #include <vector>
 #include "scene_manager.h"
 #include "constants.h"
-#include "grid_manager.h"
 
 #include <atomic>
 #include <thread>
@@ -59,7 +58,6 @@ public:
 
 public slots:
     void renderGrid(bool enabled);
-    void renderAssets(bool enabled);
     void renderTerrain(bool enabled);
     void renderAccelerationStructure(bool enabled);
     void renderRays(bool enabled);
@@ -68,6 +66,8 @@ public slots:
     void enableSlopeOverlay();
     void enableAltitudeOverlay();
     void setMode(Mode mode);
+    void setMonth(int month);
+    void setTime(int hour_of_day);
 
 protected:
     void initializeGL(); // Override
@@ -101,7 +101,6 @@ private:
     SceneManager* m_scene_manager;
     MouseTracker m_mouse_position_tracker;
     RayDrawer * m_ray_drawer;
-    GridHolder * m_grid_drawer;
 
     void enable_continuous_mouse_tracking(bool enabled);
     void mouse_tracking_callback();
@@ -117,7 +116,6 @@ private:
 
     bool m_navigation_enabled;
     bool m_draw_grid;
-    bool m_draw_assets;
     bool m_draw_terrain;
     bool m_draw_rays;
     bool m_draw_acceleration_structure;

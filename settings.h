@@ -32,12 +32,12 @@ protected:
 private:
 };
 
-class SettingsEditor : public QDialog
+class SettingsEditorDialog : public QDialog
 {
 Q_OBJECT
 public:
-    SettingsEditor ( QWidget * parent = 0, Qt::WindowFlags f = 0);
-    ~SettingsEditor();
+    SettingsEditorDialog ( QWidget * parent = 0, Qt::WindowFlags f = 0);
+    ~SettingsEditorDialog();
     Settings getSettings() { return m_settings_file.m_settings; }
 
 protected:
