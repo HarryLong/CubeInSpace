@@ -64,11 +64,7 @@ OrientationCompass::~OrientationCompass()
 
 std::vector<Asset*> OrientationCompass::getAssets()
 {
-    std::vector<Asset*> assets;
-    assets.push_back(get_contour());
-    assets.push_back(get_arrow());
-
-    return assets;
+    return std::vector<Asset*>{get_contour(), get_arrow()};
 }
 
 Contour * OrientationCompass::get_contour()

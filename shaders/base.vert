@@ -8,7 +8,7 @@ struct Transformation
 {
   mat4 projMat;
   mat4 viewMat;
-  mat4 modelMat;
+  mat4 mtwMat;
   float scale;
 };
 
@@ -21,7 +21,7 @@ uniform vec4 uniform_color;
 
 void main()
 {
-    gl_Position = transform.projMat * transform.viewMat * transform.modelMat * vec4(vPos.x * transform.scale, vPos.y * transform.scale, vPos.z * transform.scale,1);;
+    gl_Position = transform.projMat * transform.viewMat * transform.mtwMat * vec4(vPos.x * transform.scale, vPos.y * transform.scale, vPos.z * transform.scale,1);;
 
     if(use_uniform_color)
         theColor = uniform_color;

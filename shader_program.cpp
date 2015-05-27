@@ -3,34 +3,76 @@
 #include <iostream>
 #include "glheader.h"
 
-#define FailGLError(X) {int err = (int)glGetError(); \
-        if (err != GL_NO_ERROR) \
-        {\
-            std::cerr << (X); std::cerr << " error " << err << std::endl; \
-            const char* err_str = reinterpret_cast<const char *>(gluErrorString(err));\
-            std::cerr << " - GL Error message: " << err_str << std::endl;\
-            return err;\
-        }}
-
-ShaderProgram::ShaderProgram(const std::string & p_fragment_src_file, const std::string & p_vertex_src_file, std::string p_name) :
-    m_frag_shader_src_file(p_fragment_src_file), m_vertex_shader_src_file(p_vertex_src_file), m_name(p_name)
+ShaderProgram::ShaderProgram(QString p_frag_shader_src_file, QString p_vertex_shader_src_file, QString p_name) :
+    m_program_id(0), m_shader_ready(false), m_frag_shader(p_frag_shader_src_file), m_vertex_shader(p_vertex_shader_src_file), m_destription(p_name)
 {
-    initDefaults();
+
 }
 
-void ShaderProgram::initDefaults()
+bool ShaderProgram::compileAndLink()
 {
-    m_program_id = 0;
-    m_shader_ready = false;
+    if (m_shader_ready)
+        return true;
+
+    bool success(true);
+
+    m_program_id = glCreateProgram(); CE()
+
+    success &= compile_and_attach(m_frag_shader, GL_FRAGMENT_SHADER, m_fragment_shader_id);
+    success &= compile_and_attach(m_vertex_shader, GL_VERTEX_SHADER, m_vertex_shader_id);
+
+    success &= ( link(m_program_id) == GL_NO_ERROR);
+
+    m_shader_ready = success;
+
+    // Program is linked - we can detach and delete shader objects
+    if (m_fragment_shader_id != 0)
+    {
+        glDetachShader(m_program_id, m_fragment_shader_id);CE()
+        glDeleteShader(m_fragment_shader_id);CE()
+    }
+    if (m_vertex_shader_id != 0)
+    {
+        glDetachShader(m_program_id, m_vertex_shader_id);CE()
+        glDeleteShader(m_vertex_shader_id);CE()
+    }
+
+    return success;
 }
 
-GLenum ShaderProgram::linkProgram(GLuint p_program)
+bool ShaderProgram::compile_and_attach(QFile & shader_file, GLenum shader_type, GLuint & shader_id)
+{
+    if(!shader_file.open(QIODevice::ReadOnly))
+    {
+        std::cerr << "Failed to open shader file: " << shader_file.fileName().toStdString() << std::endl;
+        return false;
+    }
+
+    QByteArray shader_src(shader_file.readAll());
+
+    shader_file.close();
+
+    // COMPILE SHADER
+    GLuint err ( compile(shader_type, shader_src, shader_id) );
+    if (0 != err)
+    {
+        std::cerr << "Failed to compile shader: " << shader_file.fileName().toStdString() << std::endl;
+        return false;
+    }
+
+    // ATTACH SHADER
+    glAttachShader(m_program_id, shader_id);CE()
+
+    return true;
+}
+
+
+GLenum ShaderProgram::link(GLuint p_program)
 {
     GLint log_length = 0;
     GLint linked = 0;
 
-    glLinkProgram(p_program);
-    FailGLError("Failed glLinkProgram")
+    glLinkProgram(p_program); CE();
 
     glGetProgramiv(p_program,GL_LINK_STATUS ,&linked);
     glGetProgramiv(p_program,GL_INFO_LOG_LENGTH,&log_length);
@@ -46,122 +88,38 @@ GLenum ShaderProgram::linkProgram(GLuint p_program)
     }
 
     if (linked == 0)
-        FailGLError("shader did not link")
+        std::cerr << "Shader " << m_destription.toStdString() << " did not link!" << std::endl;
 
     return GL_NO_ERROR;
 }
 
-GLenum ShaderProgram::compileShader(GLenum p_target, GLchar* p_source_code, GLuint & p_shader)
+GLenum ShaderProgram::compile(GLenum p_shader_type, QByteArray & p_shader_src, GLuint & p_shader_id)
 {
     GLint   log_length = 0;
     GLint   compiled  = 0;
 
-    if (p_source_code != 0)
-    {
-        p_shader = glCreateShader(p_target);
-        FailGLError("Failed to create fragment shader");
-        glShaderSource(p_shader,1,(const GLchar **)&p_source_code,0);
-        FailGLError("Failed glShaderSource")
-        glCompileShader(p_shader);
-        FailGLError("Failed glCompileShader")
+    const GLchar * src(p_shader_src.constData());
 
-        glGetShaderiv(p_shader,GL_COMPILE_STATUS,&compiled);
-        glGetShaderiv(p_shader,GL_INFO_LOG_LENGTH,&log_length);
+    if (p_shader_src != 0)
+    {
+        p_shader_id = glCreateShader(p_shader_type); CE();
+        glShaderSource(p_shader_id,1,&src,0); CE();
+        glCompileShader(p_shader_id); CE();
+
+        glGetShaderiv(p_shader_id,GL_COMPILE_STATUS,&compiled); CE();
+        glGetShaderiv(p_shader_id,GL_INFO_LOG_LENGTH,&log_length); CE();
 
         if (log_length > 1)
         {
             GLint charsWritten;
             GLchar *log = new char [log_length+128];
-            glGetShaderInfoLog(p_shader, log_length, &charsWritten, log);
+            glGetShaderInfoLog(p_shader_id, log_length, &charsWritten, log);
             std::cerr << "Compilation log: nchars=(" << log_length << "): "<< (char*)log << std::endl;
             delete [] log;
         }
 
         if (compiled == 0)
-            FailGLError("shader could not compile")
+            std::cerr << "Shader " << m_destription.toStdString() << " did not compile!" << std::endl;
     }
     return GL_NO_ERROR;
-}
-
-bool ShaderProgram::compileAndLink(void)
-{
-    if (m_shader_ready)
-        return true;
-
-    // READ IN INPUT FILES
-    std::ifstream vertex_shader_input_stream(m_vertex_shader_src_file.c_str(), std::ios::binary);
-    std::ifstream fragment_shader_input_stream(m_frag_shader_src_file.c_str(), std::ios::binary);
-
-    if (!vertex_shader_input_stream)
-    {
-        std::cerr << "could not open shader source: " << m_vertex_shader_src_file << std::endl;
-        return false;
-    }
-
-    if (!fragment_shader_input_stream)
-    {
-        std::cerr << "could not open shader source: " << m_frag_shader_src_file << std::endl;
-        return false;
-    }
-
-    std::string vertex_src_str, fragment_src_str;
-
-    std::string tmp_str;
-
-    while (std::getline(vertex_shader_input_stream, tmp_str))
-    {
-        vertex_src_str += tmp_str;
-        vertex_src_str += "\n";
-    }
-
-    while (std::getline(fragment_shader_input_stream, tmp_str))
-    {
-        fragment_src_str += tmp_str;
-        fragment_src_str += "\n";
-    }
-
-    vertex_shader_input_stream.close();
-    fragment_shader_input_stream.close();
-
-    // COMPILE SHADERS
-    GLuint fragment_shader_Id;
-    GLuint vertex_shader_id;
-    GLuint err = compileShader(GL_VERTEX_SHADER, const_cast<GLchar*>(vertex_src_str.c_str()), vertex_shader_id);
-    if (0 != err)
-    {
-        std::cerr << "Vertex Shader could not compile\n";
-        return false;
-    }
-    err = compileShader(GL_FRAGMENT_SHADER, const_cast<GLchar*>(fragment_src_str.c_str()), fragment_shader_Id);
-    if (0 != err)
-    {
-        std::cerr << "Fragment Shader could not compile\n";
-        return false;
-    }
-
-    m_program_id = glCreateProgram(); CE()
-    glAttachShader(m_program_id, vertex_shader_id);CE()
-    glAttachShader(m_program_id, fragment_shader_Id);CE()
-
-    err = linkProgram(m_program_id); CE()
-    if (GL_NO_ERROR != err)
-    {
-        std::cerr << "Program could not link\n";
-                return false;
-    }
-
-    // detach and delete shader objects, we don't need them anymore (NB: may cause issues with dodgy drivers)
-    if (fragment_shader_Id != 0)
-    {
-        glDetachShader(m_program_id, fragment_shader_Id);CE()
-        glDeleteShader(fragment_shader_Id);CE()
-    }
-    if (vertex_shader_id != 0)
-    {
-        glDetachShader(m_program_id, vertex_shader_id);CE()
-        glDeleteShader(vertex_shader_id);CE()
-    }
-
-    m_shader_ready = true;
-    return true;
 }

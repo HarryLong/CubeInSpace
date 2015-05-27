@@ -64,28 +64,7 @@ void GlCircle::init()
 
 bool GlCircle::bindBuffers()
 {
-    glGenVertexArrays(1, &m_vao_constraints); CE();
-    glBindVertexArray(m_vao_constraints); CE();
-
-    // set up vertex buffer an copy in data
-    glGenBuffers(1, &m_vbo_constraints); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints); CE();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW); CE();
-
-    // enable position attribute
-    // Vertex position
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)(0)); CE();
-
-    // set up index buffer
-    glGenBuffers(1, &m_ibo_constraints);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW); CE();
-
-    // Unbinding
-    glBindVertexArray(0);CE()
-
-    return true;
+    return GlDrawable::defaultElementBufferBinding();
 }
 
 void GlCircle::render() const
@@ -155,28 +134,7 @@ void GlArrow::init()
 
 bool GlArrow::bindBuffers()
 {
-    glGenVertexArrays(1, &m_vao_constraints); CE();
-    glBindVertexArray(m_vao_constraints); CE();
-
-    // set up vertex buffer an copy in data
-    glGenBuffers(1, &m_vbo_constraints); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints); CE();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW); CE();
-
-    // enable position attribute
-    // Vertex position
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)(0)); CE();
-
-    // set up index buffer
-    glGenBuffers(1, &m_ibo_constraints);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW); CE();
-
-    // Unbinding
-    glBindVertexArray(0);CE()
-
-    return true;
+    return GlDrawable::defaultElementBufferBinding();
 }
 
 void GlArrow::render() const
@@ -202,28 +160,7 @@ GlSphere::~GlSphere()
 
 bool GlSphere::bindBuffers()
 {
-    glGenVertexArrays(1, &m_vao_constraints); CE();
-    glBindVertexArray(m_vao_constraints); CE();
-
-    // set up vertex buffer an copy in data
-    glGenBuffers(1, &m_vbo_constraints); CE();
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints); CE();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW); CE();
-
-    // enable position attribute
-    // Vertex position
-    glEnableVertexAttribArray(0); CE();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (void*)(0)); CE();
-
-    // set up index buffer
-    glGenBuffers(1, &m_ibo_constraints);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints); CE();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW); CE();
-
-    // Unbinding
-    glBindVertexArray(0);CE()
-
-    return true;
+    return GlDrawable::defaultElementBufferBinding();
 }
 
 void GlSphere::init()
@@ -279,15 +216,7 @@ GlCube::~GlCube()
 
 bool GlCube::bindBuffers()
 {
-    if (m_vbo_constraints != 0)
-    {
-        glDeleteVertexArrays(1, &m_vao_constraints);
-        glDeleteBuffers(1, &m_vbo_constraints);
-        glDeleteBuffers(1, &m_ibo_constraints);
-        m_vao_constraints = 0;
-        m_vbo_constraints = 0;
-        m_ibo_constraints = 0;
-    }
+    deleteBuffers();
 
     // vao
     glGenVertexArrays(1, &m_vao_constraints); CE()

@@ -28,7 +28,6 @@ public:
 
 private:
     void init();
-    virtual void delete_buffers();
 
     GLfloat m_screen_quad[8] = {-1.0f, -1.0f,
                               1.0f, -1.0f,

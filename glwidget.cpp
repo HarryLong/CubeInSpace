@@ -16,7 +16,7 @@ GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget *
   m_control_style(ControlStyle::SoftImage), m_active_mode(Mode::None), m_navigation_enabled(false),
   m_mouse_tracking_thread(NULL),
   m_view_manager(new ViewManager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity)),
-  m_scene_manager(new SceneManager(settings.terrain_scaler)), m_ray_drawer(new RayDrawer),
+  m_scene_manager(new SceneManager(settings.terrain_scaler)), m_rays(new RayDrawer),
   m_authorise_navigation_mode_switch(true)
 {
     m_mouse_tracking_thread_run.store(true);
@@ -32,7 +32,7 @@ GLWidget::~GLWidget()
     delete m_view_manager;
     delete m_scene_manager;
     delete m_mouse_tracking_thread;
-    delete m_ray_drawer;
+    delete m_rays;
 }
 
 void GLWidget::updateSettings(const Settings & settings)
@@ -82,7 +82,7 @@ void GLWidget::initializeGL() // Override
 
     // Initialize rendered, view, etc...
 
-    m_renderer = new Renderer(SHADER_DIR);
+    m_renderer = new Renderer();
     m_renderer->printShaders();
     m_scene_manager->initScene();
 }
@@ -95,7 +95,10 @@ void GLWidget::paintGL() // Override
 
     // Draw the grid
     if(m_draw_grid)
-        assets_to_render.push_back(m_scene_manager->getGrid());
+    {
+        std::vector<const Asset*> grid_assets (m_scene_manager->getGrid().getAssets());
+        assets_to_render.insert(assets_to_render.end(), grid_assets.begin(), grid_assets.end());
+    }
 
     // Draw the terrain
     if(m_draw_terrain)
@@ -138,7 +141,7 @@ void GLWidget::paintGL() // Override
 
     // Draw the rays
     if(m_draw_rays)
-        assets_to_render.push_back(m_ray_drawer);
+        assets_to_render.push_back(m_rays);
 
     m_renderer->renderAssets(m_view_manager, assets_to_render);
 }
@@ -229,8 +232,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             glGetIntegerv(GL_VIEWPORT, viewport);
             glm::vec3 start(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), .0f), viewport));
             glm::vec3 end(m_view_manager->toWorld(glm::vec3(event->x(), event->y(), 1.f), viewport));
-            m_ray_drawer->add(start, end) ;
-            m_ray_drawer->bindBuffers();
+            m_rays->add(start, end) ;
+            m_rays->bindBuffers();
             update();
         }
 
@@ -551,7 +554,7 @@ void GLWidget::renderAccelerationStructure(bool enabled)
 
 void GLWidget::renderRays(bool enabled)
 {
-    m_ray_drawer->clear();
+    m_rays->clear();
     m_draw_rays = enabled;
     update();
 }

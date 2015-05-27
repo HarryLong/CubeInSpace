@@ -8,7 +8,7 @@
 
 #include "utils/utils.h"
 
-SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale), m_grid(NULL)
+SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale)
 {
 
 }
@@ -16,7 +16,6 @@ SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale), 
 SceneManager::~SceneManager()
 {
     clear_acceleration_structure_viewer();
-    delete m_grid;
 }
 
 const std::vector<const Asset*> SceneManager::getAccelerationStructure() const
@@ -24,11 +23,8 @@ const std::vector<const Asset*> SceneManager::getAccelerationStructure() const
     return std::vector<const Asset*>(m_acceleration_structure_viewer.begin(), m_acceleration_structure_viewer.end());
 }
 
-Asset* SceneManager::getGrid()
+Grid & SceneManager::getGrid()
 {
-    if(!m_grid)
-        m_grid = new Grid;
-
     return m_grid;
 }
 

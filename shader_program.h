@@ -3,25 +3,28 @@
 
 #include <string>
 #include "glheader.h"
+#include <QFile>\
 
 class ShaderProgram
 {
-private:
-    GLuint m_program_id;
-    bool m_shader_ready;
-    std::string m_frag_shader_src_file, m_vertex_shader_src_file, m_name;
-
-    GLenum compileShader(GLenum p_target, GLchar* p_src_code, GLuint & p_shader);
-    GLenum linkProgram(GLuint p_program);
-    void initDefaults();
 public:
-    ShaderProgram(const std::string& p_frag_shader_src_file, const std::string& p_vertex_shader_src_file, std::string p_name = NULL); // construct from file
+    ShaderProgram(QString p_frag_shader_src_file, QString p_vertex_shader_src_file, QString p_name = QString::null); // construct from file
     ~ShaderProgram() {}
 
-    bool compileAndLink(void); //compile and link shaders
-    std::string getName() { return m_name; }
-    GLuint getProgramID(void) const { return m_program_id; }
-    bool initialised(void) const {return m_shader_ready; }
+    bool compileAndLink(); //compile and link shaders
+    QString getDescription() { return m_destription; }
+    GLuint getProgramID() const { return m_program_id; }
+    bool initialised() const {return m_shader_ready; }
+
+private:
+    GLuint m_program_id, m_fragment_shader_id, m_vertex_shader_id;
+    bool m_shader_ready;
+    QFile m_frag_shader, m_vertex_shader;
+    QString m_destription;
+
+    GLenum compile(GLenum p_shader_type, QByteArray & p_shader_src, GLuint & p_shader_id);
+    GLenum link(GLuint p_program);
+    bool compile_and_attach(QFile & shader_file, GLenum shader_type, GLuint & shader_id);
 };
 
 #endif

@@ -17,7 +17,7 @@
 #include <atomic>
 #include <thread>
 #include "settings.h"
-#include "ray_drawer.h"
+#include "rays.h"
 
 class QSurface;
 class QMouseEvent;
@@ -99,8 +99,8 @@ private:
     Renderer* m_renderer;
     ViewManager* m_view_manager;
     SceneManager* m_scene_manager;
+    RayDrawer * m_rays;
     MouseTracker m_mouse_position_tracker;
-    RayDrawer * m_ray_drawer;
 
     void enable_continuous_mouse_tracking(bool enabled);
     void mouse_tracking_callback();

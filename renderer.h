@@ -16,31 +16,25 @@
 /* SHADERS */
 enum ShaderType {
     BASE = 0,
-    GRID,
     TERRAIN,
     TERRAIN_ELEMENTS,
-    ORIENTATION_COMPASS,
     NORMALS
 };
 
 // ensure to respect order defines in shader enum
 const QString g_vertex_shader_files[] = {
-    "base.vert",
-    "grid.vert",
-    "terrain.vert",
-    "terrain_elements.vert",
-    "orientation.vert",
-    "normals_generator.vert"
+    ":/base.vert",
+    ":/terrain.vert",
+    ":/terrain_elements.vert",
+    ":/normals_generator.vert"
 };
 
 // ensure to respect order defines in shader enum
 const QString g_fragment_shader_files[] = {
-    "base.frag",
-    "grid.frag",
-    "terrain.frag",
-    "terrain_elements.frag",
-    "orientation.frag",
-    "normals_generator.frag"
+    ":/base.frag",
+    ":/terrain.frag",
+    ":/terrain_elements.frag",
+    ":/normals_generator.frag"
 };
 
 enum AssetUniforms {
@@ -51,7 +45,7 @@ enum AssetUniforms {
 enum TransformationUniforms{
     PROJECTION_MAT,
     VIEW_MAT,
-    MODEL_MAT,
+    MTW_MAT,
     SCALE
 };
 
@@ -97,31 +91,21 @@ public:
 
 class Renderer {
 public:
-    Renderer(const std::string& m_shader_dir);
+    Renderer();
     ~Renderer();
     void renderTerrain(const ViewManager * p_view, Terrain& terrain, const LightProperties & sunlight_properties);
     void renderTerrainElements(const ViewManager * p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit);
     void renderAssets(const ViewManager * p_view, const std::vector<const Asset*> & p_assets);
 
-//    void drawGrid(const ViewManager * p_view, DrawData & p_grid_data);
-//    void drawRays(const ViewManager * p_view, DrawData & p_ray_data);
-//    void drawOrientationCompass(const ViewManager * p_view, DrawData & contour, DrawData & arrow, const glm::mat4x4 & compass_translation_matrix,
-//                                const glm::mat4x4 & north_rotation_matrix);
-//    void drawLines(const ViewManager * p_view, DrawData & p_ray_data, bool grid = false);
-
-//    void drawLines(const ViewManager * p_view, Grid* p_grid);
-
     void printShaders();
     void setOverlay(TerrainOverlayUniforms overlay);
 
-    // TMP
-    void drawGrid(const ViewManager * p_view, Grid * grid);
 private:
-    void initUniforms();
-    void initShaders();
+    void init_uniforms();
+    void init_shaders();
+    void append_shader(const ShaderType & shader_type, const QString & description);
 
     std::map<ShaderType, ShaderProgram *> m_shaders;
-    QDir m_shader_dir;
 
     // Uniform holders
     std::map<TransformationUniforms,const char *> m_transformation_uniforms;

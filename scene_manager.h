@@ -7,8 +7,7 @@
 #include "terrain.h"
 #include "orientation_compass.h"
 #include "lighting_manager.h"
-
-class Grid;
+#include "grid.h"
 
 class SceneManager{
 public:
@@ -16,12 +15,13 @@ public:
     ~SceneManager();
 
     const std::vector<const Asset*> getAccelerationStructure() const;
-    Asset * getGrid();
 
 //    SceneAsset* getSun() const;
     Terrain& getTerrain();
     LightingManager & getLightingManager();
     OrientationCompass & getOrientationCompass();
+    Grid & getGrid();
+
     void initScene();
     void loadTerrain(QString filename);
     void setTerrainScaler(float p_scale);
@@ -33,7 +33,7 @@ private:
     void clear_acceleration_structure_viewer();
 
     std::vector<GlCube*> m_acceleration_structure_viewer;
-    Grid * m_grid;
+    Grid m_grid;
     Terrain m_terrain;
     OrientationCompass m_orientation_compass;
     LightingManager m_lighting_manager;

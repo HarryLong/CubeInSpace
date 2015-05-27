@@ -10,7 +10,7 @@
 /*******************
  * TERRAIN NORMALS *
  *******************/
-TerrainNormals::TerrainNormals() : m_valid(false)
+TerrainNormals::TerrainNormals() : m_valid(false), m_fbo_normal_map(0)
 {
     init();
 }
@@ -33,6 +33,8 @@ void TerrainNormals::init()
 
 bool TerrainNormals::bindBuffers()
 {
+    deleteBuffers();
+
     glGenVertexArrays(1, &m_vao_constraints); CE();
     glBindVertexArray(m_vao_constraints); CE();
 
@@ -55,11 +57,6 @@ bool TerrainNormals::setTerrainDim(int width, int depth)
 {
     if( m_normalsTexture == 0 || m_width != width || m_depth != depth )
     {
-//        delete_buffers();
-
-//        if (m_normalsTexture != 0)
-//            glDeleteTextures(1, &m_normalsTexture);  CE();
-
         glGenFramebuffers(1, &m_fbo_normal_map); CE();
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_normal_map); CE();
         // create texture target for normal map computation
@@ -101,12 +98,6 @@ bool TerrainNormals::setTerrainDim(int width, int depth)
         m_depth = depth;
     }
     return bindBuffers();
-}
-
-void TerrainNormals::delete_buffers()
-{
-    if (m_fbo_normal_map != 0) glDeleteFramebuffers(1, &m_fbo_normal_map);  CE();
-    GlDrawable::delete_buffers();
 }
 
 void TerrainNormals::render() const
@@ -274,7 +265,7 @@ bool Terrain::bindBuffers()
 bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 {
     parsed_terrangen_file.summarize();
-    delete_buffers();
+    deleteBuffers();
 
     refresh_heightmap_texture(parsed_terrangen_file);
 
@@ -332,8 +323,6 @@ void Terrain::prepare_terrain_geometry()
         if (z <  m_terragen_file.m_header_data.depth - 2)   // Degenerate end: repeat last vertex
             m_indicies.push_back((GLuint) (((z + 1) * m_terragen_file.m_header_data.width) + (m_terragen_file.m_header_data.width - 1)));
     }
-
-    std::cout << "Indicies : " << m_indicies.size() << std::endl;
 }
 
 void Terrain::refresh_heightmap_texture(TerragenFile & parsed_terrangen_file)
