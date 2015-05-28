@@ -1,18 +1,14 @@
 #include "orientation_compass.h"
-
-#define GLM_FORCE_RADIANS
-
-#include "utils/utils.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm_rotations.h"
+#include "geom.h"
 
 #define RADIUS 100.0f
 #define ARROW_COLOR glm::vec4(1,0,0,0)
 #define CONTOUR_COLOR glm::vec4(0,0,0,0)
-
 /***********
  * CONTOUR *
  ***********/
-Contour::Contour() : GlCircle(RADIUS, true, CONTOUR_COLOR)
+Contour::Contour() : GlCircle(RADIUS, CONTOUR_COLOR)
 {
 
 }
@@ -31,7 +27,7 @@ void Contour::render() const
 /***************
  * NORTH ARROW *
  ***************/
-NorthArrow::NorthArrow() : GlArrow(RADIUS, true, ARROW_COLOR)
+NorthArrow::NorthArrow() : GlArrow(RADIUS-1, ARROW_COLOR)
 {
 
 }
@@ -49,7 +45,7 @@ void NorthArrow::render() const
 
 //------------------------------
 
-OrientationCompass::OrientationCompass() : m_contour(NULL), m_arrow(NULL)
+OrientationCompass::OrientationCompass() : m_contour(NULL), m_arrow(NULL), m_north_orientation(0,0,1)
 {
 
 }
@@ -78,7 +74,10 @@ Contour * OrientationCompass::get_contour()
 NorthArrow * OrientationCompass::get_arrow()
 {
     if(!m_arrow)
+    {
         m_arrow = new NorthArrow();
+
+    }
 
     return m_arrow;
 }
@@ -86,15 +85,22 @@ NorthArrow * OrientationCompass::get_arrow()
 void OrientationCompass::rotateNorth(float rotation)
 {
     m_north_rotation += rotation;
-    Utils::normalizeAngle(m_north_rotation);
+    Geom::normalizeDegrees(m_north_rotation);
+    refresh_orientation();
 }
 
 glm::vec2 OrientationCompass::getNorthOrientation()
 {
-
+    return glm::vec2(m_north_orientation[0], m_north_orientation[2]);
 }
 
 glm::mat4x4 OrientationCompass::getNorthRotationMatrix()
 {
-    return glm::rotate(glm::mat4x4(), Utils::toRadians(m_north_rotation), glm::vec3(0,1,0));
+    return m_north_rotation_mat;
+}
+
+void OrientationCompass::refresh_orientation()
+{
+    m_north_orientation = glm::rotateY(m_arrow->m_base_orientation, Geom::toRadians(m_north_rotation));
+    m_north_rotation_mat = glm::rotate(glm::mat4x4(), Geom::toRadians(m_north_rotation), glm::vec3(0,1,0));
 }

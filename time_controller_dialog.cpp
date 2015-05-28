@@ -16,16 +16,16 @@ MonthOfYearSlider::MonthOfYearSlider()
 TimeOfDaySlider::TimeOfDaySlider()
 {
     setOrientation(Qt::Horizontal);
-    setRange(0,23);
-    setValue(DEFAULT_HOUR_OF_DAY);
+    setRange(0,1439);
+    setValue(DEFAULT_TIME_OF_DAY);
 }
 
 
 TimeControllerDialog::TimeControllerDialog(QWidget * parent, Qt::WindowFlags f) :
-    m_month_of_year_slider(new MonthOfYearSlider), m_time_of_day_slider(new TimeOfDaySlider)
+    m_month_of_year_slider(new MonthOfYearSlider), m_time_of_day_slider(new TimeOfDaySlider),
+    m_month_lbl(new QLabel), m_time_lbl(new QLabel)
 {
     setModal(false);
-
     connect(m_month_of_year_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
     connect(m_time_of_day_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
 
@@ -44,6 +44,8 @@ QSize TimeControllerDialog::sizeHint() const
 
 void TimeControllerDialog::init_layout()
 {
+    refresh_labels(); // Add content to labels
+
     QVBoxLayout * main_layout = new QVBoxLayout;
 
     // onth of year
@@ -54,7 +56,6 @@ void TimeControllerDialog::init_layout()
         // Slider
         layout->addWidget(m_month_of_year_slider,1);
         // Value label
-        m_month_lbl = new QLabel(QString::number(DEFAULT_MONTH_OF_YEAR));
         layout->addWidget(m_month_lbl, 0);
 
         main_layout->addLayout(layout,0);
@@ -68,8 +69,7 @@ void TimeControllerDialog::init_layout()
         // Slider
         layout->addWidget(m_time_of_day_slider,1);
         // Value label
-        m_hour_lbl = new QLabel(QString::number(DEFAULT_HOUR_OF_DAY));
-        layout->addWidget(m_hour_lbl, 0);
+        layout->addWidget(m_time_lbl, 0);
 
         main_layout->addLayout(layout,0);
     }
@@ -92,7 +92,22 @@ int TimeControllerDialog::getMonthOfYear()
 
 void TimeControllerDialog::refresh_labels()
 {
-    m_hour_lbl->setText(QString::number(getTimeOfDay()));
-    m_month_lbl->setText(QString::number(getMonthOfYear()));
+    m_time_lbl->setText(format_time(getTimeOfDay()));
+    m_month_lbl->setText(g_months[getMonthOfYear()-1]);
+}
+
+QString TimeControllerDialog::format_time(int minutes)
+{
+    int h(minutes/60);
+    int mn(minutes % 60);
+
+    QString formatted_time(get_two_number_digit(h));
+    formatted_time.append("h").append(get_two_number_digit(mn));
+    return formatted_time;
+}
+
+QString TimeControllerDialog::get_two_number_digit(int digit)
+{
+    return QString("%1").arg(digit, 2, 10, QChar('0'));
 }
 

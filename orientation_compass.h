@@ -43,9 +43,13 @@ private:
     float m_north_rotation;
     Contour * get_contour();
     NorthArrow * get_arrow();
+    void refresh_orientation();
 
     Contour * m_contour;
     NorthArrow * m_arrow;
+
+    glm::vec3 m_north_orientation;
+    glm::mat4x4 m_north_rotation_mat;
 };
 
 #endif // ORIENTATION_COMPASS_H

@@ -16,7 +16,7 @@ public:
 
     const std::vector<const Asset*> getAccelerationStructure() const;
 
-//    SceneAsset* getSun() const;
+    const Asset* getSun();
     Terrain& getTerrain();
     LightingManager & getLightingManager();
     OrientationCompass & getOrientationCompass();
@@ -26,13 +26,14 @@ public:
     void loadTerrain(QString filename);
     void setTerrainScaler(float p_scale);
     void refreshAccelerationStructureViewer();
-
+    void refreshNorthOrientation();
 private:    
     void refresh_base_terrain();
 
     void clear_acceleration_structure_viewer();
 
     std::vector<GlCube*> m_acceleration_structure_viewer;
+    GlSphere * m_sun;
     Grid m_grid;
     Terrain m_terrain;
     OrientationCompass m_orientation_compass;

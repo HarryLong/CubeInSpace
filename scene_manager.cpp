@@ -1,14 +1,12 @@
 #include "scene_manager.h"
 
-#define GLM_FORCE_RADIANS
-
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm_rotations.h"
 #include "grid.h"
 #include "terragen/terragen_file_manager.h"
+#include "glm_utils.h"
 
-#include "utils/utils.h"
-
-SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale)
+SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale), m_sun(NULL), m_orientation_compass(),
+    m_lighting_manager(m_orientation_compass.getNorthOrientation())
 {
 
 }
@@ -16,6 +14,7 @@ SceneManager::SceneManager(int terrain_scale) : m_terrain_scale(terrain_scale)
 SceneManager::~SceneManager()
 {
     clear_acceleration_structure_viewer();
+    delete m_sun;
 }
 
 const std::vector<const Asset*> SceneManager::getAccelerationStructure() const
@@ -33,6 +32,11 @@ Terrain& SceneManager::getTerrain()
     return m_terrain;
 }
 
+void SceneManager::refreshNorthOrientation()
+{
+    m_lighting_manager.setNorth(m_orientation_compass.getNorthOrientation());
+}
+
 LightingManager & SceneManager::getLightingManager()
 {
     return m_lighting_manager;
@@ -48,21 +52,6 @@ void SceneManager::initScene()
     // Set mock terrain (flat)
     refresh_base_terrain();
 }
-
-#define SUN_RADIUS 10
-#define SUN_SLICES 10
-#define SUN_STACKS 10
-//SceneAsset * SceneManager::getSun()
-//{
-//    if(m_sun_asset == NULL)
-//        m_sun_asset = new SceneAsset(ShapeFactory::getSphere(SUN_RADIUS, SUN_SLICES, SUN_STACKS));
-
-//    // Sun position
-//    glm::vec4 sun_position(m_lighting_manager.getSunlightProperties().getPosition());
-//    m_sun_asset->m_mtw_matrix = glm::translate(glm::mat4x4(), glm::vec3(sun_position[0], sun_position[1], sun_position[2]);
-
-//    return m_sun_asset;
-//}
 
 void SceneManager::loadTerrain(QString filename)
 {
@@ -131,6 +120,19 @@ void SceneManager::refresh_base_terrain()
     refreshAccelerationStructureViewer();
 
     m_lighting_manager.setTerrainDimensions(dummy_terragen_file.m_header_data.width, dummy_terragen_file.m_header_data.depth);
+}
+
+#define SUN_RADIUS 20
+#define SUN_SLICES 20
+#define SUN_STACKS 20
+const Asset* SceneManager::getSun()
+{
+    if(!m_sun)
+        m_sun = new GlSphere(ShapeFactory::getSphere(SUN_RADIUS, SUN_SLICES, SUN_STACKS, glm::vec4(1,1,0,1)));
+
+    m_sun->setMtwMat(glm::translate(glm::mat4x4(), glmutils::toVec3(m_lighting_manager.getSunlightProperties().getPosition())));
+
+    return m_sun;
 }
 
 /***********

@@ -13,8 +13,10 @@ class Axes : public Asset {
 public:
     Axes();
     ~Axes();
-    virtual bool bindBuffers();
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();
@@ -27,8 +29,10 @@ class Plane : public Asset {
 public:
     Plane();
     ~Plane();
-    virtual bool bindBuffers();
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();

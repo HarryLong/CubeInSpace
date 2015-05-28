@@ -9,7 +9,6 @@ class GlDrawable{
 public:
     GlDrawable();
     virtual ~GlDrawable();
-    virtual bool bindBuffers() = 0;
     virtual void render() const = 0;
 
     bool defaultArrayBufferBinding();
@@ -24,6 +23,7 @@ public:
     GLuint m_vbo_constraints;
     GLuint m_ibo_constraints;
 protected:
+    virtual bool bindBuffers() = 0;
 
     // Test methods
     void printInfo();

@@ -10,8 +10,6 @@ class Asset : public GlDrawable
 public:
     Asset(bool uniform_color, glm::vec4 color = glm::vec4(), glm::mat4x4 mtw_mat = glm::mat4x4(), float scale = 1.0f);
     virtual ~Asset();
-    virtual bool bindBuffers() = 0;
-    virtual void render() const = 0;
 
     void setMtwMat(glm::mat4x4 mtw_mat);
     glm::mat4x4 getMtwMat() const;

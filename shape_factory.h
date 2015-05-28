@@ -8,10 +8,12 @@
  **********/
 class GlCircle : public Asset {
 public:
-    GlCircle(float radius, bool uniform_color, glm::vec4 color = glm::vec4());
+    GlCircle(float radius, glm::vec4 color);
     virtual ~GlCircle();
-    virtual bool bindBuffers();    
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();
@@ -23,10 +25,13 @@ private:
  *********/
 class GlArrow : public Asset {
 public:
-    GlArrow(float length, bool uniform_color, glm::vec4 color = glm::vec4());
+    GlArrow(float length, glm::vec4 color);
     ~GlArrow();
-    virtual bool bindBuffers();
     virtual void render() const;
+    static const glm::vec3 m_base_orientation;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();
@@ -38,14 +43,17 @@ private:
  **********/
 class GlSphere : public Asset {
 public:
-    GlSphere(float radius, int slices, int stacks, bool uniform_color, glm::vec4 color = glm::vec4());
+    GlSphere(float radius, int slices, int stacks, glm::vec4 color);
     virtual ~GlSphere();
-    virtual bool bindBuffers();
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();
     void append_sphere_vert(float radius, float lat, float lon);
+    void get_stack_height_and_radius(int n_stack, float & radius, float & y);
 
     float m_radius;
     int m_slices;
@@ -59,8 +67,10 @@ class GlCube : public Asset {
 public:
     GlCube(float size);
     virtual ~GlCube();
-    virtual bool bindBuffers();
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void push_front_face_color();
@@ -79,9 +89,9 @@ private:
  *****************/
 class ShapeFactory {
 public:
-    static GlCircle getCircle(float radius, bool uniform_color, glm::vec4 color = glm::vec4());
-    static GlArrow getArrow(float length, bool uniform_color, glm::vec4 color = glm::vec4());
-    static GlSphere getSphere(float radius, int slices, int stacks, bool uniform_color, glm::vec4 color = glm::vec4());
+    static GlCircle getCircle(float radius, glm::vec4 color);
+    static GlArrow getArrow(float length, glm::vec4 color );
+    static GlSphere getSphere(float radius, int slices, int stacks, glm::vec4 color);
     static GlCube getCube(float size);
 };
 

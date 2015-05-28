@@ -5,6 +5,21 @@
 #include <QSlider>
 #include <QLabel>
 
+static QString g_months [] {
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+};
+
 class MonthOfYearSlider : public QSlider
 {
 public:
@@ -26,11 +41,11 @@ public:
     int getTimeOfDay();
     int getMonthOfYear();
 
-    QSlider * m_time_of_day_slider;
-    QSlider * m_month_of_year_slider;
+    TimeOfDaySlider * m_time_of_day_slider;
+    MonthOfYearSlider * m_month_of_year_slider;
 
     QLabel * m_month_lbl;
-    QLabel * m_hour_lbl;
+    QLabel * m_time_lbl;
 
 protected:
     QSize sizeHint() const;//Override
@@ -40,6 +55,8 @@ private slots:
 
 private:
     void init_layout();
+    QString format_time(int minutes);
+    QString get_two_number_digit(int digit);
 };
 
 #endif // TIME_CONTROLLER_DIALOG_H

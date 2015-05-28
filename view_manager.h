@@ -4,39 +4,22 @@
 #define GLM_FORCE_RADIANS
 
 #include "glheader.h"
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include "utils/utils.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/rotate_vector.hpp>
+#include "glm/matrix.hpp"
 
 enum TransformType{
     Translation,
     Rotation
 };
 
-struct CameraOrientation
+class CameraOrientation
 {
+public:
+    CameraOrientation();
+    void calculate_rotation_matrix();
+
     float pitch; // Around the x axis
     float yaw; // Around the y axis
     glm::mat4x4 rotation_mat;
-
-    CameraOrientation() : pitch(.0f), yaw(.0f) {}
-
-    void calculate_rotation_matrix()
-    {
-        Utils::normalizeAngle(pitch);
-        Utils::normalizeAngle(yaw);
-
-        float pitch_radians(Utils::toRadians(pitch));
-        float yaw_radians(Utils::toRadians(yaw));
-
-        rotation_mat = glm::rotate(glm::mat4x4(), pitch_radians, glm::vec3(1,0,0));
-        glm::fvec3 y_rotation_axis(glm::rotateY(glm::fvec3(0.f,1.f,0.f), -pitch_radians));
-        rotation_mat = glm::rotate( rotation_mat, yaw_radians, y_rotation_axis );
-    }
 };
 
 struct CameraTransformationMatrices{
@@ -49,7 +32,9 @@ struct TransformationMatrices{
     CameraTransformationMatrices view;
 };
 
-
+/****************
+ * VIEW MANAGER *
+ ****************/
 class ViewManager {
 public:
     ViewManager(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);

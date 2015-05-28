@@ -1,5 +1,6 @@
 #include "light_properties.h"
 #include <algorithm>
+#include "glm_rotations.h"
 
 /********************
  * LIGHT PROPERTIES *
@@ -31,10 +32,13 @@ glm::vec4 LightProperties::getPosition() const
 #define SUNLIGHT_SPECULAR glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
 #define SUNLIGHT_AMBIANT glm::vec4(0.4f, 0.4f, 0.4f, 1.0f)
 #define SUNLIGHT_BASE_POSITION glm::vec4(500.0f, 500.0f, -500.0f, 1.0f)
-SunLightProperties::SunLightProperties() : LightProperties (SUNLIGHT_BASE_POSITION, SUNLIGHT_DIFFUSE, SUNLIGHT_SPECULAR, SUNLIGHT_AMBIANT),
-    m_terrain_depth(0), m_terrain_width(0), m_hour_of_day(0)
+const float SunLightProperties::_axis_tilt = AXIS_TILT;
+const float SunLightProperties::_monthly_axis_tilt = (AXIS_TILT)/3.f;
+const int SunLightProperties::_midday_in_minutes = 720;
+SunLightProperties::SunLightProperties(glm::vec2 north_orientation) : LightProperties (SUNLIGHT_BASE_POSITION, SUNLIGHT_DIFFUSE, SUNLIGHT_SPECULAR, SUNLIGHT_AMBIANT),
+    m_terrain_depth(0), m_terrain_width(0), m_time_of_day(0)
 {
-
+    setNorth(north_orientation);
 }
 
 SunLightProperties::~SunLightProperties()
@@ -54,9 +58,9 @@ void SunLightProperties::setMonth(int month)
     refresh_position();
 }
 
-void SunLightProperties::setTime(int hour_of_day)
+void SunLightProperties::setTime(int minutes)
 {
-    m_hour_of_day = hour_of_day;
+    m_time_of_day = minutes;
     refresh_position();
 }
 
@@ -64,33 +68,105 @@ void SunLightProperties::setTerrainDimensions(int width, int depth)
 {
     m_terrain_width = width;
     m_terrain_depth = depth;
+
+    m_center_x = m_terrain_width/2.0f;
+    m_center_y = 0;
+    m_center_z = m_terrain_depth/2.0f;
+
+    m_diagonal_length = std::sqrt(m_terrain_depth*m_terrain_depth + m_terrain_width * m_terrain_width);
+
     refresh_position();
 }
 
+#include "geom.h"
+#include <iostream>
 void SunLightProperties::refresh_position()
 {
-    // Calculate the center of the terrain (and the circle
-    int center_x(m_terrain_width/2.0f);
-    int center_z(m_terrain_depth/2.0f);
+//    int sun_trajectory_radius(m_diagonal_length/2.0d + 50);
+    int sun_trajectory_radius(1000);
 
-    int radius(std::max(m_terrain_depth, m_terrain_width));
+    // position of the sun @ noon on the equator @ Equinox
+    glm::vec3 sun_position ( glm::normalize(glm::cross(append_y(m_north), SunLightProperties::append_y(m_east))) );
+    sun_position *= sun_trajectory_radius;
 
-    glm::vec4 pos;
+    // Build rotation matrix
+    float day_angle(SunLightProperties::minutes_to_angle(m_time_of_day));
+    float year_angle(SunLightProperties::get_axis_tilt_angle(m_month));
 
-    float angle(hour_to_angle(m_hour_of_day));
-    // X
-    pos[0] = center_x + (-std::sin(angle) * radius);
-    // Y
-    pos[1] = -std::cos(angle) * radius;
-    // Z
-    pos[2] = center_z;
-    // W
-    pos[3] = 1;
+    std::cout << "Year rotation angle: " << Geom::toDegrees(year_angle) << std::endl;
+    std::cout << "Day rotation angle: " << Geom::toDegrees(day_angle) << std::endl;
 
-    setPosition(pos);
+    // First rotate around the EAST-WEST axis for the season
+    sun_position = (glm::rotate(sun_position, year_angle, SunLightProperties::append_y(m_east)));
+
+    // Then rotate aroung the north axis for the day
+    sun_position = (glm::rotate(sun_position, day_angle, SunLightProperties::append_y(m_north)));
+
+    sun_position += glm::vec3(m_center_x, m_center_y, m_center_z);
+
+    setPosition(glm::vec4(sun_position, 1));
 }
 
-float SunLightProperties::hour_to_angle(int hour)
+//void SunLightProperties::refresh_position()
+//{
+//    int sun_trajectory_radius(m_diagonal_length/2.0d + 50);
+
+//    // position of the sun @ noon on the equator @ Equinox
+//    glm::vec3 up ( glm::cross(m_north, m_east) );
+//    up *= sun_trajectory_radius;
+
+//    // Build rotation matrix
+//    float day_angle(SunLightProperties::minutes_to_angle(m_time_of_day));
+//    float year_angle(SunLightProperties::get_axis_tilt_angle(m_month));
+
+//    // First rotate around the EAST-WEST axis for the seasons
+
+
+//    // First rotate around
+//    glm::vec3 sun_position(glm::rotate(SunLightProperties::append_y(m_east), day_angle,
+//                                       SunLightProperties::append_y(m_north)));
+
+//    sun_position *= sun_trajectory_radius;
+//    sun_position += glm::vec3(m_center_x, m_center_y, m_center_z);
+
+//    setPosition(glm::vec4(sun_position, 1));
+//}
+
+#include <iostream>
+void SunLightProperties::setNorth(glm::vec2 orientation)
 {
-    return (hour/24.0f) * 2 * M_PI;
+    m_north = glm::normalize(orientation);
+
+    // Calculate east
+    glm::vec3 north(SunLightProperties::append_y(m_north));
+    glm::vec3 east = glm::rotateY(north, (float) M_PI_2);
+    east = glm::normalize(east);
+
+    m_east = SunLightProperties::discard_y(east);
+
+    refresh_position();
+}
+
+// Static methods
+// Returns in radians, the rotation relative to noon
+float SunLightProperties::minutes_to_angle(int minutes)
+{
+    return (((float) _midday_in_minutes - minutes) / _midday_in_minutes) * M_PI;
+}
+
+float SunLightProperties::get_axis_tilt_angle(int month)
+{
+    // June = AXIS_TILT
+    // Dec = -AXIS_TILT
+    return _axis_tilt - (std::abs(6 - month) * _monthly_axis_tilt);
+}
+
+glm::vec2 SunLightProperties::discard_y(const glm::vec3 & vec)
+{
+    return glm::vec2(vec[0], vec[2]);
+}
+
+glm::vec3 SunLightProperties::append_y(const glm::vec2 & vec, float y)
+{
+    return glm::vec3(vec[0], y, vec[1]);
 }

@@ -4,7 +4,6 @@
 #include "geom.h"
 #include <math.h>
 
-#include "utils/utils.h"
 #include <cfloat>
 
 /*******************
@@ -423,21 +422,15 @@ void Terrain::build_sphere_acceleration_structure()
 
             glm::vec3 sphere_center(Geom::affinecombine(0.5f, p_min, 0.5f, p_max));
 
-//            std::cout << "p_min: "; Utils::print(p_min); std::cout << std::endl;
-//            std::cout << "p_max: "; Utils::print(p_max); std::cout << std::endl;
-//            std::cout << "sphere_center: "; Utils::print(sphere_center); std::cout << std::endl;
-
             // Calculate the maximum radius
             float squared_radius(.0f);
             for( int point_in_sphere_x(x); point_in_sphere_x < x_max; point_in_sphere_x++ )
                 for( int point_in_sphere_z(z); point_in_sphere_z < z_max; point_in_sphere_z++)
                 {
                     glm::vec3 point_in_sphere(point_in_sphere_x, m_terragen_file(point_in_sphere_x, point_in_sphere_z), point_in_sphere_z);
-//                    std::cout << "point_in_sphere: "; Utils::print(point_in_sphere); std::cout << std::endl;
 
                     // calculate the distance from the center
                     glm::vec3 center_to_point(Geom::diff(sphere_center, point_in_sphere));
-//                    std::cout << "center_to_point: "; Utils::print(center_to_point); std::cout << std::endl;
 
                     float squared_length(Geom::squaredLength(center_to_point));
 
@@ -448,25 +441,11 @@ void Terrain::build_sphere_acceleration_structure()
             // Scale & Add sphere to structure
             float radius(sqrt(squared_radius));
 
-////            std::cout << "scaled_sphere_center: "; Utils::print(sphere_center); std::cout << std::endl;
-//            std::cout << "Sphere radius: " << radius << std::endl;
-
             SphereAccelerationStructure::Sphere  sphere(sphere_center, radius);
-////            std::cout << "Going to add sphere with center: "; Utils::print(sphere.center);
-////            std::cout << " and radius " << radius << std::endl;
+
             column_of_spheres.push_back(sphere);
         }
         m_sphere_acceleration_structure.m_spheres.push_back(column_of_spheres);
-
-////    std::cout << "*** SPHERES ADDED ***" << std::endl;
-////    for(std::vector<Sphere> spheres : m_sphere_acceleration_structure.m_spheres)
-////    {
-////        for(Sphere sphere : spheres)
-////        {
-////            std::cout << "Center: "; Utils::print(sphere.center); std::couawt << std::endl;
-////        }
-////    }
-////    std::cout << "***********************" << std::endl;
 }
 }
 
@@ -512,6 +491,5 @@ void Terrain::clear_terrain_rectangles()
 const std::vector<const Asset*> Terrain::getTerrainElements()
 {
     return std::vector<const Asset*>(m_terrain_rectangles.begin(), m_terrain_rectangles.end());
-//    return m_terrain_rectangles;
 }
 

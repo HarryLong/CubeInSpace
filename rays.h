@@ -9,10 +9,13 @@ class RayDrawer : public Asset
 public:
     RayDrawer();
     ~RayDrawer();
-    virtual bool bindBuffers();
     virtual void render() const;
 
     void add(const glm::vec3 & start_point, const glm::vec3 & end_point);
+
+protected:
+    virtual bool bindBuffers();
+
 private:
 };
 

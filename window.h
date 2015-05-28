@@ -23,6 +23,7 @@ private slots:
     void render_terrain_toggled();
     void render_acceleration_structure_toggled();
     void render_rays_toggled();
+    void render_sun_toggled();
     void refresh_mode();
     void show_time_controller_dlg();
     void show_settings_dlg();
@@ -53,6 +54,7 @@ private:
     QAction * m_action_render_terrain;
     QAction * m_action_render_acceleration_structure;
     QAction * m_action_render_rays;
+    QAction * m_action_render_sun;
 
     // Control actions
     QActionGroup* m_control_action_group;

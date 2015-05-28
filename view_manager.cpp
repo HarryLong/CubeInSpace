@@ -1,25 +1,43 @@
 #include "view_manager.h"
-#include <glm/gtc/matrix_transform.hpp>
 
-//tmp
-#include "utils/utils.h"
 #include "constants.h"
 #include <math.h>
+#include "geom.h"
+#include "glm_rotations.h"
 
+/**********************
+ * CAMERA ORIENTATION *
+ **********************/
+CameraOrientation::CameraOrientation() : pitch(.0f), yaw(.0f)
+{
+
+}
+
+void CameraOrientation::calculate_rotation_matrix()
+{
+    Geom::normalizeDegrees(pitch);
+    Geom::normalizeDegrees(yaw);
+
+    float pitch_radians(Geom::toRadians(pitch));
+    float yaw_radians(Geom::toRadians(yaw));
+
+    rotation_mat = glm::rotate(glm::mat4x4(), pitch_radians, glm::vec3(1,0,0));
+    glm::fvec3 y_rotation_axis(glm::rotateY(glm::fvec3(0.f,1.f,0.f), -pitch_radians));
+    rotation_mat = glm::rotate( rotation_mat, yaw_radians, y_rotation_axis );
+}
+
+//-------------------------------------------
+
+/****************
+ * VIEW MANAGER *
+ ****************/
 ViewManager::ViewManager(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity) : m_camera_sensitivity(camera_sensitivity),
     m_z_movement_sensitivity(z_movement_sensitivity), m_x_y_movement_sensitivity(x_y_movement_sensitivity)
 {
     m_transformation_matrices.projection = glm::frustum(LEFT, RIGHT, BOTTOM, TOP, Z_NEAR, Z_FAR);
 
-    //m_transformation_matrices.view.translation = glm::mat4x4();
-
     //TMP
     translate_camera(0,500,5);
-   // rotate(90,0);
-//    m_transformation_matrices.tmp_camera = m_transformation_matrices.view;
-
-//    m_transformation_matrices.view.rotation = glm::mat4x4();
-//    m_transformation_matrices.view.translation = glm::mat4x4();
 }
 
 glm::mat4x4 ViewManager::getViewMatrix() const

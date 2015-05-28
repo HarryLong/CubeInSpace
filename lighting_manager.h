@@ -10,14 +10,15 @@
 class LightingManager : public QObject{
     Q_OBJECT
 public:
-    LightingManager();
+    LightingManager(glm::vec2 north_orientation);
     ~LightingManager();
 
     const SunLightProperties & getSunlightProperties();
 public slots:
     void setMonth(int month);
-    void setTime(int hour_of_day);
+    void setTime(int minutes);
     void setTerrainDimensions(int width, int depth);
+    void setNorth(glm::vec2 orientation);
 
 private:
     SunLightProperties m_sunlight_properties;

@@ -93,9 +93,11 @@ class Renderer {
 public:
     Renderer();
     ~Renderer();
-    void renderTerrain(const ViewManager * p_view, Terrain& terrain, const LightProperties & sunlight_properties);
-    void renderTerrainElements(const ViewManager * p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit);
-    void renderAssets(const ViewManager * p_view, const std::vector<const Asset*> & p_assets);
+    void init();
+
+    void renderTerrain(const ViewManager & p_view, Terrain& terrain, const LightProperties & sunlight_properties);
+    void renderTerrainElements(const ViewManager & p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit);
+    void renderAssets(const ViewManager & p_view, const std::vector<const Asset*> & p_assets);
 
     void printShaders();
     void setOverlay(TerrainOverlayUniforms overlay);

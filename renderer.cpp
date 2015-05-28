@@ -3,12 +3,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "view_manager.h"
-#include "utils/utils.h"
+#include <iostream>
 
 Renderer::Renderer() : m_active_terrain_overlay(OVERLAY_DISABLED)
 {
-    init_uniforms();
-    init_shaders();
+
 }
 
 Renderer::~Renderer()
@@ -17,6 +16,12 @@ Renderer::~Renderer()
     {
         delete it->second;
     }
+}
+
+void Renderer::init()
+{
+    init_uniforms();
+    init_shaders();
 }
 
 void Renderer::append_shader(const ShaderType & shader_type, const QString & description)
@@ -37,7 +42,7 @@ void Renderer::init_shaders()
     append_shader(ShaderType::NORMALS, "Normals Generator Shader");
 }
 
-void Renderer::renderTerrain(const ViewManager * p_view, Terrain& terrain, const LightProperties & sunlight_properties)
+void Renderer::renderTerrain(const ViewManager & p_view, Terrain& terrain, const LightProperties & sunlight_properties)
 {
     if(!terrain.getNormals().valid()) // Need to recalculate normals
     {
@@ -71,7 +76,7 @@ void Renderer::renderTerrain(const ViewManager * p_view, Terrain& terrain, const
 
     glUseProgram(prog_id); CE()
 
-    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
+    Transform transform(p_view.getProjMtx(), p_view.getViewMatrix());
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
@@ -93,8 +98,6 @@ void Renderer::renderTerrain(const ViewManager * p_view, Terrain& terrain, const
     const TerrainMaterialProperties & terrain_material_properties (terrain.getMaterialProperties());
     glUniform4fv(glGetUniformLocation(prog_id, m_terrain_uniforms[MATERIAL_DIFFUSE]), 1, glm::value_ptr(terrain_material_properties.diffuse)); CE();
     glUniform4fv(glGetUniformLocation(prog_id, m_terrain_uniforms[MATERIAL_AMBIENT]), 1, glm::value_ptr(terrain_material_properties.ambient)); CE();
-//    std::cout << "Material diffuse: "; Utils::print(terrain_material_properties.diffuse); std::cout << std::endl;
-//    std::cout << "Material ambient: "; Utils::print(terrain_material_properties.ambient); std::cout << std::endl;
 
     // Overlay
     glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[OVERLAY_DISABLED]), m_active_terrain_overlay == OVERLAY_DISABLED); CE();
@@ -111,14 +114,14 @@ void Renderer::renderTerrain(const ViewManager * p_view, Terrain& terrain, const
     glUseProgram(0); // unbind
 }
 
-void Renderer::renderTerrainElements(const ViewManager * p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit)
+void Renderer::renderTerrainElements(const ViewManager & p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit)
 {
     GLuint prog_id = m_shaders[TERRAIN_ELEMENTS]->getProgramID();
 
     glUseProgram(prog_id); CE()
 
     // The transformation matrices
-    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
+    Transform transform(p_view.getProjMtx(), p_view.getViewMatrix());
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
@@ -148,13 +151,13 @@ void Renderer::renderTerrainElements(const ViewManager * p_view, const std::vect
     glUseProgram(0); // unbind
 }
 
-void Renderer::renderAssets(const ViewManager * p_view, const std::vector<const Asset*> & p_assets)
+void Renderer::renderAssets(const ViewManager & p_view, const std::vector<const Asset*> & p_assets)
 {
     GLuint prog_id = m_shaders[BASE]->getProgramID();
 
     glUseProgram(prog_id); CE()
 
-    Transform transform(p_view->getProjMtx(), p_view->getViewMatrix());
+    Transform transform(p_view.getProjMtx(), p_view.getViewMatrix());
 
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
@@ -176,7 +179,7 @@ void Renderer::renderAssets(const ViewManager * p_view, const std::vector<const 
             glUniform4fv(glGetUniformLocation(prog_id, m_asset_uniforms[UNIFORM_COLOR]),1, glm::value_ptr(color) );
         }
 
-        asset->render();
+         asset->render();
     }
 
     glUseProgram(0); // unbind

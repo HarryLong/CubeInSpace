@@ -1,8 +1,6 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
-//#include <GL/glew.h>
-
 #include <QGLWidget>
 #include <QScopedPointer>
 #include <QMatrix4x4>
@@ -33,6 +31,16 @@ struct MouseTracker{
     bool ctrl_pressed;
 };
 
+struct RenderOptions {
+    RenderOptions() : m_render_grid(true), m_render_terrain(true), m_render_acceleration_structure(false), m_render_rays(false), m_render_sun(false) {}
+
+    bool m_render_grid;
+    bool m_render_terrain;
+    bool m_render_rays;
+    bool m_render_acceleration_structure;
+    bool m_render_sun;
+};
+
 enum ControlStyle {
     SoftImage,
     FPS,
@@ -61,6 +69,7 @@ public slots:
     void renderTerrain(bool enabled);
     void renderAccelerationStructure(bool enabled);
     void renderRays(bool enabled);
+    void renderSun(bool enabled);
     void setControlStyle(ControlStyle control_style);
     void disableOverlays();
     void enableSlopeOverlay();
@@ -96,10 +105,10 @@ private:
     bool get_intersection_point_with_terrain(int screen_x, int screen_y, glm::vec3 & intersection_point);
     bool get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point);
 
-    Renderer* m_renderer;
-    ViewManager* m_view_manager;
-    SceneManager* m_scene_manager;
-    RayDrawer * m_rays;
+    Renderer m_renderer;
+    SceneManager m_scene_manager;
+    ViewManager m_view_manager;
+    RayDrawer m_rays;
     MouseTracker m_mouse_position_tracker;
 
     void enable_continuous_mouse_tracking(bool enabled);
@@ -114,11 +123,8 @@ private:
     std::atomic<bool> m_mouse_tracking_thread_run;
     std::atomic<bool> m_ctrl_pressed;
 
+    RenderOptions m_render_options;
     bool m_navigation_enabled;
-    bool m_draw_grid;
-    bool m_draw_terrain;
-    bool m_draw_rays;
-    bool m_draw_acceleration_structure;
     bool m_authorise_navigation_mode_switch;
 
     ControlStyle m_control_style;

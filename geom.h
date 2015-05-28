@@ -5,6 +5,7 @@
 #include <math.h>
 #include <vector>
 #include <gl.h>
+#include <QString>
 
 namespace Geom{
     inline float squaredLength(const glm::vec3 vector)
@@ -52,6 +53,26 @@ namespace Geom{
         float length ((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
         return sqrt(length);
     }
+
+    inline void normalizeDegrees(float& p_angle)
+    {
+        while(p_angle > 360.f)
+            p_angle -= 360;
+        while(p_angle < -360.f)
+            p_angle += 360;
+    }
+
+    inline float toRadians(const float & degrees_angle)
+    {
+        return degrees_angle / (180/M_PI);
+    }
+
+    inline float toDegrees(const float & radians_angle)
+    {
+        return radians_angle * (180/M_PI);
+    }
+
+    QString toString(const glm::mat4x4 & mat);
     void rayPointDist(const glm::vec3 & start, const glm::vec3 & direction, const glm::vec3 & query_point, float &scaler, float &dist);
     bool rayPlaneIntersection(const float & plane_height, const glm::vec3 & ray_start, const glm::vec3 & ray_direction, glm::vec3 & intersection);
 }

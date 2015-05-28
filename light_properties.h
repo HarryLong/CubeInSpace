@@ -19,26 +19,40 @@ private:
     glm::vec4 m_position;
 };
 
+#define AXIS_TILT 0.408407f
 class SunLightProperties : public LightProperties {
 public:
-    SunLightProperties();
+    SunLightProperties(glm::vec2 north_orientation);
     ~SunLightProperties();
 
     void setLatitude(int latitude);
     void setMonth(int month);
-    void setTime(int hour_of_day);
+    void setTime(int minutes);
     void setTerrainDimensions(int width, int depth);
+    void setNorth(glm::vec2 orientation);
+
+    static float minutes_to_angle(int minutes);
+    static float get_axis_tilt_angle(int month);
 
 private:
     void refresh_position();
-    float hour_to_angle(int hour);
+
+    static glm::vec3 append_y(const glm::vec2 & vec, float y = .0f);
+    static glm::vec2 discard_y(const glm::vec3 & vec);
 
     int m_latitude;
     int m_month;
-    int m_hour_of_day;
+    int m_time_of_day;
 
-    int m_terrain_width;
-    int m_terrain_depth;
+    int m_terrain_width, m_terrain_depth;
+    float m_center_x, m_center_y, m_center_z;
+    float m_diagonal_length;
+
+    glm::vec2 m_north;
+    glm::vec2 m_east;
+    static const float _axis_tilt;
+    static const float _monthly_axis_tilt;
+    static const int _midday_in_minutes;
 };
 
 #endif //LIGHT_PROPERTIES_H

@@ -37,3 +37,4 @@ float Utils::toDegrees(const float & radians_angle)
 {
     return radians_angle * (180/M_PI);
 }
+

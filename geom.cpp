@@ -80,3 +80,25 @@ bool Geom::rayPlaneIntersection(const float & plane_height, const glm::vec3 & ra
 
    return false;
 }
+
+QString Geom::toString(const glm::mat4x4 & mat)
+{
+    static const QString space("   ");
+
+    QString ret("");
+    for(int i(0); i < 4; i++)
+    {
+        ret.append("|  ");
+        for(int ii(0); ii < 4; ii++)
+        {
+            ret.append(QString::number(mat[i][ii])).append(space);
+        }
+        ret.append("  |").append("\n");
+    }
+    return ret;
+}
+
+
+
+
+

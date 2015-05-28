@@ -100,26 +100,24 @@ GLenum ShaderProgram::compile(GLenum p_shader_type, QByteArray & p_shader_src, G
 
     const GLchar * src(p_shader_src.constData());
 
-    if (p_shader_src != 0)
+    p_shader_id = glCreateShader(p_shader_type); CE();
+    glShaderSource(p_shader_id,1,&src,0); CE();
+    glCompileShader(p_shader_id); CE();
+
+    glGetShaderiv(p_shader_id,GL_COMPILE_STATUS,&compiled); CE();
+    glGetShaderiv(p_shader_id,GL_INFO_LOG_LENGTH,&log_length); CE();
+
+    if (log_length > 1)
     {
-        p_shader_id = glCreateShader(p_shader_type); CE();
-        glShaderSource(p_shader_id,1,&src,0); CE();
-        glCompileShader(p_shader_id); CE();
-
-        glGetShaderiv(p_shader_id,GL_COMPILE_STATUS,&compiled); CE();
-        glGetShaderiv(p_shader_id,GL_INFO_LOG_LENGTH,&log_length); CE();
-
-        if (log_length > 1)
-        {
-            GLint charsWritten;
-            GLchar *log = new char [log_length+128];
-            glGetShaderInfoLog(p_shader_id, log_length, &charsWritten, log);
-            std::cerr << "Compilation log: nchars=(" << log_length << "): "<< (char*)log << std::endl;
-            delete [] log;
-        }
-
-        if (compiled == 0)
-            std::cerr << "Shader " << m_destription.toStdString() << " did not compile!" << std::endl;
+        GLint charsWritten;
+        GLchar *log = new char [log_length+128];
+        glGetShaderInfoLog(p_shader_id, log_length, &charsWritten, log);
+        std::cerr << "Compilation log: nchars=(" << log_length << "): "<< (char*)log << std::endl;
+        delete [] log;
     }
+
+    if (compiled == 0)
+        std::cerr << "Shader " << m_destription.toStdString() << " did not compile!" << std::endl;
+
     return GL_NO_ERROR;
 }

@@ -9,19 +9,19 @@
 /*****************
  * SHAPE FACTORY *
  *****************/
-GlCircle ShapeFactory::getCircle(float radius, bool uniform_color, glm::vec4 color)
+GlCircle ShapeFactory::getCircle(float radius, glm::vec4 color)
 {
-    return GlCircle(radius, uniform_color, color);
+    return GlCircle(radius, color);
 }
 
-GlArrow ShapeFactory::getArrow(float length, bool uniform_color, glm::vec4 color)
+GlArrow ShapeFactory::getArrow(float length, glm::vec4 color)
 {
-    return GlArrow(length, uniform_color, color);
+    return GlArrow(length, color);
 }
 
-GlSphere ShapeFactory::getSphere(float radius, int slices, int stacks, bool uniform_color, glm::vec4 color)
+GlSphere ShapeFactory::getSphere(float radius, int slices, int stacks, glm::vec4 color)
 {
-    return GlSphere(radius, slices, stacks, uniform_color, color);
+    return GlSphere(radius, slices, stacks, color);
 }
 
 GlCube ShapeFactory::getCube(float size)
@@ -33,7 +33,7 @@ GlCube ShapeFactory::getCube(float size)
 /**********
  * CIRCLE *
  **********/
-GlCircle::GlCircle(float radius, bool uniform_color, glm::vec4 color) : Asset(uniform_color, color), m_radius(radius)
+GlCircle::GlCircle(float radius, glm::vec4 color) : Asset(true, color), m_radius(radius)
 {
     init();
     bindBuffers();
@@ -70,14 +70,16 @@ bool GlCircle::bindBuffers()
 void GlCircle::render() const
 {
     glBindVertexArray(m_vao_constraints); CE();
-    glDrawElements(GL_LINES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+    glDrawElements(GL_LINE_LOOP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
     glBindVertexArray(0); // Unbind
 }
 
 /*********
  * ARROW *
  *********/
-GlArrow::GlArrow(float length, bool uniform_color, glm::vec4 color) : Asset(uniform_color, color), m_length(length)
+const glm::vec3 GlArrow::m_base_orientation = glm::vec3(0,0,1); // Do not change this!
+
+GlArrow::GlArrow(float length, glm::vec4 color) : Asset(true, color), m_length(length)
 {
     init();
     bindBuffers();
@@ -100,9 +102,9 @@ void GlArrow::init()
         m_verticies.push_back(0);
 
         // End point of arrow
-        m_verticies.push_back(0);
-        m_verticies.push_back(0); // Y
-        m_verticies.push_back(m_length);
+        m_verticies.push_back(m_base_orientation[0] * m_length);
+        m_verticies.push_back(m_base_orientation[1] * m_length); // Y
+        m_verticies.push_back(m_base_orientation[2] * m_length);
 
         m_indicies.push_back(0);
         m_indicies.push_back(1);
@@ -147,7 +149,7 @@ void GlArrow::render() const
 /**********
  * SPHERE *
  **********/
-GlSphere::GlSphere(float radius, int slices, int stacks, bool uniform_color, glm::vec4 color) : Asset(uniform_color, color),
+GlSphere::GlSphere(float radius, int slices, int stacks, glm::vec4 color) : Asset(true, color),
     m_radius(radius), m_slices(slices), m_stacks(stacks)
 {
     init();
@@ -166,38 +168,63 @@ bool GlSphere::bindBuffers()
 void GlSphere::init()
 {
     int index(0);
-
-    for(int lat(0); lat <= m_stacks; lat++)
+    float r0, r1;
+    float x0, x1;
+    float y0, y1;
+    float z0, z1;
+    int lower_stack_index, upper_stack_index;
+    for(int stack_idx(0); stack_idx < m_stacks; stack_idx++)
     {
-        float p_lat(((float)lat) / m_stacks);
-        float lat_angle(p_lat * M_PI_2);
-        float y(std::sin(lat_angle) * m_radius);
+        get_stack_height_and_radius(stack_idx, r0, y0);
+        get_stack_height_and_radius(stack_idx+1, r1, y1);
 
-        float stack_radius(std::cos(lat_angle) * m_radius);
-        int first_stack_index(index);
-
-        for(int lon(0); lon < m_slices; lon++)
+        for(int slice(0); slice <= m_slices; slice++)
         {
-            // Upper Stack
-            float angle((((float)lon)/m_slices) * 2 * M_PI);
+            float angle((((float)slice)/m_slices) * 2 * M_PI);
+            /***********************
+             * NORTHERN HEMISPHERE *
+             ***********************/
+            {
+                x0 = std::cos(angle) * r0;
+                x1 = std::cos(angle) * r1;
 
-            float x(std::cos(angle) * stack_radius);
-            float z(std::sin(angle) * stack_radius);
+                z0 = std::sin(angle) * r0;
+                z1 = std::sin(angle) * r1;
 
-            m_verticies.push_back(x); m_verticies.push_back(y); m_verticies.push_back(z);
+                lower_stack_index = index++;
+                upper_stack_index = index++;
 
-            m_indicies.push_back(index++);
+                m_verticies.push_back(x0); m_verticies.push_back(y0); m_verticies.push_back(z0); // Lower stack
+                m_verticies.push_back(x1); m_verticies.push_back(y1); m_verticies.push_back(z1); // Upper stack
 
-            // Lower Stack
+                if(slice > 0) // Last two points of quad
+                {
+                    m_indicies.push_back(upper_stack_index);
+                    m_indicies.push_back(lower_stack_index);
+                }
+                if(slice < m_slices) // First two points of quad
+                {
+                    m_indicies.push_back(lower_stack_index);
+                    m_indicies.push_back(upper_stack_index);
+                }
+            }
         }
-        m_indicies.push_back(first_stack_index);
     }
+}
+
+void GlSphere::get_stack_height_and_radius(int n_stack, float & radius, float & y)
+{
+    float p_stack(((float)n_stack)/m_stacks);
+    float stack_angle(-M_2_PI + (p_stack * M_PI));
+
+    y = std::sin(stack_angle) * m_radius;
+    radius = std::cos(stack_angle) * m_radius;
 }
 
 void GlSphere::render() const
 {
     glBindVertexArray(m_vao_constraints); CE();
-    glDrawElements(GL_LINES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+    glDrawElements(GL_QUADS, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
     glBindVertexArray(0); // Unbind
 }
 

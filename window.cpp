@@ -33,6 +33,7 @@ Window::~Window()
     delete m_action_load_terrain;
     delete m_action_render_grid;
     delete m_action_render_terrain;
+    delete m_action_render_sun;
 
     // Control style actions
     for(auto it (m_control_style_to_action_map.begin()); it != m_control_style_to_action_map.end(); it++)
@@ -125,11 +126,17 @@ void Window::init_menu()
         m_action_render_rays->setChecked(false);
         connect(m_action_render_rays, SIGNAL(triggered()), this, SLOT(render_rays_toggled()));
 
+        m_action_render_sun = new QAction("Sun", NULL);
+        m_action_render_sun->setCheckable(true);
+        m_action_render_sun->setChecked(false);
+        connect(m_action_render_sun, SIGNAL(triggered()), this, SLOT(render_sun_toggled()));
+
         m_render_menu = menuBar()->addMenu("Render");
         m_render_menu->addAction(m_action_render_grid);
         m_render_menu->addAction(m_action_render_terrain);
         m_render_menu->addAction(m_action_render_acceleration_structure);
         m_render_menu->addAction(m_action_render_rays);
+        m_render_menu->addAction(m_action_render_sun);
     }
 
     // CONTROLS MENU
@@ -255,6 +262,11 @@ void Window::render_acceleration_structure_toggled()
 void Window::render_rays_toggled()
 {
     m_glwidget->renderRays(m_action_render_rays->isChecked());
+}
+
+void Window::render_sun_toggled()
+{
+    m_glwidget->renderSun(m_action_render_sun->isChecked());
 }
 
 void Window::load_terrain_file()

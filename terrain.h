@@ -23,8 +23,10 @@ public:
     bool valid() const { return m_valid; }
     void setValid( bool valid ) { m_valid = valid; }
 
-    virtual bool bindBuffers();
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();
@@ -51,8 +53,10 @@ class TerrainRect : public Asset
 public:
     TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth);
     ~TerrainRect();
-    bool bindBuffers();
     virtual void render() const;
+
+protected:
+    virtual bool bindBuffers();
 };
 
 struct SphereAccelerationStructure
@@ -88,7 +92,6 @@ class Terrain : public GlDrawable
 public:
     Terrain();
     ~Terrain();
-    virtual bool bindBuffers();
     virtual void render() const;
 
     const std::vector<const Asset*> getTerrainElements();
@@ -111,6 +114,9 @@ public:
     glm::vec2 getCenter();
 
     const SphereAccelerationStructure& getSphereAccelerationStructure() { return m_sphere_acceleration_structure; }
+
+protected:
+    virtual bool bindBuffers();
 
 private:
     void init();
