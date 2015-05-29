@@ -612,6 +612,12 @@ void GLWidget::setTime(int hour_of_day)
     update();
 }
 
+void GLWidget::setLatitude(int latitude)
+{
+    m_scene_manager.getLightingManager().setLatitude(latitude);
+    update();
+}
+
 // THREAD
 void GLWidget::enable_continuous_mouse_tracking(bool enable)
 {

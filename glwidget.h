@@ -77,6 +77,7 @@ public slots:
     void setMode(Mode mode);
     void setMonth(int month);
     void setTime(int hour_of_day);
+    void setLatitude(int latitude);
 
 protected:
     void initializeGL(); // Override

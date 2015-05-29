@@ -80,6 +80,7 @@ void Window::init_dialogs()
     m_time_controller_dlg = new TimeControllerDialog(this);
     connect(m_time_controller_dlg->m_time_of_day_slider, SIGNAL(sliderMoved(int)), m_glwidget, SLOT(setTime(int)));
     connect(m_time_controller_dlg->m_month_of_year_slider, SIGNAL(sliderMoved(int)), m_glwidget, SLOT(setMonth(int)));
+    connect(m_time_controller_dlg->m_latitude_slider, SIGNAL(sliderMoved(int)), m_glwidget, SLOT(setLatitude(int)));
 }
 
 void Window::init_menu()

@@ -39,6 +39,7 @@ private:
 
     static glm::vec3 append_y(const glm::vec2 & vec, float y = .0f);
     static glm::vec2 discard_y(const glm::vec3 & vec);
+    static float latitude_to_sun_angle(float latitude, int month);
 
     int m_latitude;
     int m_month;

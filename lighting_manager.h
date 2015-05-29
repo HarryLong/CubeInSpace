@@ -17,6 +17,7 @@ public:
 public slots:
     void setMonth(int month);
     void setTime(int minutes);
+    void setLatitude(int latitude);
     void setTerrainDimensions(int width, int depth);
     void setNorth(glm::vec2 orientation);
 

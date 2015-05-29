@@ -41,3 +41,8 @@ void LightingManager::setNorth(glm::vec2 orientation)
 {
     m_sunlight_properties.setNorth(orientation);
 }
+
+void LightingManager::setLatitude(int latitude)
+{
+    m_sunlight_properties.setLatitude(latitude);
+}
