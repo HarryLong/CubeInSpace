@@ -28,7 +28,7 @@ public:
     GlArrow(float length, glm::vec4 color);
     ~GlArrow();
     virtual void render() const;
-    static const glm::vec3 m_base_orientation;
+    static const glm::vec3 _base_orientation;
 
 protected:
     virtual bool bindBuffers();

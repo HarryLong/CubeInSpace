@@ -5,6 +5,7 @@ struct OverlayMode
     bool none;
     bool slope;
     bool altitude;
+    bool shade;
 };
 
 uniform vec4 specularCol;
@@ -19,8 +20,7 @@ in vec4 diffuse;
 in vec4 ambient;
 in float slope;
 in float altitude; // ratio over max
-
-in float increment_intensity;
+in float shade;
 
 out vec4 outputColor;
 
@@ -50,5 +50,17 @@ void main()
     else if(overlay.slope)
     {
         outputColor = vec4(slope,slope,slope,1.0);
+    }
+    else if(overlay.shade)
+    {
+//        outputColor = vec4(shade,shade,shade,1.0);
+        if(shade > 0)
+        {
+            outputColor = vec4(0.01, 0.01, 0.01, 1.0);
+        }
+        else
+        {
+            outputColor = vec4(0.8,0.8,0.8,1.0);
+        }
     }
 }

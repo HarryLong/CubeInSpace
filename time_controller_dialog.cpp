@@ -20,22 +20,14 @@ TimeOfDaySlider::TimeOfDaySlider()
     setValue(DEFAULT_TIME_OF_DAY);
 }
 
-LatitudeSlider::LatitudeSlider()
-{
-    setOrientation(Qt::Horizontal);
-    setRange(-90,90);
-    setValue(DEFAULT_LATITUDE);
-}
 
 TimeControllerDialog::TimeControllerDialog(QWidget * parent, Qt::WindowFlags f) :
     m_month_of_year_slider(new MonthOfYearSlider), m_time_of_day_slider(new TimeOfDaySlider),
-    m_latitude_slider(new LatitudeSlider), m_month_lbl(new QLabel), m_time_lbl(new QLabel),
-    m_latitude_lbl(new QLabel)
+    m_month_lbl(new QLabel), m_time_lbl(new QLabel)
 {
     setModal(false);
     connect(m_month_of_year_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
     connect(m_time_of_day_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
-    connect(m_latitude_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
 
     init_layout();
 }
@@ -55,19 +47,6 @@ void TimeControllerDialog::init_layout()
     refresh_labels(); // Add content to labels
 
     QVBoxLayout * main_layout = new QVBoxLayout;
-
-    // Latittude
-    {
-        QHBoxLayout * layout (new QHBoxLayout);
-        // Label
-        layout->addWidget(new QLabel("Latitude: "),0);
-        // Slider
-        layout->addWidget(m_latitude_slider,1);
-        // Value label
-        layout->addWidget(m_latitude_lbl, 0);
-
-        main_layout->addLayout(layout,0);
-    }
 
     // Month of year
     {
@@ -111,16 +90,10 @@ int TimeControllerDialog::getMonthOfYear()
     return m_month_of_year_slider->value();
 }
 
-int TimeControllerDialog::getLatitude()
-{
-    return m_latitude_slider->value();
-}
-
 void TimeControllerDialog::refresh_labels()
 {
     m_time_lbl->setText(format_time(getTimeOfDay()));
     m_month_lbl->setText(g_months[getMonthOfYear()-1]);
-    m_latitude_lbl->setText(format_latitude(getLatitude()));
 }
 
 QString TimeControllerDialog::format_time(int minutes)
@@ -131,13 +104,6 @@ QString TimeControllerDialog::format_time(int minutes)
     QString formatted_time(get_two_number_digit(h));
     formatted_time.append("h").append(get_two_number_digit(mn));
     return formatted_time;
-}
-
-QString TimeControllerDialog::format_latitude(int latitude)
-{
-    bool positif(latitude >= 0);
-    QString two_digit_latitude(get_two_number_digit(std::abs(latitude)));
-    return ((positif ? "+" : "-") + two_digit_latitude + "°");
 }
 
 QString TimeControllerDialog::get_two_number_digit(int digit)

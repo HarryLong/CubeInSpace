@@ -14,8 +14,8 @@ public:
 
     void summarize();
 
-    float & operator()(int x, int y){
-        return m_height_data[y * m_header_data.width + x];
+    float & operator()(int x, int z){
+        return m_height_data[z * m_header_data.width + x];
     }
 
     TerragenFileHeaderData m_header_data;

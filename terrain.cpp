@@ -5,24 +5,24 @@
 #include <math.h>
 
 #include <cfloat>
+#include <QProgressDialog>
 
 /*******************
  * TERRAIN NORMALS *
  *******************/
-TerrainNormals::TerrainNormals() : m_valid(false), m_fbo_normal_map(0)
+TerrainNormals::TerrainNormals() : m_valid(false), m_fbo_normal_map(0), m_normalsTexUnit(GL_TEXTURE1), m_width(0), m_depth(0)
 {
     init();
 }
 
 TerrainNormals::~TerrainNormals()
 {
-
+    delete_texture();
+    delete_fbo();
 }
 
 void TerrainNormals::init()
 {
-    m_normalsTexUnit = GL_TEXTURE1;
-
     // Insert a rectangle that fills the entire screen in screen space into the vertices
     for(GLfloat coordinate : m_screen_quad)
     {
@@ -54,8 +54,11 @@ bool TerrainNormals::bindBuffers()
 
 bool TerrainNormals::setTerrainDim(int width, int depth)
 {
-    if( m_normalsTexture == 0 || m_width != width || m_depth != depth )
+    if( m_width != width || m_depth != depth )
     {
+        delete_texture();
+        delete_fbo();
+
         glGenFramebuffers(1, &m_fbo_normal_map); CE();
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo_normal_map); CE();
         // create texture target for normal map computation
@@ -111,6 +114,24 @@ void TerrainNormals::render() const
     // unbind everthing
     glBindFramebuffer(GL_FRAMEBUFFER, 0);  CE();
     glBindVertexArray(0);  CE();
+}
+
+void TerrainNormals::delete_texture()
+{
+    if(m_normalsTexture != 0)
+    {
+        glDeleteTextures(1, &m_normalsTexture);  CE();
+        m_normalsTexture = 0;
+    }
+}
+
+void TerrainNormals::delete_fbo()
+{
+    if(m_fbo_normal_map != 0)
+    {
+        glDeleteFramebuffers(1, &m_fbo_normal_map);  CE();
+        m_fbo_normal_map = 0;
+    }
 }
 
 /*********************
@@ -208,7 +229,7 @@ void TerrainRect::render() const
 /***********
  * TERRAIN *
  ***********/
-Terrain::Terrain() : m_heightmapTexture(0), m_htmapTexUnit(GL_TEXTURE0)
+Terrain::Terrain() : m_heightmapTexture(0), m_htmapTexUnit(GL_TEXTURE0), m_shadeTexUnit(GL_TEXTURE3), m_shade_overlay_ready(false)
 {
     init();
 }
@@ -216,6 +237,8 @@ Terrain::Terrain() : m_heightmapTexture(0), m_htmapTexUnit(GL_TEXTURE0)
 Terrain::~Terrain()
 {
     clearTerrainElements();
+    delete_heightmap_texture();
+    delete_shade_texture();
 }
 
 void Terrain::init()
@@ -282,6 +305,8 @@ bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
     // Recalculate center
     m_center = glm::vec2(m_terragen_file.m_header_data.width/2.0f, m_terragen_file.m_header_data.depth/2.0f);
 
+    m_shade_overlay_ready = false;
+
     return bindBuffers();
 }
 
@@ -326,13 +351,10 @@ void Terrain::prepare_terrain_geometry()
 
 void Terrain::refresh_heightmap_texture(TerragenFile & parsed_terrangen_file)
 {
-    if(m_heightmapTexture != 0 &&
-            (m_terragen_file.m_header_data.width != parsed_terrangen_file.m_header_data.width ||
-             m_terragen_file.m_header_data.depth != parsed_terrangen_file.m_header_data.depth))
+    if(m_terragen_file.m_header_data.width != parsed_terrangen_file.m_header_data.width ||
+        m_terragen_file.m_header_data.depth != parsed_terrangen_file.m_header_data.depth)
     {
-        // std::cerr << "- Delete texture\n";
-        glDeleteTextures(1, &m_heightmapTexture);  CE();
-        m_heightmapTexture = 0;
+        delete_heightmap_texture();
     }
 
     if (m_heightmapTexture == 0) // create texture if it does not exist
@@ -363,6 +385,94 @@ void Terrain::refresh_heightmap_texture(TerragenFile & parsed_terrangen_file)
     m_terrain_normals.setValid(false);
 }
 
+#include <ctime>
+void Terrain::refreshShadingTexture(QProgressDialog * progress_dialog)
+{
+    int terrain_width(m_terragen_file.m_header_data.width);
+    int terrain_depth(m_terragen_file.m_header_data.depth);
+    progress_dialog->setRange(0, terrain_width*terrain_depth);
+
+    GLubyte * shade_data = NULL;
+
+    if(!m_shade_overlay_ready)
+    {
+        // Generate the data
+        shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
+
+        std::clock_t start_time (std::clock());
+
+        if(m_sun_position[1] <= m_terragen_file.m_header_data.base_height) // Optimization - the sun is set. There will be no light
+        {
+            memset(shade_data, 0xFF, terrain_depth*terrain_width);
+        }
+        else
+        {
+            glm::vec3 dummy_intersection_point;
+            int i(0);
+            for(int z(0); z < terrain_depth; z++)
+            {
+                for(int x(0); x < terrain_width; x++)
+                {
+                    if(progress_dialog->wasCanceled())
+                    {
+                        free(shade_data);
+                        return;
+                    }
+
+                    if(++i % 100 == 0)
+                        progress_dialog->setValue(i);
+
+                    glm::vec3 point_on_terrain(glm::vec3(x, m_terragen_file(x,z)+2, z));
+                    glm::vec3 direction(m_sun_position - point_on_terrain);
+                    int index(z*terrain_depth+x);
+
+                    if(ray_intersect(point_on_terrain, direction, dummy_intersection_point)) // Ray intersection = shaded
+                    {
+                        shade_data[index] = 0xFF;
+                    }
+                    else
+                    {
+                        shade_data[index] = 0x00;
+                    }
+                }
+            }
+        }
+
+        // Delete the texture if it already contains shade data
+        delete_shade_texture();
+
+        // Now update the shade texture with the new values
+        glGenTextures(1, &m_shadeTexture); CE();
+        glActiveTexture(m_shadeTexUnit); CE();
+        glBindTexture(GL_TEXTURE_2D, m_shadeTexture ); CE();
+
+        glTexImage2D(GL_TEXTURE_2D, 0,GL_R8, terrain_width, terrain_depth, 0, GL_RED, GL_UNSIGNED_BYTE,  shade_data); CE();
+        // no filtering
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); CE();
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); CE();
+        // deal with out of array access
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+        free(shade_data);
+
+        std::cout << "Time taken: " << clock() - start_time << std::endl;
+        m_shade_overlay_ready = true;
+    }
+    progress_dialog->setValue(terrain_width*terrain_depth);
+}
+
+void Terrain::setSunPosition(float sun_pos_x, float sun_pos_y, float sun_pos_z)
+{
+    m_sun_position = glm::vec3(sun_pos_x, sun_pos_y, sun_pos_z);
+    m_shade_overlay_ready = false;
+}
+
+bool Terrain::isShadeOverlayReady()
+{
+    return m_shade_overlay_ready;
+}
+
 bool Terrain::ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point)
 {
     // bounding sphere accel structure
@@ -386,16 +496,21 @@ bool Terrain::ray_intersect(const glm::vec3 & start, const glm::vec3 & direction
                 int z_max(std::min(getDepth()-1, z_min + m_sphere_acceleration_structure.step_size));
 
                 for(int point_in_sphere_x = x_min; point_in_sphere_x < x_max; point_in_sphere_x++)
+                {
                     for(int point_in_sphere_z = z_min; point_in_sphere_z < z_max; point_in_sphere_z++)
                     {
                         glm::vec3 point_in_sphere(point_in_sphere_x, m_terragen_file(point_in_sphere_x,point_in_sphere_z), point_in_sphere_z);
-                        Geom::rayPointDist(start, direction, point_in_sphere, scaler, distance);
-                        if(distance < tolerance && distance < min_distance)
+                        if(Geom::length(Geom::diff(start, point_in_sphere)) > 5) // Make sure the point is further than 5 unit distance from the start point
                         {
-                            found = true;
-                            min_distance = distance;
-                            intersection_point = point_in_sphere;
+                            Geom::rayPointDist(start, direction, point_in_sphere, scaler, distance);
+                            if(distance < tolerance && distance < min_distance)
+                            {
+                                found = true;
+                                min_distance = distance;
+                                intersection_point = point_in_sphere;
+                            }
                         }
+                    }
                 }
             }
         }
@@ -457,6 +572,7 @@ void Terrain::incrementHeights(const std::vector<glm::vec3> & points, int increm
     }
     refresh_heightmap_texture(m_terragen_file);
     build_sphere_acceleration_structure();
+    m_shade_overlay_ready = false;
 }
 
 void Terrain::addTerrainRect(glm::vec3 min, glm::vec3 max)
@@ -468,6 +584,25 @@ void Terrain::addTerrainRect(glm::vec3 min, glm::vec3 max)
 void Terrain::clearTerrainElements()
 {
     clear_terrain_rectangles();
+}
+
+void Terrain::delete_heightmap_texture()
+{
+    if(m_heightmapTexture != 0)
+    {
+        // std::cerr << "- Delete texture\n";
+        glDeleteTextures(1, &m_heightmapTexture);  CE();
+        m_heightmapTexture = 0;
+    }
+}
+
+void Terrain::delete_shade_texture()
+{
+    if(m_shadeTexture != 0)
+    {
+        glDeleteTextures(1, &m_shadeTexture);  CE();
+        m_shadeTexture = 0;
+    }
 }
 
 bool Terrain::traceRay(glm::vec3 start_point, glm::vec3 direction, glm::vec3 & intersection_point)

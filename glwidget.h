@@ -17,6 +17,7 @@
 #include "settings.h"
 #include "rays.h"
 
+class QProgressDialog;
 class QSurface;
 class QMouseEvent;
 
@@ -59,7 +60,8 @@ class GLWidget : public QGLWidget
     Q_OBJECT
 
 public:
-    GLWidget(const Settings & settings, const QGLFormat& format, QWidget * parent = NULL);
+    GLWidget(const Settings & settings, const QGLFormat& format, QSlider * latitude_slider, QSlider * time_of_day_slider, QSlider * month_slider,
+             QWidget * parent = NULL);
     ~GLWidget();
     void loadTerrain(QString filename);
     void updateSettings(const Settings & settings);
@@ -74,10 +76,9 @@ public slots:
     void disableOverlays();
     void enableSlopeOverlay();
     void enableAltitudeOverlay();
+    void enableShadeOverlay();
     void setMode(Mode mode);
-    void setMonth(int month);
-    void setTime(int hour_of_day);
-    void setLatitude(int latitude);
+    void recalculateShade(QProgressDialog * progress_dialog);
 
 protected:
     void initializeGL(); // Override

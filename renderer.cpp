@@ -80,13 +80,23 @@ void Renderer::renderTerrain(const ViewManager & p_view, Terrain& terrain, const
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[PROJECTION_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_projection_mat)); CE();
     glUniformMatrix4fv(glGetUniformLocation(prog_id,m_transformation_uniforms[VIEW_MAT]), 1, GL_FALSE, glm::value_ptr(transform.m_view_mat)); CE();
 
-    // Heightmap
+    // Heightmap texture
     GLuint heightmap_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_MAP_TEXTURE]); CE();
     glUniform1i(heightmap_texture, (GLint)(terrain.getHeightMapTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
 
-    // Normals
-    GLuint normals_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[NORMALS_TEXTURE]); CE();
-    glUniform1i(normals_texture, (GLint)(terrain.getNormals().getNormalsTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
+    // Normals texture
+    if(m_active_terrain_overlay == OVERLAY_DISABLED || m_active_terrain_overlay == SLOPE_OVERLAY)
+    {
+        GLuint normals_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[NORMALS_TEXTURE]); CE();
+        glUniform1i(normals_texture, (GLint)(terrain.getNormals().getNormalsTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
+    }
+
+    // Slope texture
+    if(m_active_terrain_overlay == SHADE_OVERLAY)
+    {
+        GLuint shade_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[SHADE_TEXTURE]); CE();
+        glUniform1i(shade_texture, (GLint)(terrain.getShadeTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
+    }
 
     // Heightmap maximum height
     glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[MAX_HEIGHT]), (GLfloat) terrain.getMaxHeight() ); CE();
@@ -103,6 +113,7 @@ void Renderer::renderTerrain(const ViewManager & p_view, Terrain& terrain, const
     glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[OVERLAY_DISABLED]), m_active_terrain_overlay == OVERLAY_DISABLED); CE();
     glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[SLOPE_OVERLAY]), m_active_terrain_overlay == SLOPE_OVERLAY); CE();
     glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[ALTITUDE_OVERLAY]), m_active_terrain_overlay == ALTITUDE_OVERLAY); CE();
+    glUniform1i(glGetUniformLocation(prog_id, m_overlay_uniforms[SHADE_OVERLAY]), m_active_terrain_overlay == SHADE_OVERLAY); CE();
 
     // Sun Light
     glUniform4fv(glGetUniformLocation(prog_id, m_lighting_uniforms[LIGHT_DIFFUSE_COLOR]), 1, glm::value_ptr(sunlight_properties.m_diffuse_color)); CE();
@@ -196,6 +207,7 @@ void Renderer::init_uniforms()
     // Terrain uniforms
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::HEIGHT_MAP_TEXTURE,"height_map_texture"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::NORMALS_TEXTURE,"normals_texture"));
+    m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::SHADE_TEXTURE,"shade_texture"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::MAX_HEIGHT,"max_height"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::BASE_HEIGHT,"base_height"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::TERRAIN_SIZE,"terrain_size"));
@@ -206,6 +218,7 @@ void Renderer::init_uniforms()
     m_overlay_uniforms.insert(std::pair<TerrainOverlayUniforms,const char *>(TerrainOverlayUniforms::OVERLAY_DISABLED,"overlay.none"));
     m_overlay_uniforms.insert(std::pair<TerrainOverlayUniforms,const char *>(TerrainOverlayUniforms::SLOPE_OVERLAY,"overlay.slope"));
     m_overlay_uniforms.insert(std::pair<TerrainOverlayUniforms,const char *>(TerrainOverlayUniforms::ALTITUDE_OVERLAY,"overlay.altitude"));
+    m_overlay_uniforms.insert(std::pair<TerrainOverlayUniforms,const char *>(TerrainOverlayUniforms::SHADE_OVERLAY,"overlay.shade"));
 
     // Lighting uniforms
     m_lighting_uniforms.insert(std::pair<LightingUniforms,const char *>(LightingUniforms::LIGHT_POS,"light_position"));

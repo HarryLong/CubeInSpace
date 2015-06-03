@@ -30,6 +30,8 @@ protected:
 
 private:
     void init();
+    void delete_texture();
+    void delete_fbo();
 
     GLfloat m_screen_quad[8] = {-1.0f, -1.0f,
                               1.0f, -1.0f,
@@ -87,6 +89,8 @@ struct TerrainMaterialProperties{
     const glm::vec4 ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 };
 
+class QProgressDialog;
+
 class Terrain : public GlDrawable
 {
 public:
@@ -100,6 +104,8 @@ public:
     float getMaxHeight() const { return m_terragen_file.m_header_data.max_height; }
     float getBaseHeight() const { return m_terragen_file.m_header_data.base_height; }
     GLenum getHeightMapTextureUnit() const { return m_htmapTexUnit; }
+    GLenum getShadeTextureUnit() const { return m_shadeTexUnit; }
+
     const TerrainNormals & getNormals() const {return m_terrain_normals; }
     int getWidth() const {return m_terragen_file.m_header_data.width; }
     int getDepth() const {return m_terragen_file.m_header_data.depth; }
@@ -114,6 +120,14 @@ public:
     glm::vec2 getCenter();
 
     const SphereAccelerationStructure& getSphereAccelerationStructure() { return m_sphere_acceleration_structure; }
+    bool isShadeOverlayReady();
+    void refreshShadingTexture(QProgressDialog * progress_dialog);
+
+signals:
+    void terrainChanged(int width, int depth, int base_height, int max_height);
+
+public slots:
+    void setSunPosition(float sun_pos_x, float sun_pos_y, float sun_pos_z);
 
 protected:
     virtual bool bindBuffers();
@@ -124,11 +138,18 @@ private:
     void build_sphere_acceleration_structure();
     bool ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point);
     void refresh_heightmap_texture(TerragenFile & parsed_terrangen_file);
-
     void clear_terrain_rectangles();
+    void delete_heightmap_texture();
+    void delete_shade_texture();
+
     // Textures
-    GLuint m_heightmapTexture; // id of heightmap texture; generated outside class
-    GLenum m_htmapTexUnit; // height/normal map - texture units reserved
+    GLuint m_heightmapTexture; // Heightmap texture
+    GLenum m_htmapTexUnit; // Heightmap texture unit
+
+    GLuint m_shadeTexture; // Shade texture
+    GLenum m_shadeTexUnit; // Shade texture unit
+    bool m_shade_overlay_ready;
+    glm::vec3 m_sun_position;
 
     TerragenFile m_terragen_file;
     TerrainNormals m_terrain_normals;

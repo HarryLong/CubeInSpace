@@ -9,9 +9,14 @@
 #include "lighting_manager.h"
 #include "grid.h"
 
-class SceneManager{
+#include <QObject>
+
+class QSlider;
+
+class SceneManager : public QObject{
+Q_OBJECT
 public:
-    SceneManager(int terrain_scale);
+    SceneManager(QSlider * latitude_slider, QSlider * time_of_day_slider, QSlider * month_slider, int terrain_scale);
     ~SceneManager();
 
     const std::vector<const Asset*> getAccelerationStructure() const;
@@ -26,11 +31,20 @@ public:
     void loadTerrain(QString filename);
     void setTerrainScaler(float p_scale);
     void refreshAccelerationStructureViewer();
-    void refreshNorthOrientation();
+
+signals:
+    void refreshRender();
+
+public slots:
+    void sunPositionChanged(float pos_x, float pos_y, float pos_z);
+
 private:    
     void refresh_base_terrain();
+    void set_terrain(TerragenFile & terragen_file);
 
     void clear_acceleration_structure_viewer();
+
+    void establish_connections(QSlider * latitude_slider, QSlider * time_of_day_slider, QSlider * month_slider );
 
     std::vector<GlCube*> m_acceleration_structure_viewer;
     GlSphere * m_sun;

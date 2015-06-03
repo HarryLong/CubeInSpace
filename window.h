@@ -7,8 +7,9 @@
 #include "glwidget.h"
 #include <QMenu>
 #include <map>
-#include "time_controller_dialog.h"
 
+class TimeControllerDialog;
+class LatitudeControllerDialog;
 class Window : public QMainWindow
 {
     Q_OBJECT
@@ -26,16 +27,15 @@ private slots:
     void render_sun_toggled();
     void refresh_mode();
     void show_time_controller_dlg();
+    void show_latitude_controller_dlg();
     void show_settings_dlg();
+    void overlay_action_toggled(QAction* action);
 
 private slots:
     void refresh_control_style();
 
 private:
     void init_menu();
-    void init_dialogs();
-
-    GLWidget * m_glwidget;
 
     // Menu elements
     QMenu * m_file_menu;
@@ -63,11 +63,13 @@ private:
     QAction * m_action_control_experimental;
     std::map<ControlStyle, QAction*> m_control_style_to_action_map;
 
-    // Terrain options
-    QActionGroup* m_terrain_overlays_group;
+    // Overlay
+    QActionGroup* m_overlays_action_group;
     QAction * m_terrain_options_overlay_none;
     QAction * m_terrain_options_overlay_slope;
     QAction * m_terrain_options_overlay_altitude;
+    QAction * m_terrain_options_overlay_shade;
+
     // Mode options
     QActionGroup* m_mode_action_group;
     QAction * m_mode_none;
@@ -78,10 +80,15 @@ private:
 
     // Show options
     QAction * m_show_time_controller_dialog;
+    QAction * m_show_latitude_controller_dialog;
 
     // Dialogs
     SettingsEditorDialog * m_settings_editor_dlg;
     TimeControllerDialog * m_time_controller_dlg;
+    LatitudeControllerDialog * m_latitude_controller_dlg;
+
+    GLWidget * m_glwidget;
+    QAction * m_overlay_selected_action;
 };
 
 #endif

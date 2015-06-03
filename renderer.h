@@ -53,6 +53,7 @@ enum TerrainUniforms
 {
     HEIGHT_MAP_TEXTURE,
     NORMALS_TEXTURE,
+    SHADE_TEXTURE,
     MAX_HEIGHT,
     BASE_HEIGHT,
     TERRAIN_SIZE,
@@ -64,6 +65,7 @@ enum TerrainOverlayUniforms{
     OVERLAY_DISABLED,
     SLOPE_OVERLAY,
     ALTITUDE_OVERLAY,
+    SHADE_OVERLAY
 };
 
 enum LightingUniforms{

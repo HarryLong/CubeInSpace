@@ -30,7 +30,7 @@ SET(CMAKE_BUILD_TYPE Debug)
 #SET(CMAKE_VERBOSE_MAKEFILE true )
 SET(SOURCE_FILES asset time_controller_dialog lighting_manager light_properties shape_factory terrain orientation_compass glwidget
 window main glheader qtutils view_manager renderer shader_program debug grid helper gl_drawable constants settings rays geom scene_manager
-glm_rotations glm_utils)
+glm_rotations glm_utils latitude_controller_dialog )
 
 # Shaders
 add_subdirectory(shaders)

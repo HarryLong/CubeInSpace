@@ -77,7 +77,7 @@ void GlCircle::render() const
 /*********
  * ARROW *
  *********/
-const glm::vec3 GlArrow::m_base_orientation = glm::vec3(0,0,1); // Do not change this!
+const glm::vec3 GlArrow::_base_orientation = glm::vec3(0,0,1); // Do not change this!
 
 GlArrow::GlArrow(float length, glm::vec4 color) : Asset(true, color), m_length(length)
 {
@@ -102,9 +102,9 @@ void GlArrow::init()
         m_verticies.push_back(0);
 
         // End point of arrow
-        m_verticies.push_back(m_base_orientation[0] * m_length);
-        m_verticies.push_back(m_base_orientation[1] * m_length); // Y
-        m_verticies.push_back(m_base_orientation[2] * m_length);
+        m_verticies.push_back(_base_orientation[0] * m_length);
+        m_verticies.push_back(_base_orientation[1] * m_length); // Y
+        m_verticies.push_back(_base_orientation[2] * m_length);
 
         m_indicies.push_back(0);
         m_indicies.push_back(1);

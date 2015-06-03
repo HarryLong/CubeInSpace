@@ -11,8 +11,9 @@
 #include "geom.h"
 #include "glm_rotations.h"
 
-GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget * p_parent) : QGLWidget(format, p_parent),
-  m_scene_manager(settings.terrain_scaler),
+GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QSlider * latitude_slider,
+                   QSlider * time_of_day_slider, QSlider * month_slider, QWidget * p_parent) : QGLWidget(format, p_parent),
+  m_scene_manager(latitude_slider, time_of_day_slider, month_slider, settings.terrain_scaler),
   m_control_style(ControlStyle::SoftImage), m_active_mode(Mode::None), m_navigation_enabled(false),
   m_mouse_tracking_thread(NULL), m_view_manager(settings.z_movement_sensitivity, settings.x_y_movement_sensitivity, settings.camera_sensitivity),
   m_authorise_navigation_mode_switch(true)
@@ -20,6 +21,7 @@ GLWidget::GLWidget(const Settings & settings, const QGLFormat& format, QWidget *
     m_mouse_tracking_thread_run.store(true);
     m_ctrl_pressed.store(false);
     setFocusPolicy(Qt::ClickFocus);
+    connect(&m_scene_manager, SIGNAL(refreshRender()), this, SLOT(update()));
 }
 
 GLWidget::~GLWidget()
@@ -117,19 +119,7 @@ void GLWidget::paintGL() // Override
 
     if(m_active_mode == Mode::OrientationEdit)
     {
-        OrientationCompass & compass (m_scene_manager.getOrientationCompass());
-        std::vector<Asset*> compass_assets(compass.getAssets());
-
-        Terrain & terrain (m_scene_manager.getTerrain());
-        glm::vec2 center(terrain.getCenter());
-
-        glm::mat4x4 translation_mat (glm::translate(glm::mat4x4(), glm::vec3(center[0], terrain.getMaxHeight() + 10, center[1])));
-        glm::mat4x4 rotation_mat( compass.getNorthRotationMatrix() );
-        glm::mat4x4 transformation_mat( translation_mat * rotation_mat );
-
-        for(Asset * asset : compass_assets)
-            asset->setMtwMat(transformation_mat);
-
+        std::vector<Asset*> compass_assets(m_scene_manager.getOrientationCompass().getAssets());
         assets_to_render.insert(assets_to_render.end(), compass_assets.begin(), compass_assets.end());
     }
 
@@ -390,7 +380,6 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
             else
             {
                 m_scene_manager.getOrientationCompass().rotateNorth(delta*5);
-                m_scene_manager.refreshNorthOrientation();
             }
             update();
             break;
@@ -453,6 +442,17 @@ void GLWidget::enableAltitudeOverlay()
 {
     m_renderer.setOverlay(TerrainOverlayUniforms::ALTITUDE_OVERLAY);
     update();
+}
+
+void GLWidget::enableShadeOverlay()
+{
+    m_renderer.setOverlay(TerrainOverlayUniforms::SHADE_OVERLAY);
+    update();
+}
+
+void GLWidget::recalculateShade(QProgressDialog *progress_dialog)
+{
+    m_scene_manager.getTerrain().refreshShadingTexture(progress_dialog);
 }
 
 void GLWidget::keyPressEvent ( QKeyEvent * event )
@@ -575,7 +575,6 @@ void GLWidget::setMode(Mode mode)
         }
         else if(m_active_mode == Mode::OrientationEdit)
         {
-            m_scene_manager.refreshNorthOrientation();
             m_view_manager.popTransforms();
         }
 
@@ -598,24 +597,6 @@ void GLWidget::setMode(Mode mode)
         }
         update();
     }
-}
-
-void GLWidget::setMonth(int month)
-{
-    m_scene_manager.getLightingManager().setMonth(month);
-    update();
-}
-
-void GLWidget::setTime(int hour_of_day)
-{
-    m_scene_manager.getLightingManager().setTime(hour_of_day);
-    update();
-}
-
-void GLWidget::setLatitude(int latitude)
-{
-    m_scene_manager.getLightingManager().setLatitude(latitude);
-    update();
 }
 
 // THREAD
