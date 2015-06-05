@@ -123,6 +123,7 @@ public:
     bool isShadeOverlayReady();
     void refreshShadingTexture(QProgressDialog * progress_dialog);
 
+    float getScale();
 signals:
     void terrainChanged(int width, int depth, int base_height, int max_height);
 
@@ -161,6 +162,8 @@ private:
     TerrainMaterialProperties m_material_properties;
 
     glm::vec2 m_center;
+
+    float m_scaler;
 };
 
 

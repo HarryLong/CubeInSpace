@@ -140,7 +140,9 @@ void SceneManager::set_terrain(TerragenFile & terragen_file)
     m_lighting_manager.setTerrainDimensions(terragen_file.m_header_data.width, terragen_file.m_header_data.depth);
 
     glm::vec2 terrain_center(m_terrain.getCenter());
-    m_orientation_compass.setCenterPosition(glm::vec3(terrain_center[0], m_terrain.getMaxHeight()+5, terrain_center[1]));
+    float scaler(m_terrain.getScale());
+    m_orientation_compass.setCenterPosition(glm::vec3(terrain_center[0] * scaler, (m_terrain.getMaxHeight()+5) * scaler,
+                                            terrain_center[1]*scaler));
 }
 
 #define SUN_RADIUS 20

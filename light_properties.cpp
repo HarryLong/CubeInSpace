@@ -80,7 +80,7 @@ void SunLightProperties::setTerrainDimensions(int width, int depth)
 #define LATITUDE 90
 void SunLightProperties::refresh_position()
 {
-    int sun_trajectory_radius(m_diagonal_length /*+ 50000*/);
+    int sun_trajectory_radius(m_diagonal_length + 500000);
 
     float max_axis_tilt(SunLightProperties::get_axis_tilt_angle(m_month));
     float day_angle(SunLightProperties::minutes_to_angle(m_time_of_day));

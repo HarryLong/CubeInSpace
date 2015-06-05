@@ -84,6 +84,9 @@ void Renderer::renderTerrain(const ViewManager & p_view, Terrain& terrain, const
     GLuint heightmap_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_MAP_TEXTURE]); CE();
     glUniform1i(heightmap_texture, (GLint)(terrain.getHeightMapTextureUnit() - GL_TEXTURE0));  CE(); // assumes texture unit 0 is bound to heightmap texture
 
+    // Height scale
+    glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_SCALE]), (GLfloat) terrain.getScale() ); CE();
+
     // Normals texture
     if(m_active_terrain_overlay == OVERLAY_DISABLED || m_active_terrain_overlay == SLOPE_OVERLAY)
     {
@@ -125,7 +128,7 @@ void Renderer::renderTerrain(const ViewManager & p_view, Terrain& terrain, const
     glUseProgram(0); // unbind
 }
 
-void Renderer::renderTerrainElements(const ViewManager & p_view, const std::vector<const Asset*> & p_assets, GLint terrain_heightmap_texture_unit)
+void Renderer::renderTerrainElements(const ViewManager & p_view, const std::vector<const Asset*> & p_assets, Terrain& terrain)
 {
     GLuint prog_id = m_shaders[TERRAIN_ELEMENTS]->getProgramID();
 
@@ -138,7 +141,10 @@ void Renderer::renderTerrainElements(const ViewManager & p_view, const std::vect
 
     // The heightmap texture
     GLuint heightmap_texture = glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_MAP_TEXTURE]); CE();
-    glUniform1i(heightmap_texture, terrain_heightmap_texture_unit - GL_TEXTURE0);  CE(); // assumes texture unit 0 is bound to heightmap texture
+    glUniform1i(heightmap_texture, terrain.getHeightMapTextureUnit() - GL_TEXTURE0);  CE(); // assumes texture unit 0 is bound to heightmap texture
+
+    // Height scale
+    glUniform1f(glGetUniformLocation(prog_id, m_terrain_uniforms[HEIGHT_SCALE]), (GLfloat) terrain.getScale() ); CE();
 
     // Draw all the assets
     for(const Asset * asset : p_assets)
@@ -213,6 +219,7 @@ void Renderer::init_uniforms()
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::TERRAIN_SIZE,"terrain_size"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::MATERIAL_DIFFUSE,"material_diffuse"));
     m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::MATERIAL_AMBIENT,"material_ambient"));
+    m_terrain_uniforms.insert(std::pair<TerrainUniforms,const char *>(TerrainUniforms::HEIGHT_SCALE,"height_scale"));
 
     // Overlay options uniforms
     m_overlay_uniforms.insert(std::pair<TerrainOverlayUniforms,const char *>(TerrainOverlayUniforms::OVERLAY_DISABLED,"overlay.none"));

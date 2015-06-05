@@ -106,7 +106,7 @@ void GLWidget::paintGL() // Override
         const std::vector<const Asset*> terrain_elements(terrain.getTerrainElements());
         if(terrain_elements.size() > 0)
         {
-            m_renderer.renderTerrainElements(m_view_manager, terrain_elements, terrain.getHeightMapTextureUnit());
+            m_renderer.renderTerrainElements(m_view_manager, terrain_elements, terrain) ;
         }
     }
 
@@ -590,9 +590,10 @@ void GLWidget::setMode(Mode mode)
             m_view_manager.reset_camera();
 
             Terrain & terrain(m_scene_manager.getTerrain());
-            m_view_manager.forward(terrain.getWidth()/2.0f, true);
-            m_view_manager.sideStep(-terrain.getDepth()/2.0f, true);
-            m_view_manager.up(std::max(terrain.getWidth(), terrain.getDepth()) * 5, true);
+            float scaler(terrain.getScale());
+            m_view_manager.forward(terrain.getWidth()*scaler/2.0f, true);
+            m_view_manager.sideStep(-terrain.getDepth()*scaler/2.0f, true);
+            m_view_manager.up(terrain.getMaxHeight()*scaler + 1000, true);
             m_view_manager.rotate(90, 0, true);
         }
         update();

@@ -23,6 +23,7 @@ uniform Transformation transform;
 uniform OverlayMode overlay;
 uniform float max_height;
 uniform float base_height;
+uniform float height_scale;
 
 uniform sampler2D height_map_texture;
 uniform sampler2D normals_texture;
@@ -48,7 +49,7 @@ out float shade;
 void main()
 {
     // Fetch the y coordinate from the heightmap texture
-    vec3 world_space_pos = vec3(vPos.x, texture(height_map_texture, textureCoord).r, vPos.z);
+    vec3 world_space_pos = vec3(vPos.x, height_scale * texture(height_map_texture, textureCoord).r, vPos.z);
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);
     gl_Position = transform.projMat * camera_space_pos;
 

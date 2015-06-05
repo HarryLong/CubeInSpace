@@ -312,17 +312,21 @@ bool Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 
 #include "constants.h"
 void Terrain::prepare_terrain_geometry()
-{
+{    
+    float original_meters_per_unit (m_terragen_file.m_header_data.scale);
+
+    m_scaler = (original_meters_per_unit/METERS_PER_UNIT);
+
     // Vertices
     m_verticies.clear();
-    for (int z = 0; z < m_terragen_file.m_header_data.depth; z++)
+    for (float z (.0f); z < m_terragen_file.m_header_data.depth ; z++)
     {
-        for (int x = 0; x < m_terragen_file.m_header_data.width; x++)
+        for (float x( 0 ); x < m_terragen_file.m_header_data.width; x++)
         {
             // 3D Vertex coordinate
-            m_verticies.push_back((float) x);/*- (m_header_data.width/2 * m_header_data.dynamic_scale )*/ // X
+            m_verticies.push_back(x * m_scaler);/*- (m_header_data.width/2 * m_header_data.dynamic_scale )*/ // X
             m_verticies.push_back(.0f); // Y (stored in heightmap texture)
-            m_verticies.push_back((float) z);/*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/ // Z
+            m_verticies.push_back(z * m_scaler);/*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/ // Z
 
             // 2D texture coordinate
             m_verticies.push_back((float) x / (float) (m_terragen_file.m_header_data.width - 1)); // X
@@ -628,3 +632,7 @@ const std::vector<const Asset*> Terrain::getTerrainElements()
     return std::vector<const Asset*>(m_terrain_rectangles.begin(), m_terrain_rectangles.end());
 }
 
+float Terrain::getScale()
+{
+    return m_scaler;
+}
