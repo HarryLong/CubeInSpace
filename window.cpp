@@ -4,9 +4,8 @@
 #include "time_controller_dialog.h"
 
 #include <QtWidgets>
-#include "worker.h"
 
-Window::Window(const QGLFormat& format) :
+MainWindow::MainWindow(const QGLFormat& format) :
     m_settings_editor_dlg(new SettingsEditorDialog(this)), m_time_controller_dlg(new TimeControllerDialog(this)),
     m_latitude_controller_dlg (new LatitudeControllerDialog(this)),
     m_glwidget(new GLWidget(m_settings_editor_dlg->getSettings(), format, m_latitude_controller_dlg->m_latitude_slider, m_time_controller_dlg->m_time_of_day_slider,
@@ -18,7 +17,7 @@ Window::Window(const QGLFormat& format) :
     setWindowTitle("");
 }
 
-Window::~Window()
+MainWindow::~MainWindow()
 {
     // Menu elements
     delete m_file_menu;
@@ -65,25 +64,25 @@ Window::~Window()
     delete m_latitude_controller_dlg;
 }
 
-void Window::show_settings_dlg()
+void MainWindow::show_settings_dlg()
 {
     m_settings_editor_dlg->exec();
     m_glwidget->updateSettings(m_settings_editor_dlg->getSettings());
 }
 
-void Window::show_time_controller_dlg()
+void MainWindow::show_time_controller_dlg()
 {
     if(!m_time_controller_dlg->isVisible())
         m_time_controller_dlg->show();
 }
 
-void Window::show_latitude_controller_dlg()
+void MainWindow::show_latitude_controller_dlg()
 {
     if(!m_latitude_controller_dlg->isVisible())
         m_latitude_controller_dlg->show();
 }
 
-void Window::init_menu()
+void MainWindow::init_menu()
 {
     // FILE MENU
     {
@@ -253,33 +252,33 @@ void Window::init_menu()
     }
 }
 
-void Window::render_grid_toggled()
+void MainWindow::render_grid_toggled()
 {
     m_glwidget->renderGrid(m_action_render_grid->isChecked());
 }
 
-void Window::render_terrain_toggled()
+void MainWindow::render_terrain_toggled()
 {
     m_glwidget->renderTerrain(m_action_render_terrain->isChecked());
 }
 
-void Window::render_acceleration_structure_toggled()
+void MainWindow::render_acceleration_structure_toggled()
 {
     m_glwidget->renderAccelerationStructure(m_action_render_acceleration_structure->isChecked());
 }
 
-void Window::render_rays_toggled()
+void MainWindow::render_rays_toggled()
 {
     m_glwidget->renderRays(m_action_render_rays->isChecked());
 }
 
-void Window::render_sun_toggled()
+void MainWindow::render_sun_toggled()
 {
     m_glwidget->renderSun(m_action_render_sun->isChecked());
 }
 
 #include <iostream>
-void Window::overlay_action_toggled(QAction* action)
+void MainWindow::overlay_action_toggled(QAction* action)
 {
     bool check(true);
 
@@ -322,14 +321,14 @@ void Window::overlay_action_toggled(QAction* action)
         overlay_action_toggled(m_overlay_selected_action); // Restore previous overlay
 }
 
-void Window::load_terrain_file()
+void MainWindow::load_terrain_file()
 {
     QFileDialog::Options options;
     QString selectedFilter;
 
     QString fileName ( QFileDialog::getOpenFileName(this,
                                                     tr("Open Terrain File"),
-                                                    "/home/harry/ter-files/",
+                                                    QDir::homePath().append("/ter-files/"),
                                                     tr("Terragen Files (*.ter)"),
                                                     &selectedFilter,
                                                     options));
@@ -339,7 +338,7 @@ void Window::load_terrain_file()
     }
 }
 
-void Window::refresh_control_style()
+void MainWindow::refresh_control_style()
 {
     for(auto it (m_control_style_to_action_map.begin()); it != m_control_style_to_action_map.end(); it++)
     {
@@ -348,7 +347,7 @@ void Window::refresh_control_style()
     }
 }
 
-void Window::refresh_mode()
+void MainWindow::refresh_mode()
 {
     for(auto it (m_mode_to_action_map.begin()); it != m_mode_to_action_map.end(); it++)
     {

@@ -2,7 +2,7 @@
 #define TERRAIN_H
 
 #include "gl_drawable.h"
-#include "terragen/terragen_file_spec.h"
+#include "include/terragen_file_manager/terragen_file.h"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
 #include "glm/mat4x4.hpp"

@@ -15,12 +15,13 @@ find_package(GLU REQUIRED)
 # Includes
 include_directories(
     ${PROJECT_SOURCE_DIR}
+    "include/terragen_file_manager"
     "/usr/include/GL/"
 )
-# Libraries
+
 link_directories(
-    ${PROJECT_SOURCE_DIR}/common
-    ${PROJECT_SOURCE_DIR}/utils
+    ${PROJECT_SOURCE_DIR}
+    "lib/"
 )
 
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -DGL_DEBUG -std=c++11")
@@ -36,8 +37,6 @@ glm_rotations glm_utils latitude_controller_dialog )
 add_subdirectory(shaders)
 set(SHADER_RESOURCES ${CMAKE_SOURCE_DIR}/shaders/shaders.qrc)
 qt5_add_resources(RESOURCES ${SHADER_RESOURCES})
-
-add_subdirectory(terragen)
 
 add_executable(CubeInSpace ${SOURCE_FILES} ${RESOURCES})
 # Use the Widgets module from Qt 5.

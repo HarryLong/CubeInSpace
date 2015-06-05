@@ -2,9 +2,9 @@
 
 #include "glm_rotations.h"
 #include "grid.h"
-#include "terragen/terragen_file_manager.h"
 #include "glm_utils.h"
 #include <QSlider>
+#include "include/terragen_file_manager/terragen_file_manager.h"
 
 SceneManager::SceneManager(QSlider * latitude_slider, QSlider * time_of_day_slider, QSlider * month_slider, int terrain_scale) :
     m_terrain_scale(terrain_scale), m_sun(NULL), m_orientation_compass(),
@@ -70,7 +70,7 @@ void SceneManager::loadTerrain(QString filename)
     current_terrain_file = filename;
     // Read terragen file
 
-    TerragenFile terragen_file(TerragenFileManager::readTerragen(filename.toStdString()));
+    TerragenFile terragen_file(filename.toStdString());
     set_terrain(terragen_file);
 }
 
@@ -133,7 +133,7 @@ void SceneManager::set_terrain(TerragenFile & terragen_file)
 {
     // Scale terragen file
     if(m_terrain_scale != 1)
-        TerragenFileManager::scale_factor(terragen_file, m_terrain_scale);
+        TerragenFileManager::scale(terragen_file, m_terrain_scale);
 
     m_terrain.setTerrain(terragen_file);
     refreshAccelerationStructureViewer();

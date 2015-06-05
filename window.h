@@ -10,13 +10,13 @@
 
 class TimeControllerDialog;
 class LatitudeControllerDialog;
-class Window : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    Window(const QGLFormat& format);
-    ~Window();
+    MainWindow(const QGLFormat& format);
+    ~MainWindow();
 
 private slots:
     void load_terrain_file();

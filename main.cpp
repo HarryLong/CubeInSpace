@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     glFormat.setVersion( 4, 0 );
 //    glFormat.setProfile( QGLFormat::CoreProfile ); // Requires >=Qt-4.8.0
     glFormat.setSampleBuffers( true );
-    Window w(glFormat);
+    MainWindow w(glFormat);
     w.resize(w.sizeHint());
 
 //    int desktopArea = QApplication::desktop()->width() *
