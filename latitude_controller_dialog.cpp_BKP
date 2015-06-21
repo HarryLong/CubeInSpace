@@ -14,8 +14,9 @@ LatitudeSlider::LatitudeSlider()
 }
 
 LatitudeControllerDialog::LatitudeControllerDialog(QWidget * parent, Qt::WindowFlags f) :
-    m_latitude_slider(new LatitudeSlider), m_latitude_lbl(new QLabel)
+    QDialog(parent, f), m_latitude_slider(new LatitudeSlider), m_latitude_lbl(new QLabel)
 {
+    setWindowTitle("Latitude Controller");
     setModal(false);
     connect(m_latitude_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
 

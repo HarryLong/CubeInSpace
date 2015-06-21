@@ -4,6 +4,7 @@
 #include "gl_drawable.h"
 #include "glm/glm.hpp"
 #include "shape_factory.h"
+#include "controllers.h"
 
 /***********
  * CONTOUR *
@@ -12,7 +13,7 @@ class Contour : public GlCircle
 {
 public:
     Contour();
-    virtual void render() const;
+    virtual void render();
 };
 
 /***************
@@ -22,7 +23,7 @@ class NorthArrow : public GlArrow
 {
 public:
     NorthArrow();
-    virtual void render() const;
+    virtual void render();
 };
 
 /********************
@@ -32,7 +33,7 @@ class TrueNorthArrow : public GlArrow
 {
 public:
     TrueNorthArrow();
-    virtual void render() const;
+    virtual void render();
 };
 
 //------------------------------
@@ -40,7 +41,7 @@ public:
 class OrientationCompass : public QObject{
 Q_OBJECT
 public:
-    OrientationCompass();
+    OrientationCompass(PositionControllers & position_controllers);
     ~OrientationCompass();
 
     void rotateNorth(float rotation);
@@ -51,8 +52,6 @@ public:
     glm::vec3 getTrueNorthOrientation() const;
     glm::vec3 getEastOrientation() const;
 
-    void setCenterPosition(glm::vec3 center);
-
 signals:
     void orientationChanged(float north_x, float north_y, float north_z,
                             float true_north_x, float true_north_y, float true_north_z,
@@ -60,6 +59,7 @@ signals:
 
 public slots:
     void setLatitude(int latitude);
+    void setTerrainDimensions(int width, int depth, int base_height, int max_height);
 
 private:
     float m_north_rotation;

@@ -5,6 +5,7 @@
 
 #include "glheader.h"
 #include "glm/matrix.hpp"
+#include "controllers.h"
 
 enum TransformType{
     Translation,
@@ -35,9 +36,10 @@ struct TransformationMatrices{
 /****************
  * VIEW MANAGER *
  ****************/
-class ViewManager {
+class ViewManager : public QObject{
+    Q_OBJECT
 public:
-    ViewManager(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);
+    ViewManager(ViewControllers & view_controllers);
     glm::mat4x4 getViewMatrix() const; // Model View Matrix
     glm::mat4x4 getProjMtx() const; // Projection Matrix
 
@@ -46,14 +48,26 @@ public:
     void up(float p_amount, bool ignore_sensitivity = false);
     void rotate(float pitch, float yaw, bool ignore_sensitivity = false);
     void reset_camera();
-    void setNavigationProperties(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity);
     glm::vec3 toWorld(const glm::vec3 & camera_position, const GLint * viewport);
 
     void pushTransforms();
     void popTransforms();
 
+    float getCameraYaw();
+    float getCameraPitch();
+
+signals:
+    void cameraOrientationChanged(float pitch, float yaw);
+
+private slots:
+    void set_camera_sensitivity(int camera_sensitivity);
+    void set_z_movements_sensitivity(int z_movement_sensitivity);
+    void set_x_y_movements_sensitivity(int x_y_movement_sensitivity);
+
 private:
     void translate_camera(float p_x, float p_y, float p_z);
+    void emit_camera_orientation_changed_signal();
+
     TransformationMatrices m_transformation_matrices;
     TransformationMatrices m_cached_transformation_matrices;
     int m_z_movement_sensitivity, m_x_y_movement_sensitivity, m_camera_sensitivity;

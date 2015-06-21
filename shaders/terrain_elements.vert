@@ -9,6 +9,7 @@ struct Transformation
   mat4 projMat;
   mat4 viewMat;
   mat4 mtwMat;
+  float scale;
 };
 
 uniform Transformation transform;
@@ -21,7 +22,7 @@ out vec4 theColor;
 void main()
 {
     // Fetch the y coordinate from the heightmap texture
-    vec3 world_space_pos = vec3(vPos.x, (texture(height_map_texture, textureCoord).r * height_scale) + 1, vPos.z);
+    vec3 world_space_pos = vec3(vPos.x * transform.scale, (texture(height_map_texture, textureCoord).r * transform.scale) + 5, vPos.z * transform.scale);
 //    vec3 world_space_pos = vec3(vPos.x, 5, vPos.z);
 
     gl_Position = transform.projMat * transform.viewMat * transform.mtwMat * vec4(world_space_pos, 1.0);;

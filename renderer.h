@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "shader_program.h"
 #include <string>
 #include <map>
 #include <vector>
@@ -10,8 +9,10 @@
 #include "terrain.h"
 #include "constants.h"
 #include "light_properties.h"
-
+#include <QMatrix>
 #include "grid.h"
+
+class QGLShaderProgram;
 
 /* SHADERS */
 enum ShaderType {
@@ -51,22 +52,33 @@ enum TransformationUniforms{
 
 enum TerrainUniforms
 {
-    HEIGHT_MAP_TEXTURE,
-    NORMALS_TEXTURE,
-    SHADE_TEXTURE,
     MAX_HEIGHT,
     BASE_HEIGHT,
     TERRAIN_SIZE,
     MATERIAL_DIFFUSE,
     MATERIAL_AMBIENT,
-    HEIGHT_SCALE
+};
+
+enum TextureUniforms
+{
+    HEIGHT_MAP_TEXTURE,
+    NORMALS_TEXTURE,
+    SHADE_TEXTURE,
+    MIN_TEMPERATURE_TEXTURE,
+    MAX_TEMPERATURE_TEXTURE,
+    MIN_DAILY_ILLUMINATION_TEXTURE,
+    MAX_DAILY_ILLUMINATION_TEXTURE
 };
 
 enum TerrainOverlayUniforms{
     OVERLAY_DISABLED,
     SLOPE_OVERLAY,
     ALTITUDE_OVERLAY,
-    SHADE_OVERLAY
+    SHADE_OVERLAY,
+    TEMPERATURE_MIN,
+    TEMPERATURE_MAX,
+    DAILY_ILLUMINATION_MIN,
+    DAILY_ILLUMINATION_MAX
 };
 
 enum LightingUniforms{
@@ -98,19 +110,18 @@ public:
     ~Renderer();
     void init();
 
-    void renderTerrain(const ViewManager & p_view, Terrain& terrain, const LightProperties & sunlight_properties);
-    void renderTerrainElements(const ViewManager & p_view, const std::vector<const Asset*> & p_assets, Terrain& terrain);
-    void renderAssets(const ViewManager & p_view, const std::vector<const Asset*> & p_assets);
+    void renderTerrain(QGLShaderProgram * shader, const ViewManager & p_view, Terrain& terrain, const LightProperties & sunlight_properties);
+    void renderTerrainElements(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain& terrain);
+    void renderAssets(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets);
+    void calculateNormals(QGLShaderProgram * shader, Terrain& terrain);
 
     void printShaders();
-    void setOverlay(TerrainOverlayUniforms overlay);
-
 private:
     void init_uniforms();
     void init_shaders();
     void append_shader(const ShaderType & shader_type, const QString & description);
 
-    std::map<ShaderType, ShaderProgram *> m_shaders;
+//    std::map<ShaderType, ShaderProgram *> m_shaders;
 
     // Uniform holders
     std::map<TransformationUniforms,const char *> m_transformation_uniforms;
@@ -119,8 +130,7 @@ private:
     std::map<LightingUniforms,const char *> m_lighting_uniforms;
     std::map<OptionUniforms,const char *> m_options_uniforms;
     std::map<AssetUniforms,const char *> m_asset_uniforms;
-
-    TerrainOverlayUniforms m_active_terrain_overlay;
+    std::map<TextureUniforms,const char *> m_texture_uniforms;
 };
 
 #endif // RENDERER_H

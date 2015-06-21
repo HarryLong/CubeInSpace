@@ -3,16 +3,28 @@
 
 #include "window.h"
 
+#include <iostream>
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
+    QCoreApplication::setOrganizationName("UCT");
+    QCoreApplication::setOrganizationDomain("UCT.co.za");
+    QCoreApplication::setApplicationName("HarrysMasters");
+
+    QLocale::setDefault(QLocale(QLocale::Language::English, QLocale::Country::UnitedKingdom));
+
+    QSurfaceFormat format;
+    format.setVersion(4, 3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(format);
+
     // To run on laptop
-    QGLFormat glFormat;
-    glFormat.setVersion( 4, 0 );
+//    QGLFormat glFormat;
+//    glFormat.setVersion( 4, 0 );
 //    glFormat.setProfile( QGLFormat::CoreProfile ); // Requires >=Qt-4.8.0
-    glFormat.setSampleBuffers( true );
-    MainWindow w(glFormat);
+//    glFormat.setSampleBuffers( true );
+    MainWindow w;
     w.resize(w.sizeHint());
 
 //    int desktopArea = QApplication::desktop()->width() *
@@ -21,7 +33,7 @@ int main(int argc, char *argv[])
 //    if (((float)widgetArea / (float)desktopArea) < 0.75f)
 //        w.show();
 //    else
-        w.showMaximized();
+    w.showMaximized();
 
     return app.exec();
 }

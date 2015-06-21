@@ -3,168 +3,173 @@
 
 #include "gl_drawable.h"
 #include "include/terragen_file_manager/terragen_file.h"
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
-#include "glm/mat4x4.hpp"
+#include <glm/common.hpp>
 #include "constants.h"
 #include "asset.h"
+#include "controllers.h"
+#include "acceleration_structure.h"
+#include "terrain_normals.h"
+#include "terrain_shade.h"
+#include "terrain_temperature.h"
+#include "terrain_daily_illimination.h"
+#include <QOpenGLTexture>
 
-/*******************
- * TERRAIN NORMALS *
- *******************/
-class TerrainNormals : public GlDrawable
+/***********************
+ * MATERIAL PROPERTIES *
+ ***********************/
+struct TerrainMaterialProperties{
+    static const glm::vec4 diffuse;
+    static const glm::vec4 specular;
+    static const glm::vec4 ambient;
+};
+
+/****************
+ * BASE TERRAIN *
+ ****************/
+class BaseTerrain : public TerragenFile
 {
 public:
-    TerrainNormals();
-    ~TerrainNormals();
-    bool setTerrainDim(int width, int depth);
-    GLenum getNormalsTextureUnit() const { return m_normalsTexUnit; }
-//    GLuint getNormalsFBO() const { return m_fbo_normal_map; }
-    bool valid() const { return m_valid; }
-    void setValid( bool valid ) { m_valid = valid; }
+    BaseTerrain();
+    virtual ~BaseTerrain();
+};
 
-    virtual void render() const;
+/********************
+ * DRAWABLE TERRAIN *
+ ********************/
+class DrawableTerrain : public GlDrawable, public TextureElement<GLfloat>
+{
+public:
+    DrawableTerrain();
+    ~DrawableTerrain();
+
+    virtual void render();
+
+    void setMetersPerTerrainUnit(int meters_per_tu);
+
+    bool prepareTerrainGeometry(const TerragenFile & terragen_file);
+    void refreshHeightmapTexture(const TerragenFile & terragen_file);
 
 protected:
-    virtual bool bindBuffers();
+    virtual void initGL();
 
 private:
-    void init();
-    void delete_texture();
-    void delete_fbo();
-
-    GLfloat m_screen_quad[8] = {-1.0f, -1.0f,
-                              1.0f, -1.0f,
-                              1.0f, 1.0f,
-                              -1.0f, 1.0f
-                             };                        // for postprocessing: screen aligned quad
-    GLuint m_normalsTexture;
-    GLuint m_normalsTexUnit;
-    GLuint m_fbo_normal_map; // normal map FBO
-
-    int m_width, m_depth;
-
-    bool m_valid;
+    void delete_heightmap_texture();
 };
 
-/*********************
- * TERRAIN RECTANGLE *
- *********************/
-class TerrainRect : public Asset
+/***********
+ * TERRAIN *
+ ***********/
+class TemperatureEditDialog;
+class Actions;
+class GLSelectionRect;
+class Terrain : public QObject
 {
+    Q_OBJECT    
 public:
-    TerrainRect(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth);
-    ~TerrainRect();
-    virtual void render() const;
 
-protected:
-    virtual bool bindBuffers();
-};
-
-struct SphereAccelerationStructure
-{
-public:
-    struct Sphere {
-    public:
-        Sphere(glm::vec3 center, float radius) : center(center), radius(radius) {}
-        glm::vec3 center;
-        float radius;
-    };
-
-    SphereAccelerationStructure() : step_size(SPHERE_ACCELERATION_STRUCTURE_STEP_SIZE), n_spheres_x(0), n_spheres_z(0) {}
-
-    inline void clear() { m_spheres.clear(); }
-
-    const int step_size;
-    int n_spheres_x;
-    int n_spheres_z;
-
-    // Spheres ordered as x,y
-    std::vector<std::vector<Sphere> > m_spheres;
-};
-
-struct TerrainMaterialProperties{
-    const glm::vec4 diffuse = glm::vec4(0.7f, 0.6f, 0.5f, 1.0f); // colour of terrain
-    const glm::vec4 specular = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
-    const glm::vec4 ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-};
-
-class QProgressDialog;
-
-class Terrain : public GlDrawable
-{
-public:
-    Terrain();
+    Terrain(TerrainControllers & terrain_controllers, Actions * overlay_actions);
     ~Terrain();
-    virtual void render() const;
 
-    const std::vector<const Asset*> getTerrainElements();
-
-    bool setTerrain(TerragenFile parsed_terrangen_file);
-    float getMaxHeight() const { return m_terragen_file.m_header_data.max_height; }
-    float getBaseHeight() const { return m_terragen_file.m_header_data.base_height; }
-    GLenum getHeightMapTextureUnit() const { return m_htmapTexUnit; }
-    GLenum getShadeTextureUnit() const { return m_shadeTexUnit; }
-
-    const TerrainNormals & getNormals() const {return m_terrain_normals; }
-    int getWidth() const {return m_terragen_file.m_header_data.width; }
-    int getDepth() const {return m_terragen_file.m_header_data.depth; }
-    void normalsRecalculated() { m_terrain_normals.setValid(true); }
+    Asset* getSelectionRect();
+    void setTerrain(TerragenFile parsed_terrangen_file);
+    float getMaxHeight(bool scaled = false) const;
+    float getBaseHeight(bool scaled = false) const;
+    int getWidth(bool scaled = false) const;
+    int getDepth(bool scaled = false) const;
     bool traceRay(glm::vec3 start_point, glm::vec3 direction, glm::vec3 & intersection_point);
-
-    void incrementHeights(const std::vector<glm::vec3> & points, int increment);
-    void addTerrainRect(glm::vec3 min, glm::vec3 max);
-    void clearTerrainElements();
-    const TerrainMaterialProperties & getMaterialProperties() {return m_material_properties; }
-
-    glm::vec2 getCenter();
-
-    const SphereAccelerationStructure& getSphereAccelerationStructure() { return m_sphere_acceleration_structure; }
-    bool isShadeOverlayReady();
-    void refreshShadingTexture(QProgressDialog * progress_dialog);
-
+    void setSelectionRectangle(glm::vec3 min, glm::vec3 max);
+    const TerrainMaterialProperties & getMaterialProperties();
+    const SphericalAccelerationStructure<Hierarchical>& getSphereAccelerationStructure();
     float getScale();
+    void loadBaseTerrain();
+    void getTerrainDimensions(int & width, int & depth, int & base_height, int & max_height );
+    void render();
+    // Terrain normals functions
+    void renderNormals();
+    bool normalsValid();
+    float getAltitude(const glm::vec3 & point);
+    float getSlope(const glm::vec3 & point);
+    bool isShaded(const glm::vec3 & point, bool & shaded);
+    bool getTemperatures(const glm::vec3 & point, float & min, float & max);
+    bool getDailyIlluminations(const glm::vec3 & point, int & min, int & max);
+
+    // Heightmap functions
+//    GLenum getHeightMapTextureUnit() const;
+//    GLenum getShadeTextureUnit() const;
+//    GLenum getNormalsTextureUnit() const;
+//    GLenum getMinTemperatureTextureUnit() const;
+//    GLenum getMaxTemperatureTextureUnit() const;
+//    GLenum getMinDailyIlluminationTextureUnit() const;
+//    GLenum getMaxDailyIlluminationTextureUnit() const;
+//    GLint getHeightmapTexture() const;
+
+    // Overlays
+    bool overlayNone() const;
+    bool overlaySlope() const;
+    bool overlayAltitude() const;
+    bool overlayShade() const;
+    bool overlayMinTemp() const;
+    bool overlayMaxTemp() const;
+    bool overlayMinDailyIllumination() const;
+    bool overlayMaxDailyIllumination() const;
+
+    DrawableTerrain & getDrawableTerrain();
+    TerrainShade & getShade();
+    TerrainNormals & getNormals();
+    TerrainTemperature & getMinTemp();
+    TerrainTemperature & getMaxTemp();
+    TerrainDailyIllumination & getMinDailyIllumination();
+    TerrainDailyIllumination & getMaxDailyIllumination();
+
 signals:
-    void terrainChanged(int width, int depth, int base_height, int max_height);
+    void terrainDimensionsChanged(int width, int depth, int base_height, int max_height);
+    void activeOverlayChanged();
+    void processing(QString info);
+    void intermediate_processing_update(int progress);
+    void processing_complete();
+    void trigger_daily_illumination_refresh();
 
 public slots:
     void setSunPosition(float sun_pos_x, float sun_pos_y, float sun_pos_z);
+    void refreshShade(QString display_message = "Calculating shade...");
+    void invalidateIllumination(); // Called when latitude changes
+    void setMinIlluminationData(GLubyte * data);
+    void setMaxIlluminationData(GLubyte * data);
+    void refreshTemperature(float min_temp_at_zero, float min_lapse_rate, float max_temp_at_zero, float max_lapse_rate);
 
-protected:
-    virtual bool bindBuffers();
+private slots:
+    void recalculate_scale();
+    void invalidate_shade();
+    void selected_overlay_changed();
+    void invalidate_temp();
+    void refresh_illumination();
+    void reset_overlay();
 
 private:
-    void init();
-    void prepare_terrain_geometry();
-    void build_sphere_acceleration_structure();
-    bool ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point);
-    void refresh_heightmap_texture(TerragenFile & parsed_terrangen_file);
-    void clear_terrain_rectangles();
-    void delete_heightmap_texture();
-    void delete_shade_texture();
+    bool ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point, bool search_closest = true);
+    void establish_connections();
+    float get_altitude(const glm::vec2 & point);
+    float get_slope(const glm::vec2 & point);
+    bool get_temperatures(const glm::vec2 & point, float & min, float & max);
+    bool is_shaded(const glm::vec2 & point, bool & shaded);
+    bool get_daily_illuminations(const glm::vec2 & point, int & min, int & max);
+    void clear_selection_rectangle();
 
-    // Textures
-    GLuint m_heightmapTexture; // Heightmap texture
-    GLenum m_htmapTexUnit; // Heightmap texture unit
-
-    GLuint m_shadeTexture; // Shade texture
-    GLenum m_shadeTexUnit; // Shade texture unit
-    bool m_shade_overlay_ready;
+    TerrainControllers m_terrain_controllers;
     glm::vec3 m_sun_position;
-
     TerragenFile m_terragen_file;
-    TerrainNormals m_terrain_normals;
-
-    SphereAccelerationStructure m_sphere_acceleration_structure;
-
-    std::vector<TerrainRect*> m_terrain_rectangles;
-
+    SphericalAccelerationStructure<Hierarchical> m_sphere_acceleration_structure;
+    GLSelectionRect * m_selection_rectangle;
     TerrainMaterialProperties m_material_properties;
-
-    glm::vec2 m_center;
-
-    float m_scaler;
+    float m_scale;
+    DrawableTerrain m_drawable_terrain;
+    TerrainShade m_terrain_shade;
+    TerrainNormals m_terrain_normals;
+    TerrainTemperature m_terrain_min_temp;
+    TerrainTemperature m_terrain_max_temp;
+    TerrainDailyIllumination m_terrain_min_daily_illumination;
+    TerrainDailyIllumination m_terrain_max_daily_illumination;
+    Actions * m_overlay_actions;
 };
-
 
 #endif // TERRAIN_H

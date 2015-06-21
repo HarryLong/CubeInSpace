@@ -13,13 +13,10 @@ class Axes : public Asset {
 public:
     Axes();
     ~Axes();
-    virtual void render() const;
+    virtual void render();
 
 protected:
-    virtual bool bindBuffers();
-
-private:
-    void init();
+    virtual void initGL();
 };
 
 /*********
@@ -29,13 +26,10 @@ class Plane : public Asset {
 public:
     Plane();
     ~Plane();
-    virtual void render() const;
+    virtual void render();
 
 protected:
-    virtual bool bindBuffers();
-
-private:
-    void init();
+    virtual void initGL();
 };
 
 /********
@@ -45,7 +39,7 @@ class Grid{
 public:
     Grid();
     ~Grid();
-    std::vector<const Asset*> getAssets();
+    std::vector<Asset*> getAssets();
 
 private:
     Axes * get_axes();

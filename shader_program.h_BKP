@@ -3,7 +3,7 @@
 
 #include <string>
 #include "glheader.h"
-#include <QFile>\
+#include <QFile>
 
 class ShaderProgram
 {

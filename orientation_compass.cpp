@@ -14,15 +14,17 @@ Contour::Contour() : GlCircle(RADIUS, CONTOUR_COLOR)
 
 }
 
-void Contour::render() const
+void Contour::render()
 {
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
     GLfloat base_line_width;
-    glGetFloatv(GL_LINE_WIDTH, &base_line_width);
-    glLineWidth(5);
+    f->glGetFloatv(GL_LINE_WIDTH, &base_line_width);
+    f->glLineWidth(5);
 
     GlCircle::render();
 
-    glLineWidth(base_line_width);
+    f->glLineWidth(base_line_width);
 }
 
 /***************
@@ -33,15 +35,17 @@ NorthArrow::NorthArrow() : GlArrow(RADIUS-3, NORTH_ARROW_COLOR)
 
 }
 
-void NorthArrow::render() const
+void NorthArrow::render()
 {
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
     GLfloat base_line_width;
-    glGetFloatv(GL_LINE_WIDTH, &base_line_width);
-    glLineWidth(5);
+    f->glGetFloatv(GL_LINE_WIDTH, &base_line_width);
+    f->glLineWidth(5);
 
     GlArrow::render();
 
-    glLineWidth(base_line_width);
+    f->glLineWidth(base_line_width);
 }
 
 /********************
@@ -52,22 +56,26 @@ TrueNorthArrow::TrueNorthArrow() : GlArrow(RADIUS-3, TRUE_NORTH_ARROW_COLOR)
 
 }
 
-void TrueNorthArrow::render() const
+void TrueNorthArrow::render()
 {
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
     GLfloat base_line_width;
-    glGetFloatv(GL_LINE_WIDTH, &base_line_width);
-    glLineWidth(5);
+    f->glGetFloatv(GL_LINE_WIDTH, &base_line_width);
+    f->glLineWidth(5);
 
     GlArrow::render();
 
-    glLineWidth(base_line_width);
+    f->glLineWidth(base_line_width);
 }
 
 //------------------------------
 
-OrientationCompass::OrientationCompass() : m_contour(NULL), m_true_north_arrow(NULL), m_north_orientation(GlArrow::_base_orientation),
-    m_latitude(0), m_east_orientation(glm::rotateY(m_north_orientation, (float) M_PI_2)), m_true_north_orientation(m_north_orientation)
+OrientationCompass::OrientationCompass(PositionControllers & position_controllers) : m_contour(NULL), m_true_north_arrow(NULL), m_north_arrow(NULL),
+    m_north_orientation(GlArrow::_base_orientation), m_latitude(0), m_east_orientation(glm::rotateY(m_north_orientation, (float) M_PI_2)),
+    m_true_north_orientation(m_north_orientation)
 {
+    connect(position_controllers.latitude_slider, SIGNAL(valueChanged(int)), this, SLOT(setLatitude(int)));
 }
 
 OrientationCompass::~OrientationCompass()
@@ -150,12 +158,13 @@ void OrientationCompass::refresh_true_north()
 {
     m_true_north_orientation = glm::rotate(m_north_orientation, Geom::toRadians(-m_latitude), m_east_orientation);
     m_true_north_rotation_mat = glm::rotate(glm::mat4x4(), Geom::toRadians(-m_latitude), m_east_orientation);
-    get_true_north_arrow()->setMtwMat(m_center_translation_mat * m_true_north_rotation_mat * m_north_rotation_mat);
+
+    get_true_north_arrow()->setTranformation(m_center_translation_mat * m_true_north_rotation_mat * m_north_rotation_mat);
 }
 
 void OrientationCompass::refresh_contour()
 {
-    get_contour()->setMtwMat(m_center_translation_mat);
+    get_contour()->setTranformation(m_center_translation_mat);
 }
 
 void OrientationCompass::refresh_north()
@@ -163,14 +172,12 @@ void OrientationCompass::refresh_north()
     m_north_rotation_mat = glm::rotate(glm::mat4x4(), Geom::toRadians(m_north_rotation), glm::vec3(0,1,0));
     m_north_orientation = glm::rotateY(m_north_arrow->_base_orientation, Geom::toRadians(m_north_rotation));
     m_east_orientation = glm::rotateY(m_north_orientation, (float) M_PI_2);
-    get_north_arrow()->setMtwMat(m_center_translation_mat * m_north_rotation_mat);
+    get_north_arrow()->setTranformation(m_center_translation_mat * m_north_rotation_mat);
 }
 
-#include <iostream>
-void OrientationCompass::setCenterPosition(glm::vec3 center)
+void OrientationCompass::setTerrainDimensions(int width, int depth, int base_height, int max_height)
 {
-    std::cout << "Center : " << center[0] << ", " << center[1] << ", " << center[2] << ", " << std::endl;
-    m_center_translation_mat = glm::translate(glm::mat4x4(), center);
+    m_center_translation_mat = glm::translate(glm::mat4x4(), glm::vec3(width/2.0f, max_height+10,depth/2.0f));
     refresh_contour();
     refresh_north();
     refresh_true_north();

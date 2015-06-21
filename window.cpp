@@ -1,18 +1,42 @@
 #include "window.h"
 #include "glwidget.h"
-#include "latitude_controller_dialog.h"
 #include "time_controller_dialog.h"
-
+#include "pointer_info_dialog.h"
+#include "settings.h"
+#include "controllers.h"
+#include "temp_edit_dlg.h"
 #include <QtWidgets>
+#include "actions.h"
 
-MainWindow::MainWindow(const QGLFormat& format) :
-    m_settings_editor_dlg(new SettingsEditorDialog(this)), m_time_controller_dlg(new TimeControllerDialog(this)),
-    m_latitude_controller_dlg (new LatitudeControllerDialog(this)),
-    m_glwidget(new GLWidget(m_settings_editor_dlg->getSettings(), format, m_latitude_controller_dlg->m_latitude_slider, m_time_controller_dlg->m_time_of_day_slider,
-               m_time_controller_dlg->m_month_of_year_slider, this))
+/***********
+ * DIALOGS *
+ ***********/
+Dialogs::Dialogs(QWidget *parent) :
+    m_settings_dlg(new SettingsDialog(parent)), m_time_controller_dlg(new TimeControllerDialog(parent)),
+    m_temp_editor_dlg(new TemperatureEditDialog(parent))
 {
+
+}
+
+//---------------------------------------------------------------
+
+MainWindow::MainWindow() :
+    m_dialogs(this)
+{
+    init_actions();
     init_menu();
-    refresh_control_style();
+
+    m_glwidget = new GLWidget(TimeControllers(m_dialogs.m_time_controller_dlg->m_time_of_day_slider, m_dialogs.m_time_controller_dlg->m_month_of_year_slider),
+                            ViewControllers(m_dialogs.m_settings_dlg->m_camera_sensitivity_slider, m_dialogs.m_settings_dlg->m_z_movement_sensitivity_slider,
+                                            m_dialogs.m_settings_dlg->m_x_y_movement_sensitivity_slider),
+                            TerrainControllers(m_dialogs.m_settings_dlg->m_terrain_scale_le, m_dialogs.m_settings_dlg->m_default_scale_cb),
+                            m_dialogs.m_temp_editor_dlg,
+                            m_render_actions,
+                            m_overlay_actions,
+                            m_control_actions,
+                            m_show_actions,
+                            this);
+
     setCentralWidget(m_glwidget); // Takes ownership of widget
     setWindowTitle("");
 }
@@ -24,301 +48,111 @@ MainWindow::~MainWindow()
     delete m_render_menu;
     delete m_controls_menu;
     delete m_overlay_menu;
-    delete m_mode_menu;
     delete m_show_menu;
+    delete m_edit_menu;
 
-    // Misc actions
-    delete m_action_close;
-    delete m_action_open_settings_dialog;
-
-    // Render actions
-    delete m_action_load_terrain;
-    delete m_action_render_grid;
-    delete m_action_render_terrain;
-    delete m_action_render_sun;
-
-    // Control style actions
-    for(auto it (m_control_style_to_action_map.begin()); it != m_control_style_to_action_map.end(); it++)
-        delete it->second;
-    delete m_control_action_group;
-
-    // Terrain options
-    delete m_overlays_action_group;
-    delete m_terrain_options_overlay_none;
-    delete m_terrain_options_overlay_slope;
-    delete m_terrain_options_overlay_altitude;
-    delete m_terrain_options_overlay_shade;
-
-    // Mode actions
-    for(auto it (m_mode_to_action_map.begin()); it != m_mode_to_action_map.end(); it++)
-        delete it->second;
-    delete m_mode_action_group;
-
-    // Show actions
-    delete m_show_time_controller_dialog;
-    delete m_show_latitude_controller_dialog;
+    // Actions
+    delete m_base_actions;
+    delete m_render_actions;
+    delete m_control_actions;
+    delete m_overlay_actions;
+    delete m_show_actions;
+    delete m_edit_actions;
 
     // Dialogs
-    delete m_settings_editor_dlg;
-    delete m_time_controller_dlg;
-    delete m_latitude_controller_dlg;
+    delete m_dialogs.m_settings_dlg;
+    delete m_dialogs.m_time_controller_dlg;
+}
+
+void MainWindow::init_actions()
+{
+    m_base_actions = new BaseActions;
+    m_render_actions = new RenderActions;
+    m_control_actions = new ControlActions;
+    m_overlay_actions = new OverlayActions;
+    m_show_actions = new ShowActions;
+    m_edit_actions = new EditActions;
 }
 
 void MainWindow::show_settings_dlg()
 {
-    m_settings_editor_dlg->exec();
-    m_glwidget->updateSettings(m_settings_editor_dlg->getSettings());
+    m_dialogs.m_settings_dlg->exec();
 }
 
 void MainWindow::show_time_controller_dlg()
 {
-    if(!m_time_controller_dlg->isVisible())
-        m_time_controller_dlg->show();
+    if(!m_dialogs.m_time_controller_dlg->isVisible())
+        m_dialogs.m_time_controller_dlg->show();
 }
 
-void MainWindow::show_latitude_controller_dlg()
+void MainWindow::show_temp_edit_dlg()
 {
-    if(!m_latitude_controller_dlg->isVisible())
-        m_latitude_controller_dlg->show();
+    m_dialogs.m_temp_editor_dlg->exec();
 }
 
 void MainWindow::init_menu()
 {
-    // FILE MENU
+    // BASE ACTIONS
     {
-        m_action_close = new QAction("Close", NULL);
-        m_action_close->setShortcuts(QKeySequence::Close);
+        (*m_base_actions)(BaseActions::_CLOSE_APP)->setShortcut(QKeySequence::Close);
 
-        m_action_load_terrain = new QAction("Load terrain", NULL);
-
-        m_action_open_settings_dialog = new QAction("Open settings", NULL);
-
-        connect(m_action_close, SIGNAL(triggered()), this, SLOT(close()));
-        connect(m_action_load_terrain, SIGNAL(triggered()), this, SLOT(load_terrain_file()));
-        connect(m_action_open_settings_dialog, SIGNAL(triggered()), this, SLOT(show_settings_dlg()));
+        connect((*m_base_actions)(BaseActions::_CLOSE_APP), SIGNAL(triggered()), this, SLOT(close()));
+        connect((*m_base_actions)(BaseActions::_LOAD_TERRAIN), SIGNAL(triggered()), this, SLOT(load_terrain_file()));
+        connect((*m_base_actions)(BaseActions::_OPEN_SETTINGS), SIGNAL(triggered()), this, SLOT(show_settings_dlg()));
 
         m_file_menu = menuBar()->addMenu("File");
-        m_file_menu->addAction(m_action_close);
-        m_file_menu->addAction(m_action_load_terrain);
-        m_file_menu->addAction(m_action_open_settings_dialog);
+        m_file_menu->addAction((*m_base_actions)(BaseActions::_CLOSE_APP));
+        m_file_menu->addAction((*m_base_actions)(BaseActions::_LOAD_TERRAIN));
+        m_file_menu->addAction((*m_base_actions)(BaseActions::_OPEN_SETTINGS));
     }
 
 
     // RENDER MENU
     {
-        m_action_render_grid = new QAction("Grid", NULL);
-        m_action_render_grid->setCheckable(true);
-        m_action_render_grid->setChecked(true);
-        connect(m_action_render_grid, SIGNAL(triggered()), this, SLOT(render_grid_toggled()));
-
-        m_action_render_terrain = new QAction("Terrain", NULL);
-        m_action_render_terrain->setCheckable(true);
-        m_action_render_terrain->setChecked(true);
-        connect(m_action_render_terrain, SIGNAL(triggered()), this, SLOT(render_terrain_toggled()));
-
-        m_action_render_acceleration_structure = new QAction("Acceleration structure", NULL);
-        m_action_render_acceleration_structure->setCheckable(true);
-        m_action_render_acceleration_structure->setChecked(false);
-        connect(m_action_render_acceleration_structure, SIGNAL(triggered()), this, SLOT(render_acceleration_structure_toggled()));
-
-        m_action_render_rays = new QAction("Projected rays", NULL);
-        m_action_render_rays->setCheckable(true);
-        m_action_render_rays->setChecked(false);
-        connect(m_action_render_rays, SIGNAL(triggered()), this, SLOT(render_rays_toggled()));
-
-        m_action_render_sun = new QAction("Sun", NULL);
-        m_action_render_sun->setCheckable(true);
-        m_action_render_sun->setChecked(false);
-        connect(m_action_render_sun, SIGNAL(triggered()), this, SLOT(render_sun_toggled()));
-
         m_render_menu = menuBar()->addMenu("Render");
-        m_render_menu->addAction(m_action_render_grid);
-        m_render_menu->addAction(m_action_render_terrain);
-        m_render_menu->addAction(m_action_render_acceleration_structure);
-        m_render_menu->addAction(m_action_render_rays);
-        m_render_menu->addAction(m_action_render_sun);
+        m_render_menu->addAction((*m_render_actions)(RenderActions::_GRID));
+        m_render_menu->addAction((*m_render_actions)(RenderActions::_TERRAIN));
+        m_render_menu->addAction((*m_render_actions)(RenderActions::_ACCELERATION_STRUCTURE));
+        m_render_menu->addAction((*m_render_actions)(RenderActions::_RAYS));
+        m_render_menu->addAction((*m_render_actions)(RenderActions::_SUN));
     }
 
     // CONTROLS MENU
     {
-        m_control_action_group = new QActionGroup( this );
-
-        m_action_control_softimage = new QAction("SoftImage", NULL);
-        m_action_control_softimage->setCheckable(true);
-        m_action_control_softimage->setActionGroup(m_control_action_group);
-        connect(m_action_control_softimage, SIGNAL(triggered()), this, SLOT(refresh_control_style()));
-        m_control_style_to_action_map.insert(std::pair<ControlStyle,QAction*>(SoftImage, m_action_control_softimage));
-
-        m_action_control_fps = new QAction("FPS", NULL);
-        m_action_control_fps->setCheckable(true);
-        m_action_control_fps->setActionGroup(m_control_action_group);
-        connect(m_action_control_fps, SIGNAL(triggered()), this, SLOT(refresh_control_style()));
-        m_control_style_to_action_map.insert(std::pair<ControlStyle,QAction*>(FPS, m_action_control_fps));
-
-        m_action_control_experimental = new QAction("Experimental1", NULL);
-        m_action_control_experimental->setCheckable(true);
-        m_action_control_experimental->setActionGroup(m_control_action_group);
-        connect(m_action_control_experimental, SIGNAL(triggered()), this, SLOT(refresh_control_style()));
-        m_control_style_to_action_map.insert(std::pair<ControlStyle,QAction*>(Experimental1, m_action_control_experimental));
-
-        m_action_control_softimage->setChecked(true);
-
         m_controls_menu = menuBar()->addMenu("Controls");
-        m_controls_menu->addAction(m_action_control_softimage);
-        m_controls_menu->addAction(m_action_control_fps);
-        m_controls_menu->addAction(m_action_control_experimental);
+        m_controls_menu->addAction((*m_control_actions)(ControlActions::_SOFTIMAGE));
+        m_controls_menu->addAction((*m_control_actions)(ControlActions::_FPS));
     }
 
     // OVERLAY MENU
     {
-        m_overlays_action_group = new QActionGroup( this );;
-        connect(m_overlays_action_group, SIGNAL(triggered(QAction*)), this, SLOT(overlay_action_toggled(QAction*)));
-
-        m_terrain_options_overlay_none = new QAction("None", NULL);
-        m_terrain_options_overlay_none->setCheckable(true);
-        m_terrain_options_overlay_none->setActionGroup(m_overlays_action_group);
-
-        m_terrain_options_overlay_slope = new QAction("Slope", NULL);
-        m_terrain_options_overlay_slope->setCheckable(true);
-        m_terrain_options_overlay_slope->setActionGroup(m_overlays_action_group);
-
-        m_terrain_options_overlay_altitude = new QAction("Altitude", NULL);
-        m_terrain_options_overlay_altitude->setCheckable(true);
-        m_terrain_options_overlay_altitude->setActionGroup(m_overlays_action_group);
-
-        m_terrain_options_overlay_shade = new QAction("Shade", NULL);
-        m_terrain_options_overlay_shade->setCheckable(true);
-        m_terrain_options_overlay_shade->setActionGroup(m_overlays_action_group);
-
-        m_terrain_options_overlay_none->setChecked(true);
-        m_overlay_selected_action = m_terrain_options_overlay_none;
-
+;
         m_overlay_menu = menuBar()->addMenu("Overlay");
-        m_overlay_menu->addAction(m_terrain_options_overlay_none);
-        m_overlay_menu->addAction(m_terrain_options_overlay_slope);
-        m_overlay_menu->addAction(m_terrain_options_overlay_altitude);
-        m_overlay_menu->addAction(m_terrain_options_overlay_shade);
-    }
-
-
-    // MODE MENU
-    {
-        m_mode_action_group = new QActionGroup( this );
-
-        m_mode_none = new QAction("None", NULL);
-        m_mode_none->setCheckable(true);
-        m_mode_none->setActionGroup(m_mode_action_group);
-        connect(m_mode_none, SIGNAL(triggered()), this, SLOT(refresh_mode()));
-        m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::None, m_mode_none));
-
-        m_mode_terrain_edit = new QAction("Terrain Edit", NULL);
-        m_mode_terrain_edit->setCheckable(true);
-        m_mode_terrain_edit->setActionGroup(m_mode_action_group);
-        connect(m_mode_terrain_edit, SIGNAL(triggered()), this, SLOT(refresh_mode()));
-        m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::TerrainEdit, m_mode_terrain_edit));
-
-        m_mode_selection = new QAction("Selection", NULL);
-        m_mode_selection->setCheckable(true);
-        m_mode_selection->setActionGroup(m_mode_action_group);
-        connect(m_mode_selection, SIGNAL(triggered()), this, SLOT(refresh_mode()));
-        m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::Selection, m_mode_selection));
-
-        m_mode_terrain_orientation_edit = new QAction("Terrain orientation", NULL);
-        m_mode_terrain_orientation_edit->setCheckable(true);
-        m_mode_terrain_orientation_edit->setActionGroup(m_mode_action_group);
-        connect(m_mode_terrain_orientation_edit, SIGNAL(triggered()), this, SLOT(refresh_mode()));
-        m_mode_to_action_map.insert(std::pair<Mode,QAction*>(Mode::OrientationEdit, m_mode_terrain_orientation_edit));
-
-        m_mode_none->setChecked(true);
-
-        m_mode_menu = menuBar()->addMenu("Mode");
-        m_mode_menu->addAction(m_mode_none);
-        m_mode_menu->addAction(m_mode_terrain_edit);
-        m_mode_menu->addAction(m_mode_selection);
-        m_mode_menu->addAction(m_mode_terrain_orientation_edit);
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_NONE));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_ALTITUDE));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_SLOPE));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_SHADE));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MIN_TEMP));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MAX_TEMP));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MIN_DAILY_ILLUMINATION));
+        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MAX_DAILY_ILLUMINATION));
     }
 
     // SHOW MENU
     {
-        m_show_time_controller_dialog = new QAction("Time controller", NULL);
-        connect(m_show_time_controller_dialog, SIGNAL(triggered()), this, SLOT(show_time_controller_dlg()));
-
-        m_show_latitude_controller_dialog = new QAction("Latitude controller", NULL);
-        connect(m_show_latitude_controller_dialog, SIGNAL(triggered()), this, SLOT(show_latitude_controller_dlg()));
-
         m_show_menu = menuBar()->addMenu("Show");
-        m_show_menu->addAction(m_show_time_controller_dialog);
-        m_show_menu->addAction(m_show_latitude_controller_dialog);
+        m_show_menu->addAction((*m_show_actions)(ShowActions::_POINTER_INFO));
     }
-}
 
-void MainWindow::render_grid_toggled()
-{
-    m_glwidget->renderGrid(m_action_render_grid->isChecked());
-}
-
-void MainWindow::render_terrain_toggled()
-{
-    m_glwidget->renderTerrain(m_action_render_terrain->isChecked());
-}
-
-void MainWindow::render_acceleration_structure_toggled()
-{
-    m_glwidget->renderAccelerationStructure(m_action_render_acceleration_structure->isChecked());
-}
-
-void MainWindow::render_rays_toggled()
-{
-    m_glwidget->renderRays(m_action_render_rays->isChecked());
-}
-
-void MainWindow::render_sun_toggled()
-{
-    m_glwidget->renderSun(m_action_render_sun->isChecked());
-}
-
-#include <iostream>
-void MainWindow::overlay_action_toggled(QAction* action)
-{
-    bool check(true);
-
-    if(action == m_terrain_options_overlay_shade)
+    // EDIT MENU
     {
-        if(QMessageBox::warning(this, "Recalculation necessary",
-                                "In order to display this information, shading data will need to be calculated. This can be time consumming. Continue?",
-                                QMessageBox::No | QMessageBox::Yes, QMessageBox::No)
-                == QMessageBox::Yes)
-        {
-            QProgressDialog * progress_dialog = new QProgressDialog(this);
-
-            progress_dialog->setLabelText("Calculating shade...");
-            progress_dialog->setWindowModality(Qt::WindowModal);
-
-            m_glwidget->recalculateShade(progress_dialog);
-
-            if(progress_dialog->wasCanceled()) // Wasn't completed
-                check = false;
-            else
-                m_glwidget->enableShadeOverlay();
-
-            delete progress_dialog;
-        }
-        else
-            check = false;
+        m_edit_menu = menuBar()->addMenu("Edit");
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_HUMIDITY));
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_LATITUDE));
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_ORIENTATION));
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_TEMPERATURE));
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_TIME));
     }
-    else if(action == m_terrain_options_overlay_altitude)
-        m_glwidget->enableAltitudeOverlay();
-    else if(action == m_terrain_options_overlay_slope)
-        m_glwidget->enableSlopeOverlay();
-    else if(action == m_terrain_options_overlay_none)
-        m_glwidget->disableOverlays();
-
-    action->setChecked(check);
-
-    if(check)
-        m_overlay_selected_action = action;
-    else
-        overlay_action_toggled(m_overlay_selected_action); // Restore previous overlay
 }
 
 void MainWindow::load_terrain_file()
@@ -335,23 +169,5 @@ void MainWindow::load_terrain_file()
     if (!fileName.isEmpty())
     {
         m_glwidget->loadTerrain(fileName);
-    }
-}
-
-void MainWindow::refresh_control_style()
-{
-    for(auto it (m_control_style_to_action_map.begin()); it != m_control_style_to_action_map.end(); it++)
-    {
-        if(it->second->isChecked())
-            m_glwidget->setControlStyle(it->first);
-    }
-}
-
-void MainWindow::refresh_mode()
-{
-    for(auto it (m_mode_to_action_map.begin()); it != m_mode_to_action_map.end(); it++)
-    {
-        if(it->second->isChecked())
-            m_glwidget->setMode(it->first);
     }
 }

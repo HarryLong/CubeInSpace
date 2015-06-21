@@ -2,41 +2,40 @@
 #include <glm/glm.hpp>
 #include <math.h>
 
-//static GlCircle getCircle(float radius, bool uniform_color, glm::vec4 uniform_color = glm::vec4());
-//static GlArrow getArrow(float length, bool uniform_color, glm::vec4 uniform_color = glm::vec4());
-//static GlSphere getSphere(float radius, int slices, int stacks, bool uniform_color, glm::vec4 uniform_color = glm::vec4());
-
 /*****************
  * SHAPE FACTORY *
  *****************/
-GlCircle ShapeFactory::getCircle(float radius, glm::vec4 color)
+GlCircle * ShapeFactory::getCircle(float radius, glm::vec4 color)
 {
-    return GlCircle(radius, color);
+    return new GlCircle(radius, color);
 }
 
-GlArrow ShapeFactory::getArrow(float length, glm::vec4 color)
+GlArrow * ShapeFactory::getArrow(float length, glm::vec4 color)
 {
-    return GlArrow(length, color);
+    return new GlArrow(length, color);
 }
 
-GlSphere ShapeFactory::getSphere(float radius, int slices, int stacks, glm::vec4 color)
+GLSelectionRect * ShapeFactory::getSelectionRectangle()
 {
-    return GlSphere(radius, slices, stacks, color);
+    return new GLSelectionRect;
 }
 
-GlCube ShapeFactory::getCube(float size)
+GlSphere * ShapeFactory::getSphere(float radius, int slices, int stacks, glm::vec4 color)
 {
-    return GlCube(size);
+    return new GlSphere(radius, slices, stacks, color);
 }
 
+GlCube * ShapeFactory::getCube(float size)
+{
+    return new GlCube(size);
+}
 
 /**********
  * CIRCLE *
  **********/
 GlCircle::GlCircle(float radius, glm::vec4 color) : Asset(true, color), m_radius(radius)
 {
-    init();
-    bindBuffers();
+    init_vertex_data();
 }
 
 GlCircle::~GlCircle()
@@ -44,7 +43,7 @@ GlCircle::~GlCircle()
 
 }
 
-void GlCircle::init()
+void GlCircle::init_vertex_data()
 {
     float increments((2*M_PI) / 100);
     int index(0);
@@ -62,27 +61,52 @@ void GlCircle::init()
     }
 }
 
-bool GlCircle::bindBuffers()
+void GlCircle::initGL()
 {
-    return GlDrawable::defaultElementBufferBinding();
+    m_vao_constraints.create();
+    m_vbo_constraints.create();
+    m_ibo_constraints.create();
+
+    m_vao_constraints.bind(); CE();
+
+    m_vbo_constraints.bind();  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    m_ibo_constraints.bind(); CE();
+    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));
+
+    m_vao_constraints.release(); CE();
+    m_vbo_constraints.release(); CE();
+    m_ibo_constraints.release(); CE();
+
+    fillBuffers();
 }
 
-void GlCircle::render() const
+void GlCircle::render()
 {
-    glBindVertexArray(m_vao_constraints); CE();
-    glDrawElements(GL_LINE_LOOP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
-    glBindVertexArray(0); // Unbind
+    if(!initalised())
+        initGL();
+
+    m_vao_constraints.bind();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
+    f->glDrawElements(GL_LINE_LOOP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+
+    m_vao_constraints.release(); // Unbind
 }
 
 /*********
  * ARROW *
  *********/
 const glm::vec3 GlArrow::_base_orientation = glm::vec3(0,0,1); // Do not change this!
-
 GlArrow::GlArrow(float length, glm::vec4 color) : Asset(true, color), m_length(length)
 {
-    init();
-    bindBuffers();
+    init_vertex_data();
 }
 
 GlArrow::~GlArrow()
@@ -90,7 +114,7 @@ GlArrow::~GlArrow()
 
 }
 
-void GlArrow::init()
+void GlArrow::init_vertex_data()
 {
     float head_length(0.1f * m_length);
 
@@ -134,16 +158,144 @@ void GlArrow::init()
     }
 }
 
-bool GlArrow::bindBuffers()
+void GlArrow::initGL()
 {
-    return GlDrawable::defaultElementBufferBinding();
+    m_vao_constraints.create();
+    m_vbo_constraints.create();
+    m_ibo_constraints.create();
+
+    m_vao_constraints.bind(); CE();
+
+    m_vbo_constraints.bind();  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    m_ibo_constraints.bind(); CE();
+    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));
+
+    m_vao_constraints.release(); CE();
+    m_vbo_constraints.release(); CE();
+    m_ibo_constraints.release(); CE();
+
+    fillBuffers();
 }
 
-void GlArrow::render() const
+void GlArrow::render()
 {
-    glBindVertexArray(m_vao_constraints); CE();
-    glDrawElements(GL_LINES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
-    glBindVertexArray(0); // Unbind
+    if(!initalised())
+        initGL();
+
+    m_vao_constraints.bind();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
+    f->glDrawElements(GL_LINES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+
+    m_vao_constraints.release(); // Unbind
+}
+
+/*********************
+ * TERRAIN RECTANGLE *
+ *********************/
+GLSelectionRect::GLSelectionRect() : Asset(true, glm::vec4(0.3, 0.3, 0.3, 0.5))
+{
+
+}
+
+GLSelectionRect::~GLSelectionRect()
+{
+
+}
+
+void GLSelectionRect::resize(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth)
+{
+    clear();
+
+    int rect_width(max[0] - min[0]);
+    int rect_depth(max[2] - min[2]);
+
+    // Vertices
+    for (int z (min[2]); z < max[2]; z++)
+    {
+        for (int x (min[0]); x < max[0]; x++)
+        {
+            // 3D Vertex coordinate
+            m_verticies.push_back((float) x);
+            m_verticies.push_back(.0f); // Y (stored in heightmap texture)
+            m_verticies.push_back((float) z);
+
+            // 2D texture coordinate (for the heightmap)
+            m_verticies.push_back((float) x / (float) (terrain_width - 1)); // X
+            m_verticies.push_back((float) z / (float) (terrain_depth - 1)); // Y
+        }
+    }
+
+    // Indices
+    for (int z(0); z < rect_depth - 1; z++)
+    {
+        if (z > 0) // Degenerate begin: repeat first vertex
+            m_indicies.push_back((GLuint) (z * rect_width));
+
+        for (int x = 0; x < rect_width; x++)
+        {
+            // One part of the strip
+            m_indicies.push_back((GLuint) ((z * rect_width) + x));
+            m_indicies.push_back((GLuint) (((z + 1) * rect_width) + x));
+        }
+
+        if (z <  rect_depth - 2)   // Degenerate end: repeat last vertex
+            m_indicies.push_back((GLuint) (((z + 1) * rect_width) + (rect_width - 1)));
+    }
+    fillBuffers();
+}
+
+void GLSelectionRect::initGL()
+{
+    m_vao_constraints.create();
+    m_vbo_constraints.create();
+    m_ibo_constraints.create();
+
+    m_vao_constraints.bind(); CE();
+
+    m_vbo_constraints.bind();  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    m_ibo_constraints.bind(); CE();
+    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    // Texture coordinate
+    f->glEnableVertexAttribArray(1); CE();
+    const int sz = 3*sizeof(GLfloat);
+    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
+
+    m_vao_constraints.release(); CE();
+    m_vbo_constraints.release(); CE();
+    m_ibo_constraints.release(); CE();
+
+    fillBuffers();
+}
+
+void GLSelectionRect::render()
+{
+    if(!initalised())
+        initGL();
+
+    // enable position attribute;
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+    f->glEnable(GL_BLEND);
+    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_vao_constraints.bind();
+    f->glDrawElements(GL_TRIANGLE_STRIP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+    m_vao_constraints.release();
+
+    f->glDisable(GL_BLEND);
 }
 
 /**********
@@ -152,20 +304,15 @@ void GlArrow::render() const
 GlSphere::GlSphere(float radius, int slices, int stacks, glm::vec4 color) : Asset(true, color),
     m_radius(radius), m_slices(slices), m_stacks(stacks)
 {
-    init();
-    bindBuffers();
+    init_vertex_data();
 }
 
 GlSphere::~GlSphere()
 {
+
 }
 
-bool GlSphere::bindBuffers()
-{
-    return GlDrawable::defaultElementBufferBinding();
-}
-
-void GlSphere::init()
+void GlSphere::init_vertex_data()
 {
     int index(0);
     float r0, r1;
@@ -221,11 +368,43 @@ void GlSphere::get_stack_height_and_radius(int n_stack, float & radius, float & 
     radius = std::cos(stack_angle) * m_radius;
 }
 
-void GlSphere::render() const
+void GlSphere::initGL()
 {
-    glBindVertexArray(m_vao_constraints); CE();
-    glDrawElements(GL_QUADS, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
-    glBindVertexArray(0); // Unbind
+    m_vao_constraints.create();
+    m_vbo_constraints.create();
+    m_ibo_constraints.create();
+
+    m_vao_constraints.bind(); CE();
+
+    m_vbo_constraints.bind();  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    m_ibo_constraints.bind(); CE();
+    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));
+
+    m_vao_constraints.release(); CE();
+    m_vbo_constraints.release(); CE();
+    m_ibo_constraints.release(); CE();
+
+    fillBuffers();
+}
+
+void GlSphere::render()
+{
+    if(!initalised())
+        initGL();
+
+    m_vao_constraints.bind();
+
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
+    f->glDrawElements(GL_TRIANGLES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+
+    m_vao_constraints.release(); // Unbind
 }
 
 /**********
@@ -233,7 +412,7 @@ void GlSphere::render() const
  **********/
 GlCube::GlCube(float size) : Asset(false, glm::vec4(), glm::mat4x4(), size)
 {
-    init();
+    init_vertex_data();
 }
 
 GlCube::~GlCube()
@@ -241,44 +420,47 @@ GlCube::~GlCube()
 
 }
 
-bool GlCube::bindBuffers()
+void GlCube::initGL()
 {
-    deleteBuffers();
+    m_vao_constraints.create();
+    m_vbo_constraints.create();
+    m_ibo_constraints.create();
 
-    // vao
-    glGenVertexArrays(1, &m_vao_constraints); CE()
-    glBindVertexArray(m_vao_constraints);CE()
+    m_vao_constraints.bind(); CE();
 
-    // vbo
-    // set up vertex buffer and copy in data
-    glGenBuffers(1, &m_vbo_constraints);CE()
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_constraints);CE()
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_verticies.size(), &m_verticies[0], GL_STATIC_DRAW);CE()
+    m_vbo_constraints.bind();  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
 
-    // ibo
-    glGenBuffers(1, &m_ibo_constraints);CE()
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_constraints);CE()
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLint)*m_indicies.size(), &m_indicies[0], GL_STATIC_DRAW);CE()
+    m_ibo_constraints.bind(); CE();
+    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
 
-    // enable position attribute
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
     GLsizei stride = sizeof(GLfloat) * 7;
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(0));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(GLfloat) * 3));
+    f->glEnableVertexAttribArray(0); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)(0)); CE();
+    f->glEnableVertexAttribArray(1); CE();
+    f->glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(GLfloat) * 3)); CE();
 
-    // Unbinding
-    glBindVertexArray(0);CE()
+    m_vao_constraints.release(); CE();
+    m_vbo_constraints.release(); CE();
+    m_ibo_constraints.release(); CE();
 
-    return true;
+    fillBuffers();
 }
 
-void GlCube::render() const
+#include <iostream>
+void GlCube::render()
 {
-    glBindVertexArray(m_vao_constraints); CE();
-    glDrawElements(GL_TRIANGLES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+    if(!initalised())
+        initGL();
 
-    glBindVertexArray(0); // Unbind
+    QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
+
+    m_vao_constraints.bind(); CE();
+
+    f->glDrawElements(GL_TRIANGLES, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
+
+    m_vao_constraints.release(); CE(); // Unbind
 }
 
 #define RIGHT_EXTENT .5f
@@ -287,7 +469,7 @@ void GlCube::render() const
 #define BOTTOM_EXTENT -TOP_EXTENT
 #define FRONT_EXTENT -.5f
 #define REAR_EXTENT -FRONT_EXTENT
-void GlCube::init()
+void GlCube::init_vertex_data()
 {
     //Front face
     {
@@ -365,8 +547,6 @@ void GlCube::init()
         m_indicies.push_back(start_index); m_indicies.push_back(start_index+1); m_indicies.push_back(start_index+2);
         m_indicies.push_back(start_index+2); m_indicies.push_back(start_index+3); m_indicies.push_back(start_index);
     }
-
-    bindBuffers();
 }
 
 void GlCube::push_front_face_color()  // GREEN
@@ -398,65 +578,3 @@ void GlCube::push_back_face_color() // YELLOW
 {
     m_verticies.push_back(1.0f); m_verticies.push_back(1.0f); m_verticies.push_back(.0f); m_verticies.push_back(1.0f);
 }
-
-
-//void Sphere::append_sphere_vert(float radius, float lat, float lon)
-//{
-//    float la, lo, x, y, z;
-//    glm::vec4 p;
-//    glm::vec3 v;
-
-//    la = (M_PI+M_PI)*lat;
-//    lo = (M_PI+M_PI)*lon;
-//    // this is unoptimized
-//    x = cos(lo)*sin(la)*radius;
-//    y = sin(lo)*sin(la)*radius;
-//    z = cos(la)*radius;
-
-////    // apply transformation
-////    p = trm * glm::vec4(x, y, z, 1.0f);
-////    v = glm::mat3(trm) * glm::normalize(glm::vec3(x, y, z));
-
-//    verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z); // position
-////    verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
-////    verts.push_back(v.x); verts.push_back(v.y); verts.push_back(v.z); // normal
-//}
-
-//void ConstraintShape::genSphereVert(float radius, float lat, float lon, glm::mat4x4 trm)
-//{
-
-
-//}
-
-//void ConstraintShape::genSphere(float radius, int slices, int stacks, glm::mat4x4 trm)
-//{
-//    int lat, lon, base;
-//    float plat, plon;
-
-//    // doesn't produce very evenly sized triangles, tend to cluster at poles
-//    base = int(verts.size()) / 8;
-//    for(lat = 0; lat <= stacks; lat++)
-//    {
-//        for(lon = 0; lon < slices; lon++)
-//        {
-//            plat = (float) lat / (float) stacks;
-//            plon = (float) lon / (float) slices;
-//            genSphereVert(radius, plat, plon, trm);
-
-//            if(lat > 0)
-//            {
-//                if(lon < slices-1)
-//                {
-//                    indices.push_back(base-slices+lon); indices.push_back(base-slices+lon+1); indices.push_back(base+lon);
-//                    indices.push_back(base-slices+lon+1); indices.push_back(base+lon+1); indices.push_back(base+lon);
-//                }
-//                else // wrap
-//                {
-//                    indices.push_back(base-slices+lon); indices.push_back(base-slices); indices.push_back(base+lon);
-//                    indices.push_back(base-slices); indices.push_back(base); indices.push_back(base+lon);
-//                }
-//            }
-//        }
-//        base += slices;
-//    }
-//}

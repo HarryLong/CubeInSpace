@@ -28,7 +28,8 @@ public:
     SunLightProperties(glm::vec3 north_orientation, glm::vec3 true_north_orientation, glm::vec3 east_orientation);
     ~SunLightProperties();
 
-    void setTerrainDimensions(int width, int depth);
+    int currentMonth() const;
+    int currentTime() const;
 
     static float minutes_to_angle(int minutes);
     static float get_axis_tilt_angle(int month);
@@ -37,6 +38,7 @@ public slots:
     void setOrientation(glm::vec3 north, glm::vec3 true_north, glm::vec3 east);
     void setMonth(int month);
     void setTime(int minutes);
+    void setTerrainDimensions(int width, int depth, int base_height, int max_height);
 
 signals:
     void sunPositionChanged(float pos_x, float pos_y, float pos_z);
@@ -53,7 +55,6 @@ private:
 
     int m_terrain_width, m_terrain_depth;
     float m_center_x, m_center_y, m_center_z;
-    float m_diagonal_length;
 
     float m_true_north_rotation;
 

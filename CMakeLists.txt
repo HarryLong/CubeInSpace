@@ -11,6 +11,7 @@ find_package(Qt5OpenGL REQUIRED)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
 find_package(GLU REQUIRED)
+find_package(OpenMP)
 
 # Includes
 include_directories(
@@ -24,14 +25,16 @@ link_directories(
     "lib/"
 )
 
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -DGL_DEBUG -std=c++11")
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -std=c++11")
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DGL_DEBUG -std=c++11")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${OpenMP_CXX_FLAGS} -O2 -g -DGL_DEBUG -std=c++11")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -O2 -std=c++11")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -O0 -g -DGL_DEBUG -std=c++11")
 SET(CMAKE_BUILD_TYPE Debug)
 #SET(CMAKE_VERBOSE_MAKEFILE true )
-SET(SOURCE_FILES asset time_controller_dialog lighting_manager light_properties shape_factory terrain orientation_compass glwidget
-window main glheader qtutils view_manager renderer shader_program debug grid helper gl_drawable constants settings rays geom scene_manager
-glm_rotations glm_utils latitude_controller_dialog )
+SET(SOURCE_FILES asset time_controller_dialog controllers lighting_manager light_properties shape_factory terrain orientation_compass glwidget
+window main glheader qtutils view_manager renderer debug grid helper gl_drawable constants settings rays geom scene_manager
+glm_rotations glm_utils custom_line_edit acceleration_structure progress_bar_widget pointer_info_dialog temp_edit_dlg
+terrain_normals terrain_shade terrain_temperature terrain_daily_illimination texture_element orientation_widget actions
+latitude_controller_widget time_controller_widget gl_shaders)
 
 # Shaders
 add_subdirectory(shaders)

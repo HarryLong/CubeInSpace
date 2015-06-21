@@ -17,17 +17,24 @@ struct OverlayMode
     bool slope;
     bool altitude;
     bool shade;
+    bool temperature_min;
+    bool temperature_max;
+    bool daily_illumination_min;
+    bool daily_illumination_max;
 };
 
 uniform Transformation transform;
 uniform OverlayMode overlay;
 uniform float max_height;
 uniform float base_height;
-uniform float height_scale;
 
 uniform sampler2D height_map_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D shade_texture;
+uniform sampler2D min_temp_texture;
+uniform sampler2D max_temp_texture;
+uniform sampler2D min_daily_illumination_texture;
+uniform sampler2D max_daily_illumination_texture;
 
 //colours and material
 uniform vec4 material_diffuse;
@@ -46,16 +53,22 @@ out float slope;
 out float altitude;
 out float shade;
 
+out float min_temperature;
+out float max_temperature;
+
+out float min_daily_illumination;
+out float max_daily_illumination;
+
 void main()
 {
     // Fetch the y coordinate from the heightmap texture
-    vec3 world_space_pos = vec3(vPos.x, height_scale * texture(height_map_texture, textureCoord).r, vPos.z);
+    vec3 world_space_pos = vec3(vPos.x*transform.scale, texture2D(height_map_texture, textureCoord).r * transform.scale, vPos.z * transform.scale);
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);
     gl_Position = transform.projMat * camera_space_pos;
 
     if(overlay.none || overlay.slope) // Normals needs to be loaded
     {
-        vec3 normal = texture(normals_texture, textureCoord).rgb;
+        vec3 normal = texture2D(normals_texture, textureCoord).rgb;
         if(overlay.none)
         {
             // map normal to camera space for lighting calculations
@@ -77,18 +90,25 @@ void main()
         }
         else // slope
         {
-            vec3 x_y_plane = vec3(0,1,0);
-            slope = 1 - abs(dot(normal, x_y_plane));
+            vec3 vertical_vector = vec3(0,1,0);
+            slope = 1 - abs(dot(normal, vertical_vector));
         }
     }
     else if(overlay.altitude)
     {
-        altitude = ((world_space_pos.y-base_height)/max_height-base_height);
+        altitude = (world_space_pos.y-base_height)/(max_height-base_height);
+    }
+    else if(overlay.temperature_min)
+    {
+        min_temperature = texture2D(min_temp_texture, textureCoord).r * 127;
+    }
+    else if(overlay.temperature_max)
+    {
+        max_temperature = texture2D(max_temp_texture, textureCoord).r * 127;
     }
     else if(overlay.shade)
     {
-//        shade = texture(shade_texture, textureCoord).r;
-        if(texture(shade_texture, textureCoord).r > 0)
+        if(texture2D(shade_texture, textureCoord).r > 0)
         {
             shade = 1;
         }
@@ -96,6 +116,14 @@ void main()
         {
             shade = 0;
         }
+    }
+    else if(overlay.daily_illumination_min)
+    {
+        min_daily_illumination = texture2D(min_daily_illumination_texture, textureCoord).r * 255;
+    }
+    else if(overlay.daily_illumination_max)
+    {
+        max_daily_illumination = texture2D(max_daily_illumination_texture, textureCoord).r * 255;
     }
 }
 

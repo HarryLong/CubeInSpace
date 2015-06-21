@@ -5,26 +5,39 @@
 #include "glm_utils.h"
 #include <QSlider>
 #include "include/terragen_file_manager/terragen_file_manager.h"
+#include <cstring>
+#include "temp_edit_dlg.h"
 
-SceneManager::SceneManager(QSlider * latitude_slider, QSlider * time_of_day_slider, QSlider * month_slider, int terrain_scale) :
-    m_terrain_scale(terrain_scale), m_sun(NULL), m_orientation_compass(),
-    m_lighting_manager(m_orientation_compass.getNorthOrientation(), m_orientation_compass.getTrueNorthOrientation(),
-                       m_orientation_compass.getEastOrientation())
+SceneManager::SceneManager(PositionControllers position_controllers, TimeControllers time_controllers, TerrainControllers terrain_controllers,
+                           TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions) :
+    m_sun(NULL), m_acceleration_structure_viewer(NULL), m_orientation_compass(position_controllers), m_temp_edit_dlg(temp_edit_dlg),
+    m_lighting_manager(time_controllers, m_orientation_compass.getNorthOrientation(), m_orientation_compass.getTrueNorthOrientation(), m_orientation_compass.getEastOrientation()),
+    m_terrain(terrain_controllers, overlay_actions)
 {
-    establish_connections(latitude_slider, time_of_day_slider, month_slider);
+    establish_connections();
 }
 
 SceneManager::~SceneManager()
 {
-    clear_acceleration_structure_viewer();
-    delete m_sun;
+    if(m_sun)
+        delete m_sun;
+    if(m_acceleration_structure_viewer)
+        delete m_acceleration_structure_viewer;
 }
 
-void SceneManager::establish_connections(QSlider *latitude_slider, QSlider *time_of_day_slider, QSlider *month_slider)
+void SceneManager::initScene()
 {
-    connect(latitude_slider, SIGNAL(valueChanged(int)), &m_orientation_compass, SLOT(setLatitude(int))); // Latitude slider controls the orientation compass
-    connect(time_of_day_slider, SIGNAL(valueChanged(int)), &m_lighting_manager, SLOT(setTime(int))); // Time controller should change light
-    connect(month_slider, SIGNAL(valueChanged(int)),  &m_lighting_manager, SLOT(setMonth(int))); // Month controller should change light
+    m_terrain.loadBaseTerrain();
+}
+
+void SceneManager::establish_connections()
+{
+    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
+    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_orientation_compass, SLOT(setTerrainDimensions(int,int,int,int)));
+    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refreshAccelerationStructureViewer()));
+
+    // When the terrain overlay changes, a re-render must be triggered
+    connect(&m_terrain, SIGNAL(activeOverlayChanged()), this, SLOT(emitRefreshRenderRequest()));
 
     // When an orientation change occurs, the lighting manager needs to be alerted to change the sun position
     connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), &m_lighting_manager,
@@ -32,11 +45,30 @@ void SceneManager::establish_connections(QSlider *latitude_slider, QSlider *time
 
     // When the sun position changes we must recalculate shade and re-render
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
+
+    // When the latitude changes, the illumination data must be discarded and recalculated
+    connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), &m_terrain, SLOT(invalidateIllumination()));
+
+    // Recalculate illumination recalculation
+    connect(&m_terrain, SIGNAL(trigger_daily_illumination_refresh()), this, SLOT(refreshDailyIllumination()));
+
+    // Recalculate temperature
+    connect(m_temp_edit_dlg, SIGNAL(temperatureValuesChanged(float,float,float,float)), &m_terrain, SLOT(refreshTemperature(float,float,float,float)));
+
+    // PROGRESS BAR CONNECTIONS //
+    // When the terrain is busy, a processing signal needs to be emitted
+    connect(&m_terrain, SIGNAL(processing(QString)), this, SLOT(emitProcessing(QString)));
+
+    // The progress must be updated
+    connect(&m_terrain, SIGNAL(intermediate_processing_update(int)), this, SLOT(emitProcessingUpdate(int)));
+
+    // When the terrain has finished. a finished processing signal should be emitted
+    connect(&m_terrain, SIGNAL(processing_complete()), this, SLOT(emitProcessingComplete()));
 }
 
-const std::vector<const Asset*> SceneManager::getAccelerationStructure() const
+Asset * SceneManager::getAccelerationStructure()
 {
-    return std::vector<const Asset*>(m_acceleration_structure_viewer.begin(), m_acceleration_structure_viewer.end());
+    return m_acceleration_structure_viewer;
 }
 
 Grid & SceneManager::getGrid()
@@ -59,46 +91,26 @@ OrientationCompass & SceneManager::getOrientationCompass()
     return m_orientation_compass;
 }
 
-void SceneManager::initScene()
-{
-    // Set mock terrain (flat)
-    refresh_base_terrain();
-}
-
 void SceneManager::loadTerrain(QString filename)
 {
     current_terrain_file = filename;
+    m_temp_edit_dlg->reset();
     // Read terragen file
-
-    TerragenFile terragen_file(filename.toStdString());
-    set_terrain(terragen_file);
+    TerragenFile parsed_terragen_file(filename.toStdString());
+    m_terrain.setTerrain(parsed_terragen_file);
 }
 
 void SceneManager::refreshAccelerationStructureViewer()
 {
-    clear_acceleration_structure_viewer();
-
-    for(std::vector<SphereAccelerationStructure::Sphere> spheres : m_terrain.getSphereAccelerationStructure().m_spheres)
+    float terrain_scale(m_terrain.getScale());
+    if(!m_acceleration_structure_viewer)
+        m_acceleration_structure_viewer = ShapeFactory::getCube(1.0f);
+    m_acceleration_structure_viewer->clearTransformations();
+    for(const AccelerationSphere & sphere : m_terrain.getSphereAccelerationStructure().getSpheres())
     {
-        for(SphereAccelerationStructure::Sphere sphere : spheres)
-        {
-            GlCube * cube ( new GlCube(ShapeFactory::getCube(sphere.radius*2)));
-            cube->setMtwMat(glm::translate(glm::mat4x4(), sphere.center));
-            m_acceleration_structure_viewer.push_back(cube);
-        }
-    }
-}
-
-void SceneManager::setTerrainScaler(float p_scale)
-{
-    if(m_terrain_scale != p_scale)
-    {
-        m_terrain_scale = p_scale;
-        // Reload the terrain
-        if(!current_terrain_file.isNull())
-            loadTerrain(current_terrain_file);
-        else
-            refresh_base_terrain();
+        glm::mat4x4 mtw(glm::translate(glm::mat4x4(), sphere.m_center*terrain_scale));
+        float scale(sphere.m_radius*2.f*terrain_scale);
+        m_acceleration_structure_viewer->addTransformation(mtw, scale);
     }
 }
 
@@ -108,52 +120,101 @@ void SceneManager::sunPositionChanged(float pos_x, float pos_y, float pos_z)
     emit refreshRender();
 }
 
-#define DEFAULT_TERRAIN_SIZE 200
-void SceneManager::refresh_base_terrain()
+void SceneManager::emitRefreshRenderRequest()
 {
-    TerragenFile dummy_terragen_file;
-    int width(m_terrain_scale * DEFAULT_TERRAIN_SIZE);
-    int height(m_terrain_scale * DEFAULT_TERRAIN_SIZE);
-
-    dummy_terragen_file.m_height_data = (float*) malloc(sizeof(float) * width * height);
-    memset(dummy_terragen_file.m_height_data, 0, width * height);
-
-    dummy_terragen_file.m_header_data.base_height = 0;
-    dummy_terragen_file.m_header_data.depth = DEFAULT_TERRAIN_SIZE*m_terrain_scale;
-    dummy_terragen_file.m_header_data.width = DEFAULT_TERRAIN_SIZE*m_terrain_scale;
-    dummy_terragen_file.m_header_data.height_scale = 1.0f;
-    dummy_terragen_file.m_header_data.max_height = .0f;
-    dummy_terragen_file.m_header_data.min_height = .0f;
-    dummy_terragen_file.m_header_data.scale = 30.0f;
-
-    set_terrain(dummy_terragen_file);
+    emit refreshRender();
 }
 
-void SceneManager::set_terrain(TerragenFile & terragen_file)
+void SceneManager::emitProcessing(QString description)
 {
-    // Scale terragen file
-    if(m_terrain_scale != 1)
-        TerragenFileManager::scale(terragen_file, m_terrain_scale);
+    emit processing(description);
+}
 
-    m_terrain.setTerrain(terragen_file);
-    refreshAccelerationStructureViewer();
-    m_lighting_manager.setTerrainDimensions(terragen_file.m_header_data.width, terragen_file.m_header_data.depth);
+void SceneManager::emitProcessingUpdate(int update)
+{
+    emit processingUpdate(update);
+}
 
-    glm::vec2 terrain_center(m_terrain.getCenter());
-    float scaler(m_terrain.getScale());
-    m_orientation_compass.setCenterPosition(glm::vec3(terrain_center[0] * scaler, (m_terrain.getMaxHeight()+5) * scaler,
-                                            terrain_center[1]*scaler));
+void SceneManager::emitProcessingComplete()
+{
+    emit processingComplete();
+}
+
+void SceneManager::refreshDailyIllumination()
+{
+    int current_month(m_lighting_manager.currentMonth());
+    int current_time(m_lighting_manager.currentTime());
+
+    int terrain_width(m_terrain.getWidth());
+    int terrain_depth(m_terrain.getDepth());
+    int n_elements(terrain_width*terrain_depth);
+
+    GLubyte * intermediary_illumination_data = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
+    GLubyte * aggregated_min = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
+    GLubyte * aggregated_max = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
+
+    for(int month = 1; month < 13; month++)
+    {
+        m_lighting_manager.setMonth(month);
+        memset(intermediary_illumination_data, 0x00, n_elements);
+
+        for(int hour = 0; hour < 24; hour++)
+        {
+            m_lighting_manager.setTime(hour * 60);
+            m_terrain.refreshShade("Calculating shade for: Month " + QString::number(month) + " | Hour: " + QString::number(hour));
+            const GLubyte * shade_data(m_terrain.getShade().getRawData());
+#pragma omp parallel for
+            for(int z = 0 ; z < terrain_depth; z++)
+            {
+                for(int x = 0; x < terrain_width; x++)
+                {
+                    int index(z*terrain_width+x);
+                    intermediary_illumination_data[index] += (shade_data[index] > 0 ? 0 : 1);
+                }
+            }
+        }
+        // Now check if it is the minimum/maximum
+        if(month > 1)
+        {
+#pragma omp parallel for
+            for(int z = 0 ; z < terrain_depth; z++)
+            {
+                for(int x = 0; x < terrain_width; x++)
+                {
+                    int index(z*terrain_width+x);
+                    GLubyte value(intermediary_illumination_data[index]);
+                    if(value > aggregated_max[index])
+                        aggregated_max[index] = value;
+                    if(value < aggregated_min[index])
+                        aggregated_min[index] = value;
+                }
+            }
+        }
+        else
+        {
+            std::memcpy(aggregated_min, intermediary_illumination_data, n_elements);
+            std::memcpy(aggregated_max, intermediary_illumination_data, n_elements);
+        }
+    }
+    free(intermediary_illumination_data);
+    m_terrain.setMinIlluminationData(aggregated_min);
+    m_terrain.setMaxIlluminationData(aggregated_max);
+
+    // Restore time and date
+    m_lighting_manager.setMonth(current_month);
+    m_lighting_manager.setTime(current_time);
 }
 
 #define SUN_RADIUS 20
 #define SUN_SLICES 20
 #define SUN_STACKS 20
-const Asset* SceneManager::getSun()
+Asset* SceneManager::getSun()
 {
     if(!m_sun)
-        m_sun = new GlSphere(ShapeFactory::getSphere(SUN_RADIUS, SUN_SLICES, SUN_STACKS, glm::vec4(1,1,0,1)));
+        m_sun = ShapeFactory::getSphere(SUN_RADIUS, SUN_SLICES, SUN_STACKS, glm::vec4(1,1,0,1));
 
-    m_sun->setMtwMat(glm::translate(glm::mat4x4(), glmutils::toVec3(m_lighting_manager.getSunlightProperties().getPosition())));
+    glm::mat4x4 mtw( glm::translate(glm::mat4x4(), glmutils::toVec3(m_lighting_manager.getSunlightProperties().getPosition())) );
+    m_sun->setTranformation(mtw);
 
     return m_sun;
 }
@@ -161,9 +222,9 @@ const Asset* SceneManager::getSun()
 /***********
  * DELETES *
  ***********/
-void SceneManager::clear_acceleration_structure_viewer()
-{
-    for(GlCube * cube : m_acceleration_structure_viewer)
-        delete cube;
-    m_acceleration_structure_viewer.clear();
-}
+//void SceneManager::clear_acceleration_structure_viewer()
+//{
+//    for(GlCube * cube : m_acceleration_structure_viewer)
+//        delete cube;
+//    m_acceleration_structure_viewer.clear();
+//}

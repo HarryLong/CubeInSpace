@@ -1,7 +1,7 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QScopedPointer>
 #include <QMatrix4x4>
 #include <QMouseEvent>
@@ -14,71 +14,63 @@
 
 #include <atomic>
 #include <thread>
-#include "settings.h"
 #include "rays.h"
+#include "orientation_widget.h"
+#include "latitude_controller_widget.h"
+
 
 class QProgressDialog;
 class QSurface;
 class QMouseEvent;
+class PointerInformationDialog;
+class MouseTracker{
+public:
+    void setStartPosition(float x, float y, float z = 0);
+    void setEndPosition(float x, float y, float z = 0);
 
-struct MouseTracker{
-    float start_point_x, start_point_y, start_point_z;
-    float end_point_x, end_point_y, end_point_z;
+    void getStartPosition(float & x, float & y, float & z);
+    void getEndPosition(float & x, float & y, float & z);
 
-    float getDiffX() {return end_point_x-start_point_x;}
-    float getDiffY() {return end_point_y-start_point_y;}
-    float getDiffZ() {return end_point_z-start_point_z;}
+    float getDiffX();
+    float getDiffY();
+    float getDiffZ();
 
     bool ctrl_pressed;
+private:
+    std::atomic<float> start_point_x, start_point_y, start_point_z;
+    std::atomic<float> end_point_x, end_point_y, end_point_z;
 };
 
-struct RenderOptions {
-    RenderOptions() : m_render_grid(true), m_render_terrain(true), m_render_acceleration_structure(false), m_render_rays(false), m_render_sun(false) {}
-
-    bool m_render_grid;
-    bool m_render_terrain;
-    bool m_render_rays;
-    bool m_render_acceleration_structure;
-    bool m_render_sun;
-};
-
-enum ControlStyle {
-    SoftImage,
-    FPS,
-    Experimental1
-};
-
-enum Mode {
-    None,
-    TerrainEdit,
-    Selection,
-    OrientationEdit
-};
-
-class GLWidget : public QGLWidget
-{
-    Q_OBJECT
+/*******************
+ * SHADER PROGRAMS *
+ *******************/
+class QGLShaderProgram;
+class ShaderPrograms {
 
 public:
-    GLWidget(const Settings & settings, const QGLFormat& format, QSlider * latitude_slider, QSlider * time_of_day_slider, QSlider * month_slider,
-             QWidget * parent = NULL);
+    ShaderPrograms(QObject * parent);
+    ~ShaderPrograms();
+
+    QGLShaderProgram * m_base;
+    QGLShaderProgram * m_terrain;
+    QGLShaderProgram * m_terrain_elements;
+    QGLShaderProgram * m_normals_generator;
+};
+
+class Actions;
+
+class GLWidget : public QOpenGLWidget
+{
+    Q_OBJECT
+public:
+    GLWidget(TimeControllers time_controllers, ViewControllers view_controllers,
+             TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
+             Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions, QWidget * parent = NULL);
     ~GLWidget();
     void loadTerrain(QString filename);
-    void updateSettings(const Settings & settings);
 
-public slots:
-    void renderGrid(bool enabled);
-    void renderTerrain(bool enabled);
-    void renderAccelerationStructure(bool enabled);
-    void renderRays(bool enabled);
-    void renderSun(bool enabled);
-    void setControlStyle(ControlStyle control_style);
-    void disableOverlays();
-    void enableSlopeOverlay();
-    void enableAltitudeOverlay();
-    void enableShadeOverlay();
-    void setMode(Mode mode);
-    void recalculateShade(QProgressDialog * progress_dialog);
+signals:
+    void GLReady();
 
 protected:
     void initializeGL(); // Override
@@ -92,13 +84,17 @@ protected:
 
     // Mouse input stuff
     void mousePressEvent(QMouseEvent *event);
-//    void mouseDoubleClickEvent(QMouseEvent *event);
-//    void mouseReleaseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent * wheel);
 
     void keyPressEvent ( QKeyEvent * event );
     void keyReleaseEvent(QKeyEvent * event);
+    void resizeEvent(QResizeEvent * event);
+
+private slots:
+    void control_changed();
+    void display_info_pointer_dlg(bool display);
+    void clear_rays();
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -106,16 +102,34 @@ private:
     void reset_fps_cursor();
     bool get_intersection_point_with_terrain(int screen_x, int screen_y, glm::vec3 & intersection_point);
     bool get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point);
+    void set_center_camera_position();
+    void establish_connections();
+    void update_info_pointer_dlg(const glm::vec2 & screen_pos);
+
+    bool render_rays();
+    bool render_grid();
+    bool render_sun();
+    bool render_terrain();
+    bool render_acceleration_structure();
+    bool fps();
+    bool softimage();
+
+    void enable_continuous_mouse_tracking(bool enabled);
+    void mouse_tracking_callback();
+    void show_cursor(bool show);
+
+    OrientationWidget m_orientation_widget;
+    LatitudeControllerWidget m_latitude_controller;
+
+    ProgressBarWidget * m_progress_bar_widget;
+    PointerInformationDialog * m_pointer_info_dlg;
 
     Renderer m_renderer;
     SceneManager m_scene_manager;
     ViewManager m_view_manager;
     RayDrawer m_rays;
     MouseTracker m_mouse_position_tracker;
-
-    void enable_continuous_mouse_tracking(bool enabled);
-    void mouse_tracking_callback();
-    void show_cursor(bool show);
+    MouseTracker m_terrain_position_tracker;
 
     std::thread * m_mouse_tracking_thread;
     std::atomic<float> m_width;
@@ -125,14 +139,16 @@ private:
     std::atomic<bool> m_mouse_tracking_thread_run;
     std::atomic<bool> m_ctrl_pressed;
 
-    RenderOptions m_render_options;
     bool m_navigation_enabled;
     bool m_authorise_navigation_mode_switch;
 
-    ControlStyle m_control_style;
-    Mode m_active_mode;
-
     std::vector<glm::vec3> m_active_points;
+
+    Actions * m_render_actions;
+    Actions * m_control_actions;
+    Actions * m_show_actions;
+
+    ShaderPrograms * m_shaders;
 };
 
 #endif

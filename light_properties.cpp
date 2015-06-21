@@ -62,7 +62,17 @@ void SunLightProperties::setTime(int minutes)
     refresh_position();
 }
 
-void SunLightProperties::setTerrainDimensions(int width, int depth)
+int SunLightProperties::currentMonth() const
+{
+    return m_month;
+}
+
+int SunLightProperties::currentTime() const
+{
+    return m_time_of_day;
+}
+
+void SunLightProperties::setTerrainDimensions(int width, int depth, int base_height, int max_height)
 {
     m_terrain_width = width;
     m_terrain_depth = depth;
@@ -71,8 +81,6 @@ void SunLightProperties::setTerrainDimensions(int width, int depth)
     m_center_y = 0;
     m_center_z = m_terrain_depth/2.0f;
 
-    m_diagonal_length = std::sqrt(m_terrain_depth*m_terrain_depth + m_terrain_width * m_terrain_width);
-
     refresh_position();
 }
 
@@ -80,15 +88,13 @@ void SunLightProperties::setTerrainDimensions(int width, int depth)
 #define LATITUDE 90
 void SunLightProperties::refresh_position()
 {
-    int sun_trajectory_radius(m_diagonal_length + 500000);
+    int sun_trajectory_radius(500000);
 
     float max_axis_tilt(SunLightProperties::get_axis_tilt_angle(m_month));
     float day_angle(SunLightProperties::minutes_to_angle(m_time_of_day));
     glm::vec3 cp_tn_and_east (glm::normalize(glm::cross(m_true_north, m_east)));
 
     // First calculate the sun position at midday during the equinox
-    std::cout << "True north: " << m_true_north[0] << ", " << m_true_north[1] << ", " << m_true_north[2] << std::endl;
-    std::cout << "East: " << m_east[0] << ", " << m_east[1] << ", " << m_east[2] << std::endl;
     glm::vec3 sun_position ( ((float)sun_trajectory_radius) * cp_tn_and_east );
 
     // Now take into consideration axis tilt based on the month

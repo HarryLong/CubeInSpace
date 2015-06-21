@@ -8,13 +8,23 @@
 #include <QString>
 
 namespace Geom{
-    inline float squaredLength(const glm::vec3 vector)
+    inline float squaredLength(const glm::vec3 & vector)
     {
         float len;
 
         len = vector[0] * vector[0]; //i
         len += vector[1] * vector[1]; //j
         len +=  vector[2] * vector[2]; //j
+
+        return len;
+    }
+
+    inline float squaredLength(const glm::vec2 & vector)
+    {
+        float len;
+
+        len = vector[0] * vector[0]; //i
+        len += vector[1] * vector[1]; //j
 
         return len;
     }
@@ -29,6 +39,15 @@ namespace Geom{
         return glm::vec3(x,y,z);
     }
 
+    inline glm::vec2 affinecombine(const float & c1, glm::vec2& p1, const float c2, glm::vec2& p2)
+    {
+        float x, y;
+        x = c1 * p1[0] + c2 * p2[0]; //x
+        y = c1 * p1[1] + c2 * p2[1]; //y
+
+        return glm::vec2(x,y);
+    }
+
     // returns vector p2 to p1
     inline glm::vec3 diff(const glm::vec3 & p1, const glm::vec3 & p2)
     {
@@ -41,11 +60,25 @@ namespace Geom{
         return glm::vec3(i, j, k);
     }
 
-    inline glm::vec3 scale(glm::vec3 & v, const float & c)
+    inline glm::vec3 scale(const glm::vec3 & v, const float & c)
     {
-        v[0] *= c;
-        v[1] *= c;
-        v[2] *= c;
+        float i, j, k;
+
+        i = v[0] * c;
+        j = v[1] * c;
+        k = v[2] * c;
+
+        return glm::vec3(i, j, k);
+    }
+
+    inline glm::vec2 scale(const glm::vec2 & v, const float & c)
+    {
+        float i, j;
+
+        i = v[0] * c;
+        j = v[1] * c;
+
+        return glm::vec2(i, j);
     }
 
     inline float length(const glm::vec3 & v)
@@ -56,10 +89,14 @@ namespace Geom{
 
     inline void normalizeDegrees(float& p_angle)
     {
-        while(p_angle > 360.f)
-            p_angle -= 360;
-        while(p_angle < -360.f)
+        if(p_angle < 0)
             p_angle += 360;
+
+        while(p_angle > 360.f)
+            p_angle -= 360;            
+
+//        while(p_angle < -360.f)
+//            p_angle += 360;
     }
 
     inline float toRadians(const float & degrees_angle)

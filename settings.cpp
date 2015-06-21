@@ -4,70 +4,93 @@
 #include <QVBoxLayout>
 #include <iostream>
 #include <QLabel>
+#include <QCoreApplication>
+#include <QSlider>
+#include <QPushButton>
+#include <QCheckBox>
+#include "custom_line_edit.h"
 
-/*******************
- * SETTINGS FILE*
- *******************/
-#define SETTINGS_FILE_NAME ".settings"
-
-#define CAMERA_SENSITIVITY_PREFIX "camera_sensitivity"
-#define Z_MOVEMENT_SENSITIVITY_PREFIX "z_movement_sensitivity"
-#define X_Y_MOVEMENT_SENSITIVITY_PREFIX "x_y_movement_sensitivity"
-#define TERRAIN_SCALE_PREFIX "terrain_scale"
-
-SettingsFile::SettingsFile()
+// Defaults
+const int Settings::_default_camera_sensitivity (1);
+const int Settings::_default_z_sensitivity (5) ;
+const int Settings::_default_x_y_sensitivity (5);
+const int Settings::_default_scale (30);
+const bool Settings::_default_use_terrain_default_scale (true);
+// Keys
+const QString Settings::_key_camera_sensitivity ("camera_sensitivity");
+const QString Settings::_key_z_sensitivity ("z_sensitivity");
+const QString Settings::_key_x_y_sensitivity ("x_y_sensitivity");
+const QString Settings::_key_terrain_scale ("meters_per_terrain_unit");
+const QString Settings::_key_use_terrain_default_scale ("use_terrain_default_meters_per_terrain_unit");
+Settings::Settings() : m_core_settings(QCoreApplication::organizationName(), QCoreApplication::applicationName())
 {
-    QFile file(SETTINGS_FILE_NAME);
-    if(file.exists())
-    {
-        if(!file.open(QIODevice::ReadOnly))
-        {
-            std::cerr << "Failed to open file: " << SETTINGS_FILE_NAME << " to read the settings " << std::endl;
-            exit(1);
-        }
-        QTextStream in(&file);
 
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            QStringList split_line = line.split("=");
-
-            QString prefix (split_line.at(0));
-            if(prefix == CAMERA_SENSITIVITY_PREFIX)
-                m_settings.camera_sensitivity = split_line.at(1).toInt();
-            else if(prefix == Z_MOVEMENT_SENSITIVITY_PREFIX)
-                m_settings.z_movement_sensitivity = split_line.at(1).toInt();
-            else if(prefix == X_Y_MOVEMENT_SENSITIVITY_PREFIX)
-                m_settings.x_y_movement_sensitivity = split_line.at(1).toInt();
-            else if(prefix == TERRAIN_SCALE_PREFIX)
-                m_settings.terrain_scaler = split_line.at(1).toInt();
-            else
-                std::cerr << "Unknown prefix: " << prefix.toStdString() << std::endl;
-        }
-        file.close();
-    }
-    // else settings will be default
 }
 
-SettingsFile::~SettingsFile()
+Settings::~Settings()
 {
-    QFile file(SETTINGS_FILE_NAME);
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-    {
-        std::cerr << "Failed to open file: " << SETTINGS_FILE_NAME << " to write the settings " << std::endl;
-        exit(1);
-    }
 
-    QTextStream out(&file);
-    out << CAMERA_SENSITIVITY_PREFIX << "=" << m_settings.camera_sensitivity << "\n";
-    out << Z_MOVEMENT_SENSITIVITY_PREFIX << "=" << m_settings.z_movement_sensitivity << "\n";
-    out << X_Y_MOVEMENT_SENSITIVITY_PREFIX << "=" << m_settings.x_y_movement_sensitivity << "\n";
-    out << TERRAIN_SCALE_PREFIX << "=" << m_settings.terrain_scaler << "\n";
+}
+
+void Settings::setCameraSensitivity(int sensitivity)
+{
+    m_core_settings.setValue(Settings::_key_camera_sensitivity, sensitivity);
+    m_core_settings.sync();
+}
+
+void Settings::setZSensitivity(int sensitivity)
+{
+    m_core_settings.setValue(Settings::_key_z_sensitivity, sensitivity);
+    m_core_settings.sync();
+}
+
+void Settings::setXYSensitivity(int sensitivity)
+{
+    m_core_settings.setValue(Settings::_key_x_y_sensitivity, sensitivity);
+    m_core_settings.sync();
+}
+
+void Settings::setTerrainScale(int scale)
+{
+    m_core_settings.setValue(Settings::_key_terrain_scale, scale);
+    m_core_settings.sync();
+}
+
+void Settings::setUseTerrainDefaultScale(bool use_default)
+{
+    m_core_settings.setValue(Settings::_key_use_terrain_default_scale, use_default);
+    m_core_settings.sync();
+}
+
+int Settings::getCameraSensitivity() const
+{
+    return m_core_settings.value(Settings::_key_camera_sensitivity, _default_camera_sensitivity).toInt();
+}
+
+int Settings::getZSensitivity() const
+{
+    return m_core_settings.value(Settings::_key_z_sensitivity, _default_z_sensitivity).toInt();
+}
+
+int Settings::getXYSensitivity() const
+{
+    return m_core_settings.value(Settings::_key_x_y_sensitivity, _default_x_y_sensitivity).toInt();
+}
+
+int Settings::getTerrainScale() const
+{
+    return m_core_settings.value(Settings::_key_terrain_scale, _default_scale).toInt();
+}
+
+bool Settings::useTerrainDefaultScale() const
+{
+    return m_core_settings.value(Settings::_key_use_terrain_default_scale, _default_use_terrain_default_scale).toBool();
 }
 
 /*******************
  * SETTINGS EDITOR *
  *******************/
-SettingsEditorDialog::SettingsEditorDialog ( QWidget * parent, Qt::WindowFlags f) : QDialog(parent,f)
+SettingsDialog::SettingsDialog ( QWidget * parent, Qt::WindowFlags f) : QDialog(parent,f)
 {
     setModal(true);
     setWindowTitle("Settings");
@@ -75,83 +98,88 @@ SettingsEditorDialog::SettingsEditorDialog ( QWidget * parent, Qt::WindowFlags f
     init_signals();
 }
 
-void SettingsEditorDialog::init_layout()
+SettingsDialog::~SettingsDialog()
+{
+
+}
+
+void SettingsDialog::init_layout()
 {
     m_camera_sensitivity_slider = new QSlider(Qt::Horizontal, this);
     m_camera_sensitivity_slider->setRange(1,50);
-    m_camera_sensitivity_slider->setTickInterval(5);
-    m_camera_sensitivity_slider->setValue(m_settings_file.m_settings.camera_sensitivity);
+    m_camera_sensitivity_slider->setValue(m_settings.getCameraSensitivity());
 
     m_z_movement_sensitivity_slider = new QSlider(Qt::Horizontal, this);
     m_z_movement_sensitivity_slider->setRange(1,100);
-    m_z_movement_sensitivity_slider->setTickInterval(10);
-    m_z_movement_sensitivity_slider->setValue(m_settings_file.m_settings.z_movement_sensitivity);
+    m_z_movement_sensitivity_slider->setValue(m_settings.getZSensitivity());
 
     m_x_y_movement_sensitivity_slider = new QSlider(Qt::Horizontal, this);
     m_x_y_movement_sensitivity_slider->setRange(1,50);
-    m_x_y_movement_sensitivity_slider->setTickInterval(5);
-    m_x_y_movement_sensitivity_slider->setValue(m_settings_file.m_settings.x_y_movement_sensitivity);
+    m_x_y_movement_sensitivity_slider->setValue(m_settings.getXYSensitivity());
 
-    m_terrain_scaler_cb = new QComboBox(this);
-    m_terrain_scaler_cb->addItem("1");
-    m_terrain_scaler_cb->addItem("2");
-    m_terrain_scaler_cb->addItem("3");
-    m_terrain_scaler_cb->addItem("4");
-    m_terrain_scaler_cb->addItem("5");
-    m_terrain_scaler_cb->setCurrentIndex(m_terrain_scaler_cb->findText(QString::number(m_settings_file.m_settings.terrain_scaler)));
+    m_terrain_scale_le = new QIntLineEdit(1, 100, this);
+    m_terrain_scale_le->setText(QString::number(m_settings.getTerrainScale()));
 
-    QHBoxLayout * camera_sensitivity_hl = new QHBoxLayout();
-    {
-        camera_sensitivity_hl->addWidget(new QLabel("Camera sensitivity: "));
-        camera_sensitivity_hl->addWidget(m_camera_sensitivity_slider);
-    }
-
-    QHBoxLayout * z_movement_sensitivity_hl = new QHBoxLayout();
-    {
-        z_movement_sensitivity_hl->addWidget(new QLabel("ZX plane (forward/back) movement sensitivity: "));
-        z_movement_sensitivity_hl->addWidget(m_z_movement_sensitivity_slider);
-    }
-
-    QHBoxLayout * x_y_movement_sensitivity_hl = new QHBoxLayout();
-    {
-        x_y_movement_sensitivity_hl->addWidget(new QLabel("XY plane (side/up) movement sensitivity: "));
-        x_y_movement_sensitivity_hl->addWidget(m_x_y_movement_sensitivity_slider);
-    }
-
-    QHBoxLayout * terrain_dim_hl = new QHBoxLayout();
-    {
-        terrain_dim_hl->addWidget(new QLabel("Terrain scale: "));
-        terrain_dim_hl->addWidget(m_terrain_scaler_cb);
-        terrain_dim_hl->addWidget(new QLabel(" X"));
-    }
+    m_default_scale_cb = new QCheckBox(this);
+    m_default_scale_cb->setChecked(m_settings.useTerrainDefaultScale());
 
     QVBoxLayout * main_layout = new QVBoxLayout;
+    // Camera sensitivity
+    {
+        QHBoxLayout * layout = new QHBoxLayout();
+        layout->addWidget(new QLabel("Camera sensitivity: "));
+        layout->addWidget(m_camera_sensitivity_slider,1);
+        main_layout->addLayout(layout);
+    }
 
-    main_layout->addLayout(camera_sensitivity_hl);
-    main_layout->addLayout(z_movement_sensitivity_hl);
-    main_layout->addLayout(x_y_movement_sensitivity_hl);
-    main_layout->addLayout(terrain_dim_hl);
+    // Z sensitivity
+    {
+        QHBoxLayout * layout = new QHBoxLayout();
+        layout->addWidget(new QLabel("ZX plane (forward/back) movement sensitivity: "));
+        layout->addWidget(m_z_movement_sensitivity_slider,1);
+        main_layout->addLayout(layout);
+    }
+
+    // X-Y sensitivity
+    {
+        QHBoxLayout * layout = new QHBoxLayout();
+        layout->addWidget(new QLabel("XY plane (side/up) movement sensitivity: "));
+        layout->addWidget(m_x_y_movement_sensitivity_slider,1);
+        main_layout->addLayout(layout);
+    }
+
+    // Meters per terrain unit
+    {
+        QHBoxLayout * layout = new QHBoxLayout();
+        layout->addWidget(new QLabel("Terrain scale: "));
+        layout->addWidget(m_terrain_scale_le, 1);
+        layout->addWidget(m_default_scale_cb);
+        layout->addWidget(new QLabel("Use terrain default"));
+        main_layout->addLayout(layout);
+    }
+
+    main_layout->addWidget(new QLabel(""), 1); // Padding
 
     setLayout(main_layout);
 }
 
-void SettingsEditorDialog::init_signals()
+void SettingsDialog::init_signals()
 {
-    connect(m_camera_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(settings_changed()));
-    connect(m_z_movement_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(settings_changed()));
-    connect(m_x_y_movement_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(settings_changed()));
-    connect(m_terrain_scaler_cb, SIGNAL(currentIndexChanged(int)), this, SLOT(settings_changed()));
+    connect(m_camera_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setCameraSensitivity(int)));
+    connect(m_z_movement_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setZSensitivity(int)));
+    connect(m_x_y_movement_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setXYSensitivity(int)));
+    connect(m_terrain_scale_le, SIGNAL(valueChanged(int)), &m_settings, SLOT(setTerrainScale(int)));
+    connect(m_default_scale_cb, SIGNAL(clicked(bool)), &m_settings, SLOT(setUseTerrainDefaultScale(bool)));
+
+    connect(m_default_scale_cb, SIGNAL(clicked(bool)), m_terrain_scale_le, SLOT(setDisabled(bool)));
 }
 
-void SettingsEditorDialog::settings_changed()
+QString SettingsDialog::get_two_number_digit(int digit)
 {
-    m_settings_file.m_settings.camera_sensitivity = m_camera_sensitivity_slider->value();
-    m_settings_file.m_settings.z_movement_sensitivity = m_z_movement_sensitivity_slider->value();
-    m_settings_file.m_settings.x_y_movement_sensitivity = m_x_y_movement_sensitivity_slider->value();
-    m_settings_file.m_settings.terrain_scaler = m_terrain_scaler_cb->currentText().toInt();
+    return QString("%1").arg(digit, 2, 10, QChar('0'));
 }
 
-SettingsEditorDialog::~SettingsEditorDialog()
+QSize SettingsDialog::sizeHint() const
 {
-
+    return QSize(700,350);
 }

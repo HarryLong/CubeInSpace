@@ -20,12 +20,13 @@ TimeOfDaySlider::TimeOfDaySlider()
     setValue(DEFAULT_TIME_OF_DAY);
 }
 
-
 TimeControllerDialog::TimeControllerDialog(QWidget * parent, Qt::WindowFlags f) :
-    m_month_of_year_slider(new MonthOfYearSlider), m_time_of_day_slider(new TimeOfDaySlider),
+    QDialog(parent, f), m_month_of_year_slider(new MonthOfYearSlider), m_time_of_day_slider(new TimeOfDaySlider),
     m_month_lbl(new QLabel), m_time_lbl(new QLabel)
 {
     setModal(false);
+    setWindowTitle("Time Controller");
+
     connect(m_month_of_year_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
     connect(m_time_of_day_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_labels()));
 

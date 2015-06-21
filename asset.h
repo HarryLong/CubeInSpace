@@ -5,23 +5,31 @@
 #include "glm/glm.hpp"
 #include "glm/matrix.hpp"
 
+#include <vector>
+
 class Asset : public GlDrawable
 {
 public:
+    struct AssetTransformations{
+    public:
+        AssetTransformations(glm::mat4x4 mtw, float scale) : mtw(mtw), scale(scale) {}
+        float scale;
+        glm::mat4x4 mtw;
+    };
+
     Asset(bool uniform_color, glm::vec4 color = glm::vec4(), glm::mat4x4 mtw_mat = glm::mat4x4(), float scale = 1.0f);
     virtual ~Asset();
 
-    void setMtwMat(glm::mat4x4 mtw_mat);
-    glm::mat4x4 getMtwMat() const;
-    float getScale() const;
-    void setScale(float scale);
+    void addTransformation(glm::mat4x4 mtw, float scale = 1.0f);
+    void setTranformation(glm::mat4x4 mtw, float scale = 1.0f);
+    const std::vector<Asset::AssetTransformations> & getTransformations();
+    void clearTransformations();
 
     const glm::vec4 m_color;
     const bool m_uniform_color;
 
 private:
-    glm::mat4x4 m_mtw_mat;
-    float m_scale;
+    std::vector<Asset::AssetTransformations> m_asset_transformations;
 };
 
 #endif // ASSET_H

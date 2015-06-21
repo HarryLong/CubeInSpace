@@ -4,6 +4,7 @@
 #include <math.h>
 #include "geom.h"
 #include "glm_rotations.h"
+#include <QSlider>
 
 /**********************
  * CAMERA ORIENTATION *
@@ -31,10 +32,15 @@ void CameraOrientation::calculate_rotation_matrix()
 /****************
  * VIEW MANAGER *
  ****************/
-ViewManager::ViewManager(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity) : m_camera_sensitivity(camera_sensitivity),
-    m_z_movement_sensitivity(z_movement_sensitivity), m_x_y_movement_sensitivity(x_y_movement_sensitivity)
+ViewManager::ViewManager(ViewControllers & view_controllers) : m_camera_sensitivity(view_controllers.camera_sensitivity_slider->value()),
+    m_z_movement_sensitivity(view_controllers.z_movement_sensitivity_slider->value()),
+    m_x_y_movement_sensitivity(view_controllers.x_y_movement_sensitivity_slider->value())
 {
     m_transformation_matrices.projection = glm::frustum(LEFT, RIGHT, BOTTOM, TOP, Z_NEAR, Z_FAR);
+
+    connect(view_controllers.camera_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(set_camera_sensitivity(int)));
+    connect(view_controllers.x_y_movement_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(set_x_y_movements_sensitivity(int)));
+    connect(view_controllers.z_movement_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(set_z_movements_sensitivity(int)));
 
     //TMP
     translate_camera(0,500,5);
@@ -72,6 +78,8 @@ void ViewManager::rotate(float pitch, float yaw, bool ignore_sensitivity)
     m_transformation_matrices.view.rotation.yaw += (ignore_sensitivity ? 1 : m_camera_sensitivity) * yaw;
 
     m_transformation_matrices.view.rotation.calculate_rotation_matrix();
+
+    emit_camera_orientation_changed_signal();
 }
 
 void ViewManager::translate_camera(float p_x, float p_y, float p_z)
@@ -93,6 +101,8 @@ void ViewManager::reset_camera()
 
     m_transformation_matrices.view.rotation.rotation_mat = glm::mat4x4();
     m_transformation_matrices.view.translation = glm::mat4x4();
+
+    emit_camera_orientation_changed_signal();
 }
 
 glm::vec3 ViewManager::toWorld(const glm::vec3 & camera_position, const GLint* viewport)
@@ -111,11 +121,19 @@ glm::vec3 ViewManager::toWorld(const glm::vec3 & camera_position, const GLint* v
     return glm::vec3(world_pos.x, world_pos.y, world_pos.z);
 }
 
-void ViewManager::setNavigationProperties(int z_movement_sensitivity, int x_y_movement_sensitivity, int camera_sensitivity)
+void ViewManager::set_camera_sensitivity(int camera_sensitivity)
 {
-    this->m_camera_sensitivity = camera_sensitivity;
-    this->m_z_movement_sensitivity = z_movement_sensitivity;
-    this->m_x_y_movement_sensitivity = x_y_movement_sensitivity;
+    m_camera_sensitivity = camera_sensitivity;
+}
+
+void ViewManager::set_z_movements_sensitivity(int z_movement_sensitivity)
+{
+    m_z_movement_sensitivity = z_movement_sensitivity;
+}
+
+void ViewManager::set_x_y_movements_sensitivity(int x_y_movement_sensitivity)
+{
+    m_x_y_movement_sensitivity = x_y_movement_sensitivity;
 }
 
 void ViewManager::pushTransforms()
@@ -127,3 +145,19 @@ void ViewManager::popTransforms()
 {
     m_transformation_matrices = m_cached_transformation_matrices;
 }
+
+void ViewManager::emit_camera_orientation_changed_signal()
+{
+    emit cameraOrientationChanged(m_transformation_matrices.view.rotation.pitch, m_transformation_matrices.view.rotation.yaw);
+}
+
+float ViewManager::getCameraYaw()
+{
+    return m_transformation_matrices.view.rotation.pitch;
+}
+
+float ViewManager::getCameraPitch()
+{
+    return m_transformation_matrices.view.rotation.yaw;
+}
+
