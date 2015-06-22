@@ -110,17 +110,16 @@ public:
     ~Renderer();
     void init();
 
-    void renderTerrain(QGLShaderProgram * shader, const ViewManager & p_view, Terrain& terrain, const LightProperties & sunlight_properties);
-    void renderTerrainElements(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain& terrain);
+    void renderTerrain(QGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties);
+    void renderTerrainElements(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain);
     void renderAssets(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets);
-    void calculateNormals(QGLShaderProgram * shader, Terrain& terrain);
+    void calculateNormals(QGLShaderProgram * shader, Terrain * terrain);
 
-    void printShaders();
 private:
     void init_uniforms();
     void init_shaders();
     void append_shader(const ShaderType & shader_type, const QString & description);
-
+    void reset_overlays(QGLShaderProgram * shader);
 //    std::map<ShaderType, ShaderProgram *> m_shaders;
 
     // Uniform holders

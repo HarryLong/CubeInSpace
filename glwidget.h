@@ -16,8 +16,7 @@
 #include <thread>
 #include "rays.h"
 #include "orientation_widget.h"
-#include "latitude_controller_widget.h"
-
+#include "controller_widgets.h"
 
 class QProgressDialog;
 class QSurface;
@@ -57,15 +56,38 @@ public:
     QGLShaderProgram * m_normals_generator;
 };
 
+/*******************
+ * OVERLAY WIDGETS *
+ *******************/
+class OverlayWidgets {
+public:
+    enum Type {
+        _LATITUDE,
+        _MONTH,
+        _TIME
+    };
+
+    OverlayWidgets(QWidget * parent);
+    ~OverlayWidgets();
+
+    void display(Type type);
+    void hideAll();
+    bool isVisible(Type type) const;
+    BaseControllerWidget * operator()(Type type);
+
+private:
+    std::map<Type, BaseControllerWidget*> m_widgets;
+};
+
 class Actions;
 
 class GLWidget : public QOpenGLWidget
 {
     Q_OBJECT
 public:
-    GLWidget(TimeControllers time_controllers, ViewControllers view_controllers,
-             TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
-             Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions, QWidget * parent = NULL);
+    GLWidget(ViewControllers view_controllers, TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
+             Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions, Actions * edit_actions,
+             QWidget * parent = NULL);
     ~GLWidget();
     void loadTerrain(QString filename);
 
@@ -118,14 +140,12 @@ private:
     void mouse_tracking_callback();
     void show_cursor(bool show);
 
-    OrientationWidget m_orientation_widget;
-    LatitudeControllerWidget m_latitude_controller;
-
     ProgressBarWidget * m_progress_bar_widget;
     PointerInformationDialog * m_pointer_info_dlg;
+    OverlayWidgets m_overlay_widgets;
 
     Renderer m_renderer;
-    SceneManager m_scene_manager;
+    SceneManager * m_scene_manager; // Pointer to ensure GL context is current on deletion
     ViewManager m_view_manager;
     RayDrawer m_rays;
     MouseTracker m_mouse_position_tracker;
@@ -147,8 +167,10 @@ private:
     Actions * m_render_actions;
     Actions * m_control_actions;
     Actions * m_show_actions;
+    Actions * m_edit_actions;
 
     ShaderPrograms * m_shaders;
+    OrientationWidget m_orientation_widget;
 };
 
 #endif

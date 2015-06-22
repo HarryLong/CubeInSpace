@@ -5,6 +5,7 @@
 #include "texture_element.h"
 #include <glm/common.hpp>
 #include <QOpenGLFramebufferObjectFormat>
+#include <QOffscreenSurface>
 
 class QOpenGLFramebufferObject;
 /*******************
@@ -23,6 +24,8 @@ public:
     virtual void render();
 
     glm::vec3 operator()(int x, int z) const;
+
+    QSurface * getOffscreenSurface();
 
 protected:
     void initGL();
@@ -45,6 +48,8 @@ private:
 
     GLfloat * m_normals;
     QImage m_img_normals;
+
+    QOffscreenSurface m_offscreen_surface;
 };
 
 

@@ -10,7 +10,6 @@
 
 class Actions;
 class TimeControllerDialog;
-class LatitudeControllerDialog;
 class PointerInformationDialog;
 class SettingsDialog;
 class TemperatureEditDialog;
@@ -20,7 +19,7 @@ public:
     Dialogs(QWidget * parent);
 
     SettingsDialog * m_settings_dlg;
-    TimeControllerDialog * m_time_controller_dlg;
+//    TimeControllerDialog * m_time_controller_dlg;
     TemperatureEditDialog * m_temp_editor_dlg;
 };
 
@@ -34,7 +33,6 @@ public:
 
 private slots:
     void load_terrain_file();
-    void show_time_controller_dlg();
     void show_settings_dlg();
     void show_temp_edit_dlg();
 

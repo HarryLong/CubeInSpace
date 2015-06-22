@@ -12,13 +12,14 @@ SceneManager::SceneManager(PositionControllers position_controllers, TimeControl
                            TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions) :
     m_sun(NULL), m_acceleration_structure_viewer(NULL), m_orientation_compass(position_controllers), m_temp_edit_dlg(temp_edit_dlg),
     m_lighting_manager(time_controllers, m_orientation_compass.getNorthOrientation(), m_orientation_compass.getTrueNorthOrientation(), m_orientation_compass.getEastOrientation()),
-    m_terrain(terrain_controllers, overlay_actions)
+    m_terrain(new Terrain(terrain_controllers, overlay_actions))
 {
     establish_connections();
 }
 
 SceneManager::~SceneManager()
 {
+    delete m_terrain;
     if(m_sun)
         delete m_sun;
     if(m_acceleration_structure_viewer)
@@ -27,17 +28,17 @@ SceneManager::~SceneManager()
 
 void SceneManager::initScene()
 {
-    m_terrain.loadBaseTerrain();
+    m_terrain->loadBaseTerrain();
 }
 
 void SceneManager::establish_connections()
 {
-    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
-    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_orientation_compass, SLOT(setTerrainDimensions(int,int,int,int)));
-    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refreshAccelerationStructureViewer()));
+    connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
+    connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_orientation_compass, SLOT(setTerrainDimensions(int,int,int,int)));
+    connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refreshAccelerationStructureViewer()));
 
     // When the terrain overlay changes, a re-render must be triggered
-    connect(&m_terrain, SIGNAL(activeOverlayChanged()), this, SLOT(emitRefreshRenderRequest()));
+    connect(m_terrain, SIGNAL(activeOverlayChanged()), this, SLOT(emitRefreshRenderRequest()));
 
     // When an orientation change occurs, the lighting manager needs to be alerted to change the sun position
     connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), &m_lighting_manager,
@@ -47,23 +48,23 @@ void SceneManager::establish_connections()
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
 
     // When the latitude changes, the illumination data must be discarded and recalculated
-    connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), &m_terrain, SLOT(invalidateIllumination()));
+    connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), m_terrain, SLOT(invalidateIllumination()));
 
     // Recalculate illumination recalculation
-    connect(&m_terrain, SIGNAL(trigger_daily_illumination_refresh()), this, SLOT(refreshDailyIllumination()));
+    connect(m_terrain, SIGNAL(trigger_daily_illumination_refresh()), this, SLOT(refreshDailyIllumination()));
 
     // Recalculate temperature
-    connect(m_temp_edit_dlg, SIGNAL(temperatureValuesChanged(float,float,float,float)), &m_terrain, SLOT(refreshTemperature(float,float,float,float)));
+    connect(m_temp_edit_dlg, SIGNAL(temperatureValuesChanged(float,float,float,float)), m_terrain, SLOT(refreshTemperature(float,float,float,float)));
 
     // PROGRESS BAR CONNECTIONS //
     // When the terrain is busy, a processing signal needs to be emitted
-    connect(&m_terrain, SIGNAL(processing(QString)), this, SLOT(emitProcessing(QString)));
+    connect(m_terrain, SIGNAL(processing(QString)), this, SLOT(emitProcessing(QString)));
 
     // The progress must be updated
-    connect(&m_terrain, SIGNAL(intermediate_processing_update(int)), this, SLOT(emitProcessingUpdate(int)));
+    connect(m_terrain, SIGNAL(intermediate_processing_update(int)), this, SLOT(emitProcessingUpdate(int)));
 
     // When the terrain has finished. a finished processing signal should be emitted
-    connect(&m_terrain, SIGNAL(processing_complete()), this, SLOT(emitProcessingComplete()));
+    connect(m_terrain, SIGNAL(processing_complete()), this, SLOT(emitProcessingComplete()));
 }
 
 Asset * SceneManager::getAccelerationStructure()
@@ -76,7 +77,7 @@ Grid & SceneManager::getGrid()
     return m_grid;
 }
 
-Terrain& SceneManager::getTerrain()
+Terrain * SceneManager::getTerrain()
 {
     return m_terrain;
 }
@@ -97,16 +98,16 @@ void SceneManager::loadTerrain(QString filename)
     m_temp_edit_dlg->reset();
     // Read terragen file
     TerragenFile parsed_terragen_file(filename.toStdString());
-    m_terrain.setTerrain(parsed_terragen_file);
+    m_terrain->setTerrain(parsed_terragen_file);
 }
 
 void SceneManager::refreshAccelerationStructureViewer()
 {
-    float terrain_scale(m_terrain.getScale());
+    float terrain_scale(m_terrain->getScale());
     if(!m_acceleration_structure_viewer)
         m_acceleration_structure_viewer = ShapeFactory::getCube(1.0f);
     m_acceleration_structure_viewer->clearTransformations();
-    for(const AccelerationSphere & sphere : m_terrain.getSphereAccelerationStructure().getSpheres())
+    for(const AccelerationSphere & sphere : m_terrain->getSphereAccelerationStructure().getSpheres())
     {
         glm::mat4x4 mtw(glm::translate(glm::mat4x4(), sphere.m_center*terrain_scale));
         float scale(sphere.m_radius*2.f*terrain_scale);
@@ -116,7 +117,7 @@ void SceneManager::refreshAccelerationStructureViewer()
 
 void SceneManager::sunPositionChanged(float pos_x, float pos_y, float pos_z)
 {
-    m_terrain.setSunPosition(pos_x, pos_y, pos_z);
+    m_terrain->setSunPosition(pos_x, pos_y, pos_z);
     emit refreshRender();
 }
 
@@ -145,8 +146,8 @@ void SceneManager::refreshDailyIllumination()
     int current_month(m_lighting_manager.currentMonth());
     int current_time(m_lighting_manager.currentTime());
 
-    int terrain_width(m_terrain.getWidth());
-    int terrain_depth(m_terrain.getDepth());
+    int terrain_width(m_terrain->getWidth());
+    int terrain_depth(m_terrain->getDepth());
     int n_elements(terrain_width*terrain_depth);
 
     GLubyte * intermediary_illumination_data = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
@@ -161,8 +162,8 @@ void SceneManager::refreshDailyIllumination()
         for(int hour = 0; hour < 24; hour++)
         {
             m_lighting_manager.setTime(hour * 60);
-            m_terrain.refreshShade("Calculating shade for: Month " + QString::number(month) + " | Hour: " + QString::number(hour));
-            const GLubyte * shade_data(m_terrain.getShade().getRawData());
+            m_terrain->refreshShade("Calculating shade for: Month " + QString::number(month) + " | Hour: " + QString::number(hour));
+            const GLubyte * shade_data(m_terrain->getShade()->getRawData());
 #pragma omp parallel for
             for(int z = 0 ; z < terrain_depth; z++)
             {
@@ -197,8 +198,8 @@ void SceneManager::refreshDailyIllumination()
         }
     }
     free(intermediary_illumination_data);
-    m_terrain.setMinIlluminationData(aggregated_min);
-    m_terrain.setMaxIlluminationData(aggregated_max);
+    m_terrain->setMinIlluminationData(aggregated_min);
+    m_terrain->setMaxIlluminationData(aggregated_max);
 
     // Restore time and date
     m_lighting_manager.setMonth(current_month);

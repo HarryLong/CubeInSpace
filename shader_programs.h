@@ -1,5 +1,5 @@
-#ifndef GL_SHADERS
-#define GL_SHADERS
+#ifndef SHADER_PROGRAMS
+#define SHADER_PROGRAMS
 
 #include <QGLShaderProgram>
 
@@ -51,4 +51,4 @@ public:
     ~NormalsGeneratorShader();
 };
 
-#endif
+#endif //SHADER_PROGRAMS

@@ -28,6 +28,14 @@ TerrainNormals::~TerrainNormals()
     delete_raw_normals();
 }
 
+QSurface * TerrainNormals::getOffscreenSurface()
+{
+    if(!m_offscreen_surface.isValid())
+        m_offscreen_surface.setFormat(QSurfaceFormat::defaultFormat());
+        m_offscreen_surface.create();
+    return &m_offscreen_surface;
+}
+
 void TerrainNormals::delete_fbo()
 {
     if(m_fbo_normal_map)
@@ -43,8 +51,6 @@ void TerrainNormals::init_fbo()
 glm::vec3 TerrainNormals::operator()(int x, int z) const
 {
     int start_idx(((z*m_width)+x)*3);
-    qCritical() << "Normal: [" << m_normals[start_idx] << ", " << m_normals[start_idx+1]
-                 << ", " << m_normals[start_idx+2];
 
 //    QRgb pixel(m_img_normals.pixel(x, z));
 //    qCritical() << "Normal: " << qRed(pixel) << ", " << qGreen(pixel)

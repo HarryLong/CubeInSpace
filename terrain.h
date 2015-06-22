@@ -114,12 +114,12 @@ public:
     bool overlayMaxDailyIllumination() const;
 
     DrawableTerrain & getDrawableTerrain();
-    TerrainShade & getShade();
-    TerrainNormals & getNormals();
-    TerrainTemperature & getMinTemp();
-    TerrainTemperature & getMaxTemp();
-    TerrainDailyIllumination & getMinDailyIllumination();
-    TerrainDailyIllumination & getMaxDailyIllumination();
+    TerrainShade * getShade();
+    TerrainNormals * getNormals();
+    TerrainTemperature * getMinTemp();
+    TerrainTemperature * getMaxTemp();
+    TerrainDailyIllumination * getMinDailyIllumination();
+    TerrainDailyIllumination * getMaxDailyIllumination();
 
 signals:
     void terrainDimensionsChanged(int width, int depth, int base_height, int max_height);
@@ -163,12 +163,12 @@ private:
     TerrainMaterialProperties m_material_properties;
     float m_scale;
     DrawableTerrain m_drawable_terrain;
-    TerrainShade m_terrain_shade;
-    TerrainNormals m_terrain_normals;
-    TerrainTemperature m_terrain_min_temp;
-    TerrainTemperature m_terrain_max_temp;
-    TerrainDailyIllumination m_terrain_min_daily_illumination;
-    TerrainDailyIllumination m_terrain_max_daily_illumination;
+    TerrainShade * m_terrain_shade;
+    TerrainNormals * m_terrain_normals;
+    TerrainTemperature * m_terrain_min_temp;
+    TerrainTemperature * m_terrain_max_temp;
+    TerrainDailyIllumination * m_terrain_min_daily_illumination;
+    TerrainDailyIllumination * m_terrain_max_daily_illumination;
     Actions * m_overlay_actions;
 };
 

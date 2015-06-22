@@ -12,7 +12,7 @@
 #include "settings.h"
 #include "actions.h"
 #include "glheader.h"
-#include "gl_shaders.h"
+#include "shader_programs.h"
 
 /*****************
  * MOUSE TRACKER *
@@ -85,19 +85,69 @@ ShaderPrograms::~ShaderPrograms()
 
 //----------------------------------------------------------------------------------------------
 
-GLWidget::GLWidget(TimeControllers time_controllers,
-                    ViewControllers view_controllers, TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
-                    Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions,
-                    QWidget * parent) :
+/*******************
+ * OVERLAY WIDGETS *
+ *******************/
+//    enum Type {
+//        _LATITUDE,
+//        _MONTH,
+//        _TIME
+//    };
+
+OverlayWidgets::OverlayWidgets(QWidget * parent) :
+            m_latitude_controller(parent), m_month_controller(parent), m_time_controller(parent)
+{
+    m_widgets[Type::_LATITUDE] = new LatitudeControllerWidget(parent);
+    m_widgets[Type::_MONTH] = new MonthControllerWidget(parent);
+    m_widgets[Type::_TIME] = new TimeControllerWidget(parent);
+}
+
+OverlayWidgets::~OverlayWidgets()
+{
+    for(BaseControllerWidget * w : m_widgets)
+        delete w;
+}
+
+void OverlayWidgets::display(Type type)
+{
+    m_widgets[type]->show();
+}
+
+void OverlayWidgets::hideAll()
+{
+    for(BaseControllerWidget * w : m_widgets)
+        w->hide();
+}
+
+bool OverlayWidgets::isVisible(Type type) const
+{
+    return m_widgets[type]->isVisible();
+}
+
+BaseControllerWidget * OverlayWidgets::operator()(Type type)
+{
+    return m_widgets[type];
+}
+
+
+//----------------------------------------------------------------------------------------------
+
+
+GLWidget::GLWidget(ViewControllers view_controllers, TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
+                   Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions,
+                   Actions * edit_actions, QWidget * parent) :
   QOpenGLWidget(parent),
   m_progress_bar_widget(new ProgressBarWidget(this)),
   m_pointer_info_dlg(new PointerInformationDialog(this)),
-  m_latitude_controller(this),
-  m_scene_manager(PositionControllers(m_latitude_controller.m_latitude_slider), time_controllers, terrain_controllers, temp_edit_dlg, overlay_actions),
+  m_overlay_widgets(this),
+  m_scene_manager(new SceneManager(PositionControllers(m_overlay_widgets.m_latitude_controller.getSlider()),
+                                   TimeControllers(m_overlay_widgets.m_time_controller.getSlider(), m_overlay_widgets.m_month_controller.getSlider()),
+                                   terrain_controllers, temp_edit_dlg, overlay_actions)),
   m_navigation_enabled(false), m_mouse_tracking_thread(NULL), m_authorise_navigation_mode_switch(true),
   m_view_manager(view_controllers),
   m_orientation_widget(m_view_manager.getCameraPitch(), m_view_manager.getCameraYaw(), this),
-  m_render_actions(render_actions), m_control_actions(control_actions), m_show_actions(show_actions)
+  m_render_actions(render_actions), m_control_actions(control_actions), m_show_actions(show_actions),
+  m_edit_actions(edit_actions)
 {
     m_mouse_tracking_thread_run.store(true);
     m_ctrl_pressed.store(false);
@@ -111,6 +161,7 @@ GLWidget::~GLWidget()
 {
     makeCurrent();
     enable_continuous_mouse_tracking(false);
+    delete m_scene_manager;
     delete m_progress_bar_widget;
     delete m_mouse_tracking_thread;
     delete m_pointer_info_dlg;
@@ -119,7 +170,7 @@ GLWidget::~GLWidget()
 void GLWidget::establish_connections()
 {
     // Refresh render upon request from the scene manager
-    connect(&m_scene_manager, SIGNAL(refreshRender()), this, SLOT(update()));
+    connect(m_scene_manager, SIGNAL(refreshRender()), this, SLOT(update()));
 
     connect(&m_view_manager, SIGNAL(cameraOrientationChanged(float,float)), &m_orientation_widget, SLOT(setCameraOrientation(float,float)));
 
@@ -130,15 +181,17 @@ void GLWidget::establish_connections()
     connect((*m_show_actions)(ShowActions::_POINTER_INFO), SIGNAL(toggled(bool)), this, SLOT(display_info_pointer_dlg(bool)));
 
     // Progress dialog updates
-    connect(&m_scene_manager, SIGNAL(processing(QString)), m_progress_bar_widget, SLOT(processing(QString)));
-    connect(&m_scene_manager, SIGNAL(processingUpdate(int)), m_progress_bar_widget, SLOT(updateProgress(int)));
-    connect(&m_scene_manager, SIGNAL(processingComplete()), m_progress_bar_widget, SLOT(finishedProcessing()));
+    connect(m_scene_manager, SIGNAL(processing(QString)), m_progress_bar_widget, SLOT(processing(QString)));
+    connect(m_scene_manager, SIGNAL(processingUpdate(int)), m_progress_bar_widget, SLOT(updateProgress(int)));
+    connect(m_scene_manager, SIGNAL(processingComplete()), m_progress_bar_widget, SLOT(finishedProcessing()));
 
     // When a new render element is selected, we must rerender
     connect(m_render_actions->getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(update()));
 
     // Clear rendered rays when action is toggles
     connect((*m_render_actions)(RenderActions::_RAYS), SIGNAL(toggled(bool)), this, SLOT(clear_rays()));
+
+    // When an edit element is clicked
 }
 
 void GLWidget::control_changed()
@@ -169,7 +222,7 @@ void GLWidget::initializeGL() // Override
 
     m_shaders = new ShaderPrograms(this);
     emit GLReady(); // Other things need to be setup...
-    m_scene_manager.initScene();
+    m_scene_manager->initScene();
 }
 
 void GLWidget::paintGL() // Override
@@ -177,12 +230,12 @@ void GLWidget::paintGL() // Override
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     std::vector<Asset*> assets_to_render;
-    Terrain & terrain (m_scene_manager.getTerrain());
+    Terrain * terrain (m_scene_manager->getTerrain());
 
     // Draw the grid
     if(render_grid())
     {
-        std::vector<Asset*> grid_assets (m_scene_manager.getGrid().getAssets());
+        std::vector<Asset*> grid_assets (m_scene_manager->getGrid().getAssets());
         assets_to_render.insert(assets_to_render.end(), grid_assets.begin(), grid_assets.end());
     }
 
@@ -190,24 +243,27 @@ void GLWidget::paintGL() // Override
     if(render_terrain())
     {
         // Check if normals need recalculating
-        if(!terrain.normalsValid())
+        if(!terrain->normalsValid())
         {
+//            setFormat(terrain->getNormals().getOffscreenSurface());
+            context()->swapBuffers(terrain->getNormals()->getOffscreenSurface());
             m_renderer.calculateNormals(m_shaders->m_normals_generator, terrain);
+            makeCurrent();
         }
 
-        const LightProperties & sunlight_properties (m_scene_manager.getLightingManager().getSunlightProperties());
+        const LightProperties & sunlight_properties (m_scene_manager->getLightingManager().getSunlightProperties());
         m_renderer.renderTerrain(m_shaders->m_terrain, m_view_manager, terrain, sunlight_properties);
 
         // Terrain elements
         std::vector<Asset*> terrain_elements_to_render;
-        terrain_elements_to_render.push_back(terrain.getSelectionRect());
+        terrain_elements_to_render.push_back(terrain->getSelectionRect());
         m_renderer.renderTerrainElements(m_shaders->m_terrain_elements, m_view_manager, terrain_elements_to_render, terrain) ;
     }
 
     // Draw the acceleration structure
     if(render_acceleration_structure())
     {
-        assets_to_render.push_back(m_scene_manager.getAccelerationStructure());
+        assets_to_render.push_back(m_scene_manager->getAccelerationStructure());
     }
 
     // Draw the rays
@@ -216,7 +272,7 @@ void GLWidget::paintGL() // Override
 
     // Draw the sun
     if(render_sun())
-        assets_to_render.push_back(m_scene_manager.getSun());
+        assets_to_render.push_back(m_scene_manager->getSun());
 
     m_renderer.renderAssets(m_shaders->m_base, m_view_manager, assets_to_render);
 }
@@ -266,7 +322,7 @@ bool GLWidget::get_intersection_point_with_terrain(int screen_x, int screen_y, g
     glm::vec3 start(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, .0f), viewport));
     glm::vec3 end(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport));
     glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
-    return m_scene_manager.getTerrain().traceRay(start, direction, intersection_point);
+    return m_scene_manager->getTerrain()->traceRay(start, direction, intersection_point);
 }
 
 bool GLWidget::get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point)
@@ -278,7 +334,7 @@ bool GLWidget::get_intersection_point_with_base_plane(int screen_x, int screen_y
     glm::vec3 end(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport));
     glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
 
-    return Geom::rayPlaneIntersection(m_scene_manager.getTerrain().getBaseHeight(true), start, direction, intersection_point);
+    return Geom::rayPlaneIntersection(m_scene_manager->getTerrain()->getBaseHeight(true), start, direction, intersection_point);
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
@@ -366,7 +422,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         if(event->buttons() == Qt::LeftButton)
         {
-            Terrain & terrain (m_scene_manager.getTerrain());
+            Terrain * terrain (m_scene_manager->getTerrain());
             glm::vec3 intersection_point;
             if(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point) ||
                 get_intersection_point_with_base_plane(event->x(), event->y(), intersection_point))
@@ -378,11 +434,11 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                         0,
                         std::max(0.f,std::min(start_point_z, intersection_point[2])));
 
-                glm::vec3 rect_max( std::min((float)terrain.getWidth(true), std::max(start_point_x, intersection_point[0])),
+                glm::vec3 rect_max( std::min((float)terrain->getWidth(true), std::max(start_point_x, intersection_point[0])),
                         0,
-                        std::min((float)terrain.getDepth(true), std::max(start_point_z, intersection_point[2])));
+                        std::min((float)terrain->getDepth(true), std::max(start_point_z, intersection_point[2])));
 
-                terrain.setSelectionRectangle(rect_min, rect_max);
+                terrain->setSelectionRectangle(rect_min, rect_max);
                 update();
             }
         }
@@ -506,14 +562,14 @@ void GLWidget::keyReleaseEvent(QKeyEvent * event)
 void GLWidget::loadTerrain(QString filename)
 {
     makeCurrent();
-    m_scene_manager.loadTerrain(filename);
+    m_scene_manager->loadTerrain(filename);
     update();
 }
 
 void GLWidget::set_center_camera_position()
 {
     int width, depth, base_height, max_height;
-    m_scene_manager.getTerrain().getTerrainDimensions(width, depth, base_height, max_height);
+    m_scene_manager->getTerrain()->getTerrainDimensions(width, depth, base_height, max_height);
 
     m_view_manager.reset_camera();
     m_view_manager.forward(width/2.0f, true);
@@ -524,9 +580,6 @@ void GLWidget::set_center_camera_position()
 
 #define PROGRESS_BAR_HEIGHT 100
 #define ORIENTATION_WIDGET_HEIGHT 25
-#define LATITUDE_CONTROLLER_HEIGHT 400
-#define LATITUDE_CONTROLLER_WIDTH 50
-
 void GLWidget::resizeEvent(QResizeEvent *event)
 {
     QOpenGLWidget::resizeEvent(event);
@@ -540,33 +593,34 @@ void GLWidget::resizeEvent(QResizeEvent *event)
     m_orientation_widget.setFixedSize(w/2.0f, ORIENTATION_WIDGET_HEIGHT);
     m_orientation_widget.move(w/4.0f, 0);
 
-    m_latitude_controller.setFixedSize(LATITUDE_CONTROLLER_WIDTH, LATITUDE_CONTROLLER_HEIGHT);
-    m_latitude_controller.move(w-LATITUDE_CONTROLLER_WIDTH, h/2.0f - (LATITUDE_CONTROLLER_HEIGHT/2.0f));
+    m_overlay_widgets.m_latitude_controller.move(w-m_overlay_widgets.m_latitude_controller.width(), h/2.0f - (m_overlay_widgets.m_latitude_controller.height()/2.0f));
+
+    m_overlay_widgets.m_time_controller.move(0, h/2.0f - (m_overlay_widgets.m_time_controller.height()));
 }
 
 void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
 {
-    Terrain & terrain (m_scene_manager.getTerrain());
+    Terrain * terrain (m_scene_manager->getTerrain());
     glm::vec3 intersection_point;
     if(get_intersection_point_with_terrain(screen_pos[0], screen_pos[1], intersection_point))
     {
         // Altitude
-        float altitude(terrain.getAltitude(intersection_point));
+        float altitude(terrain->getAltitude(intersection_point));
 
         // Slope
-        float slope(terrain.getSlope(intersection_point));
+        float slope(terrain->getSlope(intersection_point));
 
         // Shade
         bool shaded;
-        bool shade_data_valid(terrain.isShaded(intersection_point, shaded));
+        bool shade_data_valid(terrain->isShaded(intersection_point, shaded));
 
         // Temperature
         float min_temp, max_temp;
-        bool temp_data_valid(terrain.getTemperatures(intersection_point, min_temp, max_temp));
+        bool temp_data_valid(terrain->getTemperatures(intersection_point, min_temp, max_temp));
 
         // Daily illumination
         int min_daily_illumination, max_daily_illumination;
-        bool daily_illumination_valid(terrain.getDailyIlluminations(intersection_point, min_daily_illumination, max_daily_illumination));
+        bool daily_illumination_valid(terrain->getDailyIlluminations(intersection_point, min_daily_illumination, max_daily_illumination));
 
         m_pointer_info_dlg->update(altitude, slope,
                                    shade_data_valid, shaded,

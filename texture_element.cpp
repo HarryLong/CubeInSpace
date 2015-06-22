@@ -10,7 +10,6 @@ template <class T> TextureElement<T>::TextureElement(QOpenGLTexture::TextureForm
 
 template <class T> TextureElement<T>::~TextureElement()
 {
-    delete_texture();
     if(m_raw_data)
         delete m_raw_data;
 }

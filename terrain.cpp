@@ -150,7 +150,11 @@ void DrawableTerrain::refreshHeightmapTexture(const TerragenFile & terragen_file
  ***********/
 Terrain::Terrain(TerrainControllers & terrain_controllers, Actions * overlay_actions) :
     m_terrain_controllers(terrain_controllers), m_overlay_actions(overlay_actions),
-    m_selection_rectangle(ShapeFactory::getSelectionRectangle())
+    m_selection_rectangle(ShapeFactory::getSelectionRectangle()),
+    m_terrain_shade(new TerrainShade), m_terrain_normals(new TerrainNormals),
+    m_terrain_min_temp(new TerrainTemperature), m_terrain_max_temp(new TerrainTemperature),
+    m_terrain_min_daily_illumination(new TerrainDailyIllumination),
+    m_terrain_max_daily_illumination(new TerrainDailyIllumination)
 {
     establish_connections();
     selected_overlay_changed();
@@ -162,7 +166,12 @@ Terrain::Terrain(TerrainControllers & terrain_controllers, Actions * overlay_act
 
 Terrain::~Terrain()
 {
-//    free(m_terragen_file.m_height_data);
+    delete m_terrain_shade;
+    delete m_terrain_normals;
+    delete m_terrain_min_temp;
+    delete m_terrain_max_temp;
+    delete m_terrain_min_daily_illumination;
+    delete m_terrain_max_daily_illumination;
 }
 
 void Terrain::establish_connections()
@@ -186,8 +195,8 @@ void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
     // Remove selection rectangle
     clear_selection_rectangle();
 
-    m_terrain_normals.setTerrainDim(m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
-    m_terrain_normals.setValid(false);
+    m_terrain_normals->setTerrainDim(m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
+    m_terrain_normals->setValid(false);
 
     m_sphere_acceleration_structure.build(m_terragen_file);
 
@@ -238,8 +247,8 @@ const SphericalAccelerationStructure<Hierarchical> & Terrain::getSphereAccelerat
 
 void Terrain::renderNormals()
 {
-    m_terrain_normals.render();
-    m_terrain_normals.setValid(true);
+    m_terrain_normals->render();
+    m_terrain_normals->setValid(true);
 }
 
 void Terrain::render()
@@ -249,7 +258,7 @@ void Terrain::render()
 
 bool Terrain::normalsValid()
 {
-    return m_terrain_normals.valid();
+    return m_terrain_normals->valid();
 }
 
 void Terrain::getTerrainDimensions(int & width, int & depth, int & base_height, int & max_height )
@@ -262,12 +271,12 @@ void Terrain::getTerrainDimensions(int & width, int & depth, int & base_height, 
 
 void Terrain::setMinIlluminationData(GLubyte * data)
 {
-    m_terrain_min_daily_illumination.setData(data, m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
+    m_terrain_min_daily_illumination->setData(data, m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
 }
 
 void Terrain::setMaxIlluminationData(GLubyte * data)
 {
-    m_terrain_max_daily_illumination.setData(data, m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
+    m_terrain_max_daily_illumination->setData(data, m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
 }
 
 void Terrain::refreshShade(QString display_message)
@@ -280,7 +289,7 @@ void Terrain::refreshShade(QString display_message)
 
     GLubyte * shade_data = NULL;
 
-    if(!m_terrain_shade.isValid())
+    if(!m_terrain_shade->isValid())
     {
         // Generate the data
         shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
@@ -305,7 +314,7 @@ void Terrain::refreshShade(QString display_message)
                     // First check if the normal is within sun angle
                     int index(z*terrain_depth+x);
 
-                    if(glm::dot(m_terrain_normals(x,z), sun_direction) < 0 ||
+                    if(glm::dot((*m_terrain_normals)(x,z), sun_direction) < 0 ||
                             ray_intersect(point_on_terrain, sun_direction, dummy_intersection_point, false)) // Not within direction
                     {
                         shade_data[index] = 0xFF;
@@ -318,7 +327,7 @@ void Terrain::refreshShade(QString display_message)
             }
         }
 
-        m_terrain_shade.setData(shade_data, terrain_width, terrain_depth);
+        m_terrain_shade->setData(shade_data, terrain_width, terrain_depth);
     }
 
     emit processing_complete();
@@ -356,7 +365,7 @@ void Terrain::refreshTemperature(float min_temp_at_zero, float min_lapse_rate, f
             }
         }
 
-        m_terrain_min_temp.setData(temp_data, terrain_width, terrain_depth);
+        m_terrain_min_temp->setData(temp_data, terrain_width, terrain_depth);
 
         emit processing_complete();
     }
@@ -387,7 +396,7 @@ void Terrain::refreshTemperature(float min_temp_at_zero, float min_lapse_rate, f
             }
         }
 
-        m_terrain_max_temp.setData(temp_data, terrain_width, terrain_depth);
+        m_terrain_max_temp->setData(temp_data, terrain_width, terrain_depth);
         emit processing_complete();
     }
 }
@@ -412,15 +421,15 @@ void Terrain::setSunPosition(float sun_pos_x, float sun_pos_y, float sun_pos_z)
 
 void Terrain::invalidate_shade()
 {
-    m_terrain_shade.invalidate();
+    m_terrain_shade->invalidate();
     if(overlayShade())
         reset_overlay();
 }
 
 void Terrain::invalidateIllumination()
 {
-    m_terrain_min_daily_illumination.invalidate();
-    m_terrain_max_daily_illumination.invalidate();
+    m_terrain_min_daily_illumination->invalidate();
+    m_terrain_max_daily_illumination->invalidate();
 
     if(overlayMinDailyIllumination() ||
             overlayMaxDailyIllumination())
@@ -433,8 +442,8 @@ void Terrain::invalidate_temp()
 {
     (*m_overlay_actions)(OverlayActions::_MIN_TEMP)->setEnabled(false);
     (*m_overlay_actions)(OverlayActions::_MAX_TEMP)->setEnabled(false);
-    m_terrain_min_temp.invalidate();
-    m_terrain_max_temp.invalidate();
+    m_terrain_min_temp->invalidate();
+    m_terrain_max_temp->invalidate();
 
     if(overlayMinTemp() || overlayMaxTemp())
     {
@@ -528,44 +537,44 @@ DrawableTerrain & Terrain::getDrawableTerrain()
     return m_drawable_terrain;
 }
 
-TerrainShade & Terrain::getShade()
+TerrainShade * Terrain::getShade()
 {
     return m_terrain_shade;
 }
 
-TerrainNormals & Terrain::getNormals()
+TerrainNormals * Terrain::getNormals()
 {
     return m_terrain_normals;
 }
 
-TerrainTemperature & Terrain::getMinTemp()
+TerrainTemperature * Terrain::getMinTemp()
 {
     return m_terrain_min_temp;
 }
 
-TerrainTemperature & Terrain::getMaxTemp()
+TerrainTemperature * Terrain::getMaxTemp()
 {
     return m_terrain_max_temp;
 }
 
-TerrainDailyIllumination & Terrain::getMinDailyIllumination()
+TerrainDailyIllumination * Terrain::getMinDailyIllumination()
 {
     return m_terrain_min_daily_illumination;
 }
 
-TerrainDailyIllumination & Terrain::getMaxDailyIllumination()
+TerrainDailyIllumination * Terrain::getMaxDailyIllumination()
 {
     return m_terrain_max_daily_illumination;
 }
 
 void Terrain::selected_overlay_changed()
 {
-    if(overlayShade() && !m_terrain_shade.isValid())
+    if(overlayShade() && !m_terrain_shade->isValid())
         refreshShade();
 
     if((overlayMinDailyIllumination() ||
             overlayMaxDailyIllumination()) &&
-        (!m_terrain_min_daily_illumination.isValid() || !m_terrain_max_daily_illumination.isValid()))
+        (!m_terrain_min_daily_illumination->isValid() || !m_terrain_max_daily_illumination->isValid()))
         refresh_illumination();
 
     emit activeOverlayChanged();
@@ -603,7 +612,7 @@ float Terrain::get_altitude(const glm::vec2 & point)
 
 float Terrain::get_slope(const glm::vec2 & point)
 {
-    glm::vec3 normal(m_terrain_normals(point[0],point[1]));
+    glm::vec3 normal((*m_terrain_normals)(point[0],point[1]));
     glm::vec3 vertical_vector(glm::vec3(0,1,0));
 
     return Geom::toDegrees(std::abs(std::acos(glm::dot(normal, vertical_vector))));
@@ -611,10 +620,10 @@ float Terrain::get_slope(const glm::vec2 & point)
 
 bool Terrain::get_temperatures(const glm::vec2 &point, float &min, float &max)
 {
-    if(m_terrain_min_temp.isValid() && m_terrain_max_temp.isValid())
+    if(m_terrain_min_temp->isValid() && m_terrain_max_temp->isValid())
     {
-        min = m_terrain_min_temp(point[0], point[1]);
-        max = m_terrain_max_temp(point[0], point[1]);
+        min = (*m_terrain_min_temp)(point[0], point[1]);
+        max = (*m_terrain_max_temp)(point[0], point[1]);
         return true;
     }
 
@@ -623,10 +632,10 @@ bool Terrain::get_temperatures(const glm::vec2 &point, float &min, float &max)
 
 bool Terrain::get_daily_illuminations(const glm::vec2 & point, int & min, int & max)
 {
-    if(m_terrain_min_daily_illumination.isValid() && m_terrain_max_daily_illumination.isValid())
+    if(m_terrain_min_daily_illumination->isValid() && m_terrain_max_daily_illumination->isValid())
     {
-        min = m_terrain_min_daily_illumination(point[0], point[1]);
-        max = m_terrain_max_daily_illumination(point[0], point[1]);
+        min = (*m_terrain_min_daily_illumination)(point[0], point[1]);
+        max = (*m_terrain_max_daily_illumination)(point[0], point[1]);
         return true;
     }
 
@@ -635,9 +644,9 @@ bool Terrain::get_daily_illuminations(const glm::vec2 & point, int & min, int & 
 
 bool Terrain::is_shaded(const glm::vec2 &point, bool &shaded)
 {
-    if(m_terrain_shade.isValid())
+    if(m_terrain_shade->isValid())
     {
-        shaded = m_terrain_shade(point[0], point[1]);
+        shaded = (*m_terrain_shade)(point[0], point[1]);
         return true;
     }
 

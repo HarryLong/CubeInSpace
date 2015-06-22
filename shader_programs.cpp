@@ -1,4 +1,4 @@
-#include "gl_shaders.h"
+#include "shader_programs.h"
 #include "glheader.h"
 
 ShaderProgram::ShaderProgram(const QString & vertex_shader_filename, const QString & fragment_shader_filename,

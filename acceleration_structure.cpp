@@ -218,8 +218,8 @@ AccelerationSphere Hierarchical::get_sphere(const TerragenFile & terrain, glm::v
         {
             glm::vec3 point_in_sphere(point_in_sphere_x,
                                       terrain(
-                                          std::max(0,std::min(point_in_sphere_x,terrain.m_header_data.width)),
-                                          std::max(0,std::min(point_in_sphere_z,terrain.m_header_data.width))),
+                                          std::max(0,std::min(point_in_sphere_x,terrain.m_header_data.width-1)),
+                                          std::max(0,std::min(point_in_sphere_z,terrain.m_header_data.depth-1))),
                                       point_in_sphere_z);
 
             // calculate the distance from the center

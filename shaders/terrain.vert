@@ -66,35 +66,7 @@ void main()
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);
     gl_Position = transform.projMat * camera_space_pos;
 
-    if(overlay.none || overlay.slope) // Normals needs to be loaded
-    {
-        vec3 normal = texture2D(normals_texture, textureCoord).rgb;
-        if(overlay.none)
-        {
-            // map normal to camera space for lighting calculations
-            camera_space_normal = normalize(mat3(transform.viewMat) * normal);
-
-            diffuse = material_diffuse * light_diffuse_color;
-            ambient = material_ambient * light_ambient_color;
-            if(light_position.y >= base_height) // Day
-            {
-                vec4 camera_space_light_pos = transform.viewMat * light_position;
-                light_direction = normalize(camera_space_light_pos.xyz - camera_space_pos.xyz);
-                half_vector = normalize(normalize(-camera_space_pos.xyz) + light_direction);
-            }
-            else // Night
-            {
-                light_direction = vec3(0,0,0);
-                half_vector = vec3(0,0,0);
-            }
-        }
-        else // slope
-        {
-            vec3 vertical_vector = vec3(0,1,0);
-            slope = 1 - abs(dot(normal, vertical_vector));
-        }
-    }
-    else if(overlay.altitude)
+    if(overlay.altitude)
     {
         altitude = (world_space_pos.y-base_height)/(max_height-base_height);
     }
@@ -124,6 +96,34 @@ void main()
     else if(overlay.daily_illumination_max)
     {
         max_daily_illumination = texture2D(max_daily_illumination_texture, textureCoord).r * 255;
+    }
+    else // Default
+    {
+        vec3 normal = texture2D(normals_texture, textureCoord).rgb;
+        if(overlay.slope)
+        {
+            vec3 vertical_vector = vec3(0,1,0);
+            slope = 1 - abs(dot(normal, vertical_vector));
+        }
+        else // Default
+        {
+            // map normal to camera space for lighting calculations
+            camera_space_normal = normalize(mat3(transform.viewMat) * normal);
+
+            diffuse = material_diffuse * light_diffuse_color;
+            ambient = material_ambient * light_ambient_color;
+            if(light_position.y >= base_height) // Day
+            {
+                vec4 camera_space_light_pos = transform.viewMat * light_position;
+                light_direction = normalize(camera_space_light_pos.xyz - camera_space_pos.xyz);
+                half_vector = normalize(normalize(-camera_space_pos.xyz) + light_direction);
+            }
+            else // Night
+            {
+                light_direction = vec3(0,0,0);
+                half_vector = vec3(0,0,0);
+            }
+        }
     }
 }
 

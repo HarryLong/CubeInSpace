@@ -34,7 +34,7 @@ SET(SOURCE_FILES asset time_controller_dialog controllers lighting_manager light
 window main glheader qtutils view_manager renderer debug grid helper gl_drawable constants settings rays geom scene_manager
 glm_rotations glm_utils custom_line_edit acceleration_structure progress_bar_widget pointer_info_dialog temp_edit_dlg
 terrain_normals terrain_shade terrain_temperature terrain_daily_illimination texture_element orientation_widget actions
-latitude_controller_widget time_controller_widget gl_shaders)
+latitude_controller_widget time_controller_widget shader_programs time_controller_widget controller_widgets)
 
 # Shaders
 add_subdirectory(shaders)

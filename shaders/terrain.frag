@@ -79,24 +79,7 @@ vec4 daily_illumination_to_output_color(in float daily_illumination)
 
 void main()
 {
-    if(overlay.none)
-    {
-        outputColor = ambient;
-        float normal_dot_lightdir = dot(camera_space_normal.xyz, light_direction);
-
-        if(normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
-        {
-            outputColor += diffuse * normal_dot_lightdir;
-
-            float normal_dot_half_vector = dot(camera_space_normal, half_vector);
-
-            if(normal_dot_half_vector > 0.0)
-            {
-                outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
-            }
-        }
-    }
-    else if(overlay.altitude)
+    if(overlay.altitude)
     {
         outputColor = altitude_to_output_color(altitude);
     }
@@ -123,5 +106,22 @@ void main()
     else if(overlay.daily_illumination_max)
     {
         outputColor = daily_illumination_to_output_color(max_daily_illumination);
+    }
+    else // Default
+    {
+        outputColor = ambient;
+        float normal_dot_lightdir = dot(camera_space_normal.xyz, light_direction);
+
+        if(normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
+        {
+            outputColor += diffuse * normal_dot_lightdir;
+
+            float normal_dot_half_vector = dot(camera_space_normal, half_vector);
+
+            if(normal_dot_half_vector > 0.0)
+            {
+                outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
+            }
+        }
     }
 }

@@ -24,7 +24,7 @@ public:
 
     Asset* getAccelerationStructure();
     Asset* getSun();
-    Terrain& getTerrain();
+    Terrain * getTerrain();
     LightingManager & getLightingManager();
     OrientationCompass & getOrientationCompass();
     Grid & getGrid();
@@ -56,7 +56,7 @@ private:
     Asset * m_acceleration_structure_viewer;
     Asset * m_sun;
     Grid m_grid;
-    Terrain m_terrain;
+    Terrain * m_terrain; // Pointer to control
     OrientationCompass m_orientation_compass;
     LightingManager m_lighting_manager;
 
