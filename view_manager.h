@@ -48,7 +48,7 @@ public:
     void up(float p_amount, bool ignore_sensitivity = false);
     void rotate(float pitch, float yaw, bool ignore_sensitivity = false);
     void reset_camera();
-    glm::vec3 toWorld(const glm::vec3 & camera_position, const GLint * viewport);
+    glm::vec3 toWorld(const glm::vec3 & camera_position, const GLint * viewport, int widget_width, int widget_height);
 
     void pushTransforms();
     void popTransforms();

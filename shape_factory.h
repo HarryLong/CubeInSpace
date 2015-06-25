@@ -53,6 +53,8 @@ public:
 
 protected:
     virtual void initGL();
+
+private:
 };
 
 /**********

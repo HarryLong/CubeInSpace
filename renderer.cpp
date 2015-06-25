@@ -56,7 +56,8 @@ void Renderer::calculateNormals(QGLShaderProgram * shader, Terrain * terrain)
     // Save the viewport
     GLint viewport[4];
     f->glGetIntegerv(GL_VIEWPORT, viewport); // save current viewport
-    // reset current viewport
+
+
     f->glViewport(0,0,terrain->getWidth(), terrain->getDepth()); CE();
 
     // The heightmap texture

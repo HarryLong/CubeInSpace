@@ -52,11 +52,6 @@ glm::vec3 TerrainNormals::operator()(int x, int z) const
 {
     int start_idx(((z*m_width)+x)*3);
 
-//    QRgb pixel(m_img_normals.pixel(x, z));
-//    qCritical() << "Normal: " << qRed(pixel) << ", " << qGreen(pixel)
-//                    << ", " << qBlue(pixel);
-//    return glm::vec3(qRed(pixel), qGreen(pixel), qBlue(pixel));
-
     return glm::vec3(m_normals[start_idx], m_normals[start_idx+1], m_normals[start_idx+2]);
 }
 

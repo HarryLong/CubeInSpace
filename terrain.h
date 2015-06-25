@@ -67,7 +67,7 @@ class Terrain : public QObject
     Q_OBJECT    
 public:
 
-    Terrain(TerrainControllers & terrain_controllers, Actions * overlay_actions);
+    Terrain(TerrainControllers & terrain_controllers, TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions);
     ~Terrain();
 
     Asset* getSelectionRect();
@@ -92,6 +92,7 @@ public:
     bool isShaded(const glm::vec3 & point, bool & shaded);
     bool getTemperatures(const glm::vec3 & point, float & min, float & max);
     bool getDailyIlluminations(const glm::vec3 & point, int & min, int & max);
+    const TerragenFile & getHeightMap();
 
     // Heightmap functions
 //    GLenum getHeightMapTextureUnit() const;
@@ -170,6 +171,7 @@ private:
     TerrainDailyIllumination * m_terrain_min_daily_illumination;
     TerrainDailyIllumination * m_terrain_max_daily_illumination;
     Actions * m_overlay_actions;
+    TemperatureEditDialog * m_temp_edit_dlg;
 };
 
 #endif // TERRAIN_H

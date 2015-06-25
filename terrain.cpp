@@ -18,15 +18,23 @@ const glm::vec4 TerrainMaterialProperties::specular = glm::vec4(0.2f, 0.2f, 0.2f
 const glm::vec4 TerrainMaterialProperties::ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
 //-------------------------------------------------------------------
-#define BASE_TERRAIN_SIZE 100
+#define BASE_TERRAIN_SIZE 1000
 BaseTerrain::BaseTerrain()
 {
     int width(BASE_TERRAIN_SIZE);
-    int height(BASE_TERRAIN_SIZE);
+    int depth(BASE_TERRAIN_SIZE);
+    m_height_data = (float*) malloc(sizeof(float) * width * depth);
 
-    m_height_data = (float*) malloc(sizeof(float) * width * height);
+#pragma omp parallel for
+    for(int z = 0; z < depth; z++)
+    {
+        for(int x = 0; x < width; x++)
+        {
+            m_height_data[z*depth+x] = -0.001;
+        }
+    }
 
-    memset(m_height_data, 0, width * height);
+//    memset(m_height_data, 0, width * depth);
     m_header_data.base_height = 0;
     m_header_data.depth = BASE_TERRAIN_SIZE;
     m_header_data.width = BASE_TERRAIN_SIZE;
@@ -148,13 +156,14 @@ void DrawableTerrain::refreshHeightmapTexture(const TerragenFile & terragen_file
 /***********
  * TERRAIN *
  ***********/
-Terrain::Terrain(TerrainControllers & terrain_controllers, Actions * overlay_actions) :
+Terrain::Terrain(TerrainControllers & terrain_controllers, TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions) :
     m_terrain_controllers(terrain_controllers), m_overlay_actions(overlay_actions),
     m_selection_rectangle(ShapeFactory::getSelectionRectangle()),
     m_terrain_shade(new TerrainShade), m_terrain_normals(new TerrainNormals),
     m_terrain_min_temp(new TerrainTemperature), m_terrain_max_temp(new TerrainTemperature),
     m_terrain_min_daily_illumination(new TerrainDailyIllumination),
-    m_terrain_max_daily_illumination(new TerrainDailyIllumination)
+    m_terrain_max_daily_illumination(new TerrainDailyIllumination),
+    m_temp_edit_dlg(temp_edit_dlg)
 {
     establish_connections();
     selected_overlay_changed();
@@ -179,6 +188,8 @@ void Terrain::establish_connections()
     connect(m_terrain_controllers.terrain_scale_le, SIGNAL(valueChanged(int)), this, SLOT(recalculate_scale()));
     connect(m_terrain_controllers.use_default_scale_cb, SIGNAL(clicked(bool)), this, SLOT(recalculate_scale()));
     connect(m_overlay_actions->getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(selected_overlay_changed()));
+    // Recalculate temperature
+    connect(m_temp_edit_dlg, SIGNAL(temperatureValuesChanged(float,float,float,float)), this, SLOT(refreshTemperature(float,float,float,float)));
 }
 
 void Terrain::loadBaseTerrain()
@@ -188,6 +199,7 @@ void Terrain::loadBaseTerrain()
 
 void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 {
+    m_temp_edit_dlg->reset();
     m_terragen_file = parsed_terrangen_file;
     m_terragen_file.summarize();
     recalculate_scale();
@@ -399,6 +411,9 @@ void Terrain::refreshTemperature(float min_temp_at_zero, float min_lapse_rate, f
         m_terrain_max_temp->setData(temp_data, terrain_width, terrain_depth);
         emit processing_complete();
     }
+
+    (*m_overlay_actions)(OverlayActions::_MIN_TEMP)->setEnabled(true);
+    (*m_overlay_actions)(OverlayActions::_MAX_TEMP)->setEnabled(true);
 }
 
 void Terrain::reset_overlay()
@@ -600,6 +615,11 @@ bool Terrain::getDailyIlluminations(const glm::vec3 & point, int & min, int & ma
     return get_daily_illuminations(glm::vec2(point[0]/m_scale, point[2]/m_scale), min, max);
 }
 
+const TerragenFile & Terrain::getHeightMap()
+{
+    return m_terragen_file;
+}
+
 bool Terrain::isShaded(const glm::vec3 &point, bool &shaded)
 {
     return is_shaded(glm::vec2(point[0]/m_scale, point[2]/m_scale), shaded);
@@ -607,7 +627,7 @@ bool Terrain::isShaded(const glm::vec3 &point, bool &shaded)
 
 float Terrain::get_altitude(const glm::vec2 & point)
 {
-    return (m_terragen_file.m_header_data.base_height + m_terragen_file(point[0], point[1])) * m_scale * m_terragen_file.m_header_data.scale;
+    return m_terragen_file(point[0], point[1]) * m_scale * m_terragen_file.m_header_data.scale;
 }
 
 float Terrain::get_slope(const glm::vec2 & point)

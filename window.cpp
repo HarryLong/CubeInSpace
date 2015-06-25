@@ -1,6 +1,5 @@
 #include "window.h"
 #include "glwidget.h"
-#include "time_controller_dialog.h"
 #include "pointer_info_dialog.h"
 #include "settings.h"
 #include "controllers.h"
@@ -23,6 +22,7 @@ MainWindow::MainWindow() :
     m_dialogs(this)
 {
     init_actions();
+    establish_connections();
     init_menu();
 
     m_glwidget = new GLWidget(ViewControllers(m_dialogs.m_settings_dlg->m_camera_sensitivity_slider, m_dialogs.m_settings_dlg->m_z_movement_sensitivity_slider,
@@ -77,9 +77,12 @@ void MainWindow::show_settings_dlg()
     m_dialogs.m_settings_dlg->exec();
 }
 
-void MainWindow::show_temp_edit_dlg()
+void MainWindow::trigger_temp_edit_dlg(bool checked)
 {
-    m_dialogs.m_temp_editor_dlg->exec();
+    if(checked)
+        m_dialogs.m_temp_editor_dlg->exec();
+    else
+        m_dialogs.m_temp_editor_dlg->hide();
 }
 
 void MainWindow::init_menu()
@@ -87,11 +90,6 @@ void MainWindow::init_menu()
     // BASE ACTIONS
     {
         (*m_base_actions)(BaseActions::_CLOSE_APP)->setShortcut(QKeySequence::Close);
-
-        connect((*m_base_actions)(BaseActions::_CLOSE_APP), SIGNAL(triggered()), this, SLOT(close()));
-        connect((*m_base_actions)(BaseActions::_LOAD_TERRAIN), SIGNAL(triggered()), this, SLOT(load_terrain_file()));
-        connect((*m_base_actions)(BaseActions::_OPEN_SETTINGS), SIGNAL(triggered()), this, SLOT(show_settings_dlg()));
-
         m_file_menu = menuBar()->addMenu("File");
         m_file_menu->addAction((*m_base_actions)(BaseActions::_CLOSE_APP));
         m_file_menu->addAction((*m_base_actions)(BaseActions::_LOAD_TERRAIN));
@@ -143,7 +141,8 @@ void MainWindow::init_menu()
         m_edit_menu->addAction((*m_edit_actions)(EditActions::_LATITUDE));
         m_edit_menu->addAction((*m_edit_actions)(EditActions::_ORIENTATION));
         m_edit_menu->addAction((*m_edit_actions)(EditActions::_TEMPERATURE));
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_TIME));
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_TIME_OF_DAY));
+        m_edit_menu->addAction((*m_edit_actions)(EditActions::_MONTH_OF_YEAR));
     }
 }
 
@@ -162,4 +161,12 @@ void MainWindow::load_terrain_file()
     {
         m_glwidget->loadTerrain(fileName);
     }
+}
+
+void MainWindow::establish_connections()
+{
+    connect((*m_base_actions)(BaseActions::_CLOSE_APP), SIGNAL(triggered()), this, SLOT(close()));
+    connect((*m_base_actions)(BaseActions::_LOAD_TERRAIN), SIGNAL(triggered()), this, SLOT(load_terrain_file()));
+    connect((*m_base_actions)(BaseActions::_OPEN_SETTINGS), SIGNAL(triggered()), this, SLOT(show_settings_dlg()));
+    connect((*m_edit_actions)(EditActions::_TEMPERATURE), SIGNAL(triggered(bool)), this, SLOT(trigger_temp_edit_dlg(bool)));
 }

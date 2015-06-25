@@ -11,7 +11,7 @@
 class LightingManager : public QObject{
     Q_OBJECT
 public:
-    LightingManager(TimeControllers & time_controllers, glm::vec3 north_orientation, glm::vec3 true_north_orientation, glm::vec3 east_orientation);
+    LightingManager(TimeControllers & time_controllers, PositionControllers & position_controllers);
     ~LightingManager();
 
     SunLightProperties & getSunlightProperties();
@@ -24,14 +24,17 @@ signals:
 public slots:
     void setMonth(int month);
     void setTime(int minutes);
+    void setLatitude(int latitude);
     void setTerrainDimensions(int width, int depth, int base_height, int max_height);
-    void setOrientation(float north_x, float north_y, float north_z,
-                        float true_north_x, float true_north_y, float true_north_z,
-                        float east_x, float east_y, float east_z);
+    void setNorthOrientation(float north_x, float north_y, float north_z);
     void emit_sun_position_change(float pos_x, float pos_y, float pos_z);
 
 private:
+    void establish_connections();
+
+    PositionControllers m_position_controllers;
     SunLightProperties m_sunlight_properties;
+    TimeControllers m_time_controllers;
 };
 
 #endif // LIGHT_MANAGER_H

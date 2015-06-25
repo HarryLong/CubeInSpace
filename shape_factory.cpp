@@ -212,15 +212,20 @@ GLSelectionRect::~GLSelectionRect()
 
 void GLSelectionRect::resize(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth)
 {
-    clear();
+    m_verticies.clear();
+    m_indicies.clear();
 
-    int rect_width(max[0] - min[0]);
-    int rect_depth(max[2] - min[2]);
+    // Ensure integers
+    min = glm::vec3((int) (min[0]+0.5), (int) (min[1]+0.5), (int) (min[2]+0.5));
+    max = glm::vec3((int) (max[0]+0.5), (int) (max[1]+0.5), (int) (max[2]+0.5));
+
+    float rect_width(max[0] - min[0] +1);
+    float rect_depth(max[2] - min[2] +1);
 
     // Vertices
-    for (int z (min[2]); z < max[2]; z++)
+    for (int z (min[2]); z <= max[2]; z++)
     {
-        for (int x (min[0]); x < max[0]; x++)
+        for (int x (min[0]); x <= max[0]; x++)
         {
             // 3D Vertex coordinate
             m_verticies.push_back((float) x);
@@ -245,8 +250,7 @@ void GLSelectionRect::resize(glm::vec3 min, glm::vec3 max, int terrain_width, in
             m_indicies.push_back((GLuint) ((z * rect_width) + x));
             m_indicies.push_back((GLuint) (((z + 1) * rect_width) + x));
         }
-
-        if (z <  rect_depth - 2)   // Degenerate end: repeat last vertex
+        if (z <  rect_depth - 1)   // Degenerate end: repeat last vertex
             m_indicies.push_back((GLuint) (((z + 1) * rect_width) + (rect_width - 1)));
     }
     fillBuffers();
@@ -286,16 +290,16 @@ void GLSelectionRect::render()
     if(!initalised())
         initGL();
 
-    // enable position attribute;
     QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
-    f->glEnable(GL_BLEND);
-    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    m_vao_constraints.bind();
-    f->glDrawElements(GL_TRIANGLE_STRIP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();
-    m_vao_constraints.release();
+    f->glEnable(GL_BLEND);CE();
+    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);CE();
 
-    f->glDisable(GL_BLEND);
+    m_vao_constraints.bind();CE();
+    f->glDrawElements(GL_TRIANGLE_STRIP, m_indicies.size(), GL_UNSIGNED_INT, (void*)(0)); CE();CE();
+    m_vao_constraints.release();CE();
+
+    f->glDisable(GL_BLEND);CE();
 }
 
 /**********

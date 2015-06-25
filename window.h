@@ -19,7 +19,6 @@ public:
     Dialogs(QWidget * parent);
 
     SettingsDialog * m_settings_dlg;
-//    TimeControllerDialog * m_time_controller_dlg;
     TemperatureEditDialog * m_temp_editor_dlg;
 };
 
@@ -34,11 +33,12 @@ public:
 private slots:
     void load_terrain_file();
     void show_settings_dlg();
-    void show_temp_edit_dlg();
+    void trigger_temp_edit_dlg(bool checked);
 
 private:
     void init_menu();
     void init_actions();
+    void establish_connections();
 
     Dialogs m_dialogs;
 

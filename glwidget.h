@@ -17,6 +17,7 @@
 #include "rays.h"
 #include "orientation_widget.h"
 #include "controller_widgets.h"
+#include "water_flow_analyser.h"
 
 class QProgressDialog;
 class QSurface;
@@ -56,31 +57,7 @@ public:
     QGLShaderProgram * m_normals_generator;
 };
 
-/*******************
- * OVERLAY WIDGETS *
- *******************/
-class OverlayWidgets {
-public:
-    enum Type {
-        _LATITUDE,
-        _MONTH,
-        _TIME
-    };
-
-    OverlayWidgets(QWidget * parent);
-    ~OverlayWidgets();
-
-    void display(Type type);
-    void hideAll();
-    bool isVisible(Type type) const;
-    BaseControllerWidget * operator()(Type type);
-
-private:
-    std::map<Type, BaseControllerWidget*> m_widgets;
-};
-
 class Actions;
-
 class GLWidget : public QOpenGLWidget
 {
     Q_OBJECT
@@ -140,9 +117,14 @@ private:
     void mouse_tracking_callback();
     void show_cursor(bool show);
 
+    Actions * m_render_actions;
+    Actions * m_control_actions;
+    Actions * m_show_actions;
+    Actions * m_edit_actions;
+
     ProgressBarWidget * m_progress_bar_widget;
     PointerInformationDialog * m_pointer_info_dlg;
-    OverlayWidgets m_overlay_widgets;
+    ControllerWidgetsWrapper m_overlay_widgets;
 
     Renderer m_renderer;
     SceneManager * m_scene_manager; // Pointer to ensure GL context is current on deletion
@@ -164,13 +146,9 @@ private:
 
     std::vector<glm::vec3> m_active_points;
 
-    Actions * m_render_actions;
-    Actions * m_control_actions;
-    Actions * m_show_actions;
-    Actions * m_edit_actions;
-
     ShaderPrograms * m_shaders;
     OrientationWidget m_orientation_widget;
+    WaterFlowAnalyzer m_water_flow_analyzer;
 };
 
 #endif

@@ -183,9 +183,10 @@ void ShowActions::init_actions()
 const QString EditActions::_TEMPERATURE = "Temperature";
 const QString EditActions::_ORIENTATION = "Orientation";
 const QString EditActions::_HUMIDITY = "Humidity";
-const QString EditActions::_TIME = "Time";
+const QString EditActions::_TIME_OF_DAY = "Time of day";
+const QString EditActions::_MONTH_OF_YEAR = "Month of year";
 const QString EditActions::_LATITUDE = "Latitude";
-EditActions::EditActions() : Actions(true, false)
+EditActions::EditActions() : Actions(true, true)
 {
     init_actions();
     finalise();
@@ -201,6 +202,7 @@ void EditActions::init_actions()
     m_actions[EditActions::_TEMPERATURE] = new QAction(EditActions::_TEMPERATURE, NULL);
     m_actions[EditActions::_ORIENTATION] = new QAction(EditActions::_ORIENTATION, NULL);
     m_actions[EditActions::_HUMIDITY] = new QAction(EditActions::_HUMIDITY, NULL);
-    m_actions[EditActions::_TIME] = new QAction(EditActions::_TIME, NULL);
+    m_actions[EditActions::_TIME_OF_DAY] = new QAction(EditActions::_TIME_OF_DAY, NULL);
+    m_actions[EditActions::_MONTH_OF_YEAR] = new QAction(EditActions::_MONTH_OF_YEAR, NULL);
     m_actions[EditActions::_LATITUDE] = new QAction(EditActions::_LATITUDE, NULL);
 }

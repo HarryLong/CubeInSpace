@@ -20,7 +20,7 @@ void RayDrawer::initGL()
     m_vao_constraints.bind(); CE();
 
     m_vbo_constraints.bind();  CE();
-    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::DynamicDraw);  CE();
 
     QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
     f->glEnableVertexAttribArray(0);

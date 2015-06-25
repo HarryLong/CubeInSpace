@@ -105,19 +105,18 @@ void ViewManager::reset_camera()
     emit_camera_orientation_changed_signal();
 }
 
-glm::vec3 ViewManager::toWorld(const glm::vec3 & camera_position, const GLint* viewport)
+glm::vec3 ViewManager::toWorld(const glm::vec3 & camera_position, const GLint* viewport, int widget_width, int widget_height)
 {
-    int width = viewport[2];
-    int height = viewport[3];
-
     // unproject screen point to derive world coordinates
-    int realx = camera_position[0] ;
-    int realy = height - camera_position[1] - 1;
+    int realx = camera_position[0]-1;
+
+    int realy = widget_height - camera_position[1];
     int realz = camera_position[2] ;
+
     glm::vec3 window_pos = glm::vec3((float) realx, (float) realy, (float) realz); // Actual window position
 
     glm::vec3 world_pos = glm::unProject(window_pos, getViewMatrix(), getProjMtx(),
-                                         glm::vec4(viewport[0], viewport[1], viewport[2], viewport[3]));
+                                         glm::vec4(viewport[0], viewport[1], widget_width, widget_height));
     return glm::vec3(world_pos.x, world_pos.y, world_pos.z);
 }
 

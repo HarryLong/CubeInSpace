@@ -28,13 +28,13 @@ link_directories(
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${OpenMP_CXX_FLAGS} -O2 -g -DGL_DEBUG -std=c++11")
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -O2 -std=c++11")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -O0 -g -DGL_DEBUG -std=c++11")
-SET(CMAKE_BUILD_TYPE Debug)
+SET(CMAKE_BUILD_TYPE Release)
 #SET(CMAKE_VERBOSE_MAKEFILE true )
-SET(SOURCE_FILES asset time_controller_dialog controllers lighting_manager light_properties shape_factory terrain orientation_compass glwidget
+SET(SOURCE_FILES asset controllers lighting_manager light_properties shape_factory terrain glwidget
 window main glheader qtutils view_manager renderer debug grid helper gl_drawable constants settings rays geom scene_manager
 glm_rotations glm_utils custom_line_edit acceleration_structure progress_bar_widget pointer_info_dialog temp_edit_dlg
 terrain_normals terrain_shade terrain_temperature terrain_daily_illimination texture_element orientation_widget actions
-latitude_controller_widget time_controller_widget shader_programs time_controller_widget controller_widgets)
+shader_programs controller_widgets water_flow_analyser)
 
 # Shaders
 add_subdirectory(shaders)

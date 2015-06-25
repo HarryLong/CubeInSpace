@@ -94,9 +94,6 @@ namespace Geom{
 
         while(p_angle > 360.f)
             p_angle -= 360;            
-
-//        while(p_angle < -360.f)
-//            p_angle += 360;
     }
 
     inline float toRadians(const float & degrees_angle)

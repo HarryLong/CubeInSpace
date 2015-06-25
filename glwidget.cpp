@@ -85,53 +85,6 @@ ShaderPrograms::~ShaderPrograms()
 
 //----------------------------------------------------------------------------------------------
 
-/*******************
- * OVERLAY WIDGETS *
- *******************/
-//    enum Type {
-//        _LATITUDE,
-//        _MONTH,
-//        _TIME
-//    };
-
-OverlayWidgets::OverlayWidgets(QWidget * parent) :
-            m_latitude_controller(parent), m_month_controller(parent), m_time_controller(parent)
-{
-    m_widgets[Type::_LATITUDE] = new LatitudeControllerWidget(parent);
-    m_widgets[Type::_MONTH] = new MonthControllerWidget(parent);
-    m_widgets[Type::_TIME] = new TimeControllerWidget(parent);
-}
-
-OverlayWidgets::~OverlayWidgets()
-{
-    for(BaseControllerWidget * w : m_widgets)
-        delete w;
-}
-
-void OverlayWidgets::display(Type type)
-{
-    m_widgets[type]->show();
-}
-
-void OverlayWidgets::hideAll()
-{
-    for(BaseControllerWidget * w : m_widgets)
-        w->hide();
-}
-
-bool OverlayWidgets::isVisible(Type type) const
-{
-    return m_widgets[type]->isVisible();
-}
-
-BaseControllerWidget * OverlayWidgets::operator()(Type type)
-{
-    return m_widgets[type];
-}
-
-
-//----------------------------------------------------------------------------------------------
-
 
 GLWidget::GLWidget(ViewControllers view_controllers, TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
                    Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions,
@@ -139,15 +92,16 @@ GLWidget::GLWidget(ViewControllers view_controllers, TerrainControllers terrain_
   QOpenGLWidget(parent),
   m_progress_bar_widget(new ProgressBarWidget(this)),
   m_pointer_info_dlg(new PointerInformationDialog(this)),
-  m_overlay_widgets(this),
-  m_scene_manager(new SceneManager(PositionControllers(m_overlay_widgets.m_latitude_controller.getSlider()),
-                                   TimeControllers(m_overlay_widgets.m_time_controller.getSlider(), m_overlay_widgets.m_month_controller.getSlider()),
+  m_render_actions(render_actions), m_control_actions(control_actions), m_show_actions(show_actions),
+  m_edit_actions(edit_actions),
+  m_overlay_widgets((*m_edit_actions)(EditActions::_LATITUDE), (*m_edit_actions)(EditActions::_TIME_OF_DAY), (*m_edit_actions)(EditActions::_MONTH_OF_YEAR), this),
+  m_scene_manager(new SceneManager(PositionControllers(m_overlay_widgets(ControllerWidgetsWrapper::Type::_LATITUDE)->getSlider()),
+                                   TimeControllers(m_overlay_widgets(ControllerWidgetsWrapper::Type::_TIME)->getSlider(),
+                                                   m_overlay_widgets(ControllerWidgetsWrapper::Type::_MONTH)->getSlider()),
                                    terrain_controllers, temp_edit_dlg, overlay_actions)),
   m_navigation_enabled(false), m_mouse_tracking_thread(NULL), m_authorise_navigation_mode_switch(true),
   m_view_manager(view_controllers),
-  m_orientation_widget(m_view_manager.getCameraPitch(), m_view_manager.getCameraYaw(), this),
-  m_render_actions(render_actions), m_control_actions(control_actions), m_show_actions(show_actions),
-  m_edit_actions(edit_actions)
+  m_orientation_widget(m_view_manager.getCameraPitch(), m_view_manager.getCameraYaw(), (*m_edit_actions)(EditActions::_ORIENTATION), this)
 {
     m_mouse_tracking_thread_run.store(true);
     m_ctrl_pressed.store(false);
@@ -189,9 +143,9 @@ void GLWidget::establish_connections()
     connect(m_render_actions->getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(update()));
 
     // Clear rendered rays when action is toggles
-    connect((*m_render_actions)(RenderActions::_RAYS), SIGNAL(toggled(bool)), this, SLOT(clear_rays()));
+    connect((*m_render_actions)(RenderActions::_RAYS), SIGNAL(triggered(bool)), this, SLOT(clear_rays()));
 
-    // When an edit element is clicked
+    connect(&m_orientation_widget, SIGNAL(northOrientationChanged(float,float,float)), m_scene_manager, SLOT(setNorthOrientation(float,float,float)));
 }
 
 void GLWidget::control_changed()
@@ -274,16 +228,16 @@ void GLWidget::paintGL() // Override
     if(render_sun())
         assets_to_render.push_back(m_scene_manager->getSun());
 
+    assets_to_render.push_back(m_water_flow_analyzer.asAsset());
+
     m_renderer.renderAssets(m_shaders->m_base, m_view_manager, assets_to_render);
 }
 
-void GLWidget::resizeGL(int width, int height) // Override
+void GLWidget::resizeGL(int w, int h) // Override
 {
-    int side = qMin(width, height);
-    glViewport(0, 0, width, height);
-
-    m_width.store(width);
-    m_height.store(height);
+    QOpenGLWidget::resizeGL(w ,h);
+    m_width.store(width());
+    m_height.store(height());
 }
 
 QSize GLWidget::minimumSizeHint() const
@@ -319,19 +273,21 @@ bool GLWidget::get_intersection_point_with_terrain(int screen_x, int screen_y, g
 {
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-    glm::vec3 start(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, .0f), viewport));
-    glm::vec3 end(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport));
+    glm::vec3 start(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 0.0f), viewport, m_width.load(), m_height.load()));
+    glm::vec3 end(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport, m_width.load(), m_height.load()));
     glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
     return m_scene_manager->getTerrain()->traceRay(start, direction, intersection_point);
 }
 
 bool GLWidget::get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point)
 {
-    std::cout << "Checking intersection with base plane!" << std::endl;
+    int w(width());
+    int h(height());
+
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-    glm::vec3 start(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, .0f), viewport));
-    glm::vec3 end(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport));
+    glm::vec3 start(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, .0f), viewport, m_width.load(), m_height.load()));
+    glm::vec3 end(m_view_manager.toWorld(glm::vec3(screen_x, screen_y, 1.f), viewport, m_width.load(), m_height.load()));
     glm::vec3 direction(glm::normalize(Geom::diff(end,start)));
 
     return Geom::rayPlaneIntersection(m_scene_manager->getTerrain()->getBaseHeight(true), start, direction, intersection_point);
@@ -361,22 +317,36 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         {
             GLint viewport[4];
             glGetIntegerv(GL_VIEWPORT, viewport);
-            glm::vec3 start(m_view_manager.toWorld(glm::vec3(event->x(), event->y(), .0f), viewport));
-            glm::vec3 end(m_view_manager.toWorld(glm::vec3(event->x(), event->y(), 1.f), viewport));
+            glm::vec3 start(m_view_manager.toWorld(glm::vec3(event->x(), event->y(), .0f), viewport, m_width.load(), m_height.load()));
+            glm::vec3 end(m_view_manager.toWorld(glm::vec3(event->x(), event->y(), 1.f), viewport, m_width.load(), m_height.load()));
             m_rays.add(start, end) ;
             update();
         }
 
-        // Selection
-        // Remove the rectangles
         if(intersection)
-            m_terrain_position_tracker.setStartPosition(intersection_point[0],0,intersection_point[2]);
+        {
+            if(m_ctrl_pressed.load()) // Waterflow
+            {
+                std::cout << "WATERFLOW!" << std::endl;
+                Terrain * terrain(m_scene_manager->getTerrain());
+                float scale(terrain->getScale());
+//                std::cout << "Scale: " << scale << std::emdl;
+                m_water_flow_analyzer.generateWaterFlow(terrain->getHeightMap(),
+                                                        glm::vec2(intersection_point[0]/scale,intersection_point[2]/scale));
+                update();
+            }
+            else // Selection
+                m_terrain_position_tracker.setStartPosition(intersection_point[0],0,intersection_point[2]);
+        }
     }
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     QOpenGLWidget::mouseMoveEvent(event);
+
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
 
     if(m_navigation_enabled)
     {
@@ -434,9 +404,9 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                         0,
                         std::max(0.f,std::min(start_point_z, intersection_point[2])));
 
-                glm::vec3 rect_max( std::min((float)terrain->getWidth(true), std::max(start_point_x, intersection_point[0])),
+                glm::vec3 rect_max( std::min((float)terrain->getWidth(true)-1, std::max(start_point_x, intersection_point[0])),
                         0,
-                        std::min((float)terrain->getDepth(true), std::max(start_point_z, intersection_point[2])));
+                        std::min((float)terrain->getDepth(true)-1, std::max(start_point_z, intersection_point[2])));
 
                 terrain->setSelectionRectangle(rect_min, rect_max);
                 update();
@@ -510,6 +480,7 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
 {
     QOpenGLWidget::keyPressEvent(event);
 
+
     if(event->key() == Qt::Key_R)
     {
         m_view_manager.reset_camera();
@@ -543,9 +514,25 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
             case Qt::Key_D:
                 m_view_manager.sideStep(-1);
                 break;
+            default:
+                break;
             }
             update();
         }
+    }
+    if(m_orientation_widget.editMode())
+    {
+        switch(event->key()){
+        case Qt::Key_Left:
+            m_orientation_widget.rotateNorth(m_ctrl_pressed.load() ? 10 : 1);
+            break;
+        case Qt::Key_Right:
+            m_orientation_widget.rotateNorth(m_ctrl_pressed.load() ? -10 : -1);
+            break;
+        default:
+            break;
+        }
+        update();
     }
 }
 
@@ -583,9 +570,9 @@ void GLWidget::set_center_camera_position()
 void GLWidget::resizeEvent(QResizeEvent *event)
 {
     QOpenGLWidget::resizeEvent(event);
-
-    int w(width());
-    int h(height());
+    QSize new_size(event->size());
+    int h(new_size.height());
+    int w(new_size.width());
 
     m_progress_bar_widget->setFixedSize(w, PROGRESS_BAR_HEIGHT);
     m_progress_bar_widget->move(0, h-PROGRESS_BAR_HEIGHT);
@@ -593,9 +580,7 @@ void GLWidget::resizeEvent(QResizeEvent *event)
     m_orientation_widget.setFixedSize(w/2.0f, ORIENTATION_WIDGET_HEIGHT);
     m_orientation_widget.move(w/4.0f, 0);
 
-    m_overlay_widgets.m_latitude_controller.move(w-m_overlay_widgets.m_latitude_controller.width(), h/2.0f - (m_overlay_widgets.m_latitude_controller.height()/2.0f));
-
-    m_overlay_widgets.m_time_controller.move(0, h/2.0f - (m_overlay_widgets.m_time_controller.height()));
+    m_overlay_widgets.resize(w,h);
 }
 
 void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)

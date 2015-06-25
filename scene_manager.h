@@ -5,7 +5,6 @@
 #include <vector>
 #include "gl_drawable.h"
 #include "terrain.h"
-#include "orientation_compass.h"
 #include "lighting_manager.h"
 #include "grid.h"
 
@@ -26,7 +25,6 @@ public:
     Asset* getSun();
     Terrain * getTerrain();
     LightingManager & getLightingManager();
-    OrientationCompass & getOrientationCompass();
     Grid & getGrid();
 
     void loadTerrain(QString filename);
@@ -40,6 +38,7 @@ signals:
 
 public slots:
     void sunPositionChanged(float pos_x, float pos_y, float pos_z);
+    void setNorthOrientation(float north_x, float north_y, float north_z);
     void refreshAccelerationStructureViewer();
     void emitRefreshRenderRequest();
     void refreshDailyIllumination();
@@ -57,12 +56,11 @@ private:
     Asset * m_sun;
     Grid m_grid;
     Terrain * m_terrain; // Pointer to control
-    OrientationCompass m_orientation_compass;
     LightingManager m_lighting_manager;
 
     QString current_terrain_file;
 
-    TemperatureEditDialog * m_temp_edit_dlg;
+//    TemperatureEditDialog * m_temp_edit_dlg;
 };
 
 #endif //SCENE_MANAGER_H

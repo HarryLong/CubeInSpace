@@ -7,12 +7,13 @@
 #include "include/terragen_file_manager/terragen_file_manager.h"
 #include <cstring>
 #include "temp_edit_dlg.h"
+#include "orientation_widget.h"
+#include "shape_factory.h"
 
 SceneManager::SceneManager(PositionControllers position_controllers, TimeControllers time_controllers, TerrainControllers terrain_controllers,
                            TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions) :
-    m_sun(NULL), m_acceleration_structure_viewer(NULL), m_orientation_compass(position_controllers), m_temp_edit_dlg(temp_edit_dlg),
-    m_lighting_manager(time_controllers, m_orientation_compass.getNorthOrientation(), m_orientation_compass.getTrueNorthOrientation(), m_orientation_compass.getEastOrientation()),
-    m_terrain(new Terrain(terrain_controllers, overlay_actions))
+    m_sun(NULL), m_acceleration_structure_viewer(NULL),  m_lighting_manager(time_controllers, position_controllers),
+    m_terrain(new Terrain(terrain_controllers, temp_edit_dlg, overlay_actions))
 {
     establish_connections();
 }
@@ -34,27 +35,16 @@ void SceneManager::initScene()
 void SceneManager::establish_connections()
 {
     connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
-    connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_orientation_compass, SLOT(setTerrainDimensions(int,int,int,int)));
     connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refreshAccelerationStructureViewer()));
 
     // When the terrain overlay changes, a re-render must be triggered
     connect(m_terrain, SIGNAL(activeOverlayChanged()), this, SLOT(emitRefreshRenderRequest()));
 
-    // When an orientation change occurs, the lighting manager needs to be alerted to change the sun position
-    connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), &m_lighting_manager,
-            SLOT(setOrientation(float,float,float,float,float,float,float,float,float)));
-
     // When the sun position changes we must recalculate shade and re-render
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
 
-    // When the latitude changes, the illumination data must be discarded and recalculated
-    connect(&m_orientation_compass, SIGNAL(orientationChanged(float,float,float,float,float,float,float,float,float)), m_terrain, SLOT(invalidateIllumination()));
-
     // Recalculate illumination recalculation
     connect(m_terrain, SIGNAL(trigger_daily_illumination_refresh()), this, SLOT(refreshDailyIllumination()));
-
-    // Recalculate temperature
-    connect(m_temp_edit_dlg, SIGNAL(temperatureValuesChanged(float,float,float,float)), m_terrain, SLOT(refreshTemperature(float,float,float,float)));
 
     // PROGRESS BAR CONNECTIONS //
     // When the terrain is busy, a processing signal needs to be emitted
@@ -87,15 +77,9 @@ LightingManager & SceneManager::getLightingManager()
     return m_lighting_manager;
 }
 
-OrientationCompass & SceneManager::getOrientationCompass()
-{
-    return m_orientation_compass;
-}
-
 void SceneManager::loadTerrain(QString filename)
 {
     current_terrain_file = filename;
-    m_temp_edit_dlg->reset();
     // Read terragen file
     TerragenFile parsed_terragen_file(filename.toStdString());
     m_terrain->setTerrain(parsed_terragen_file);
@@ -218,6 +202,12 @@ Asset* SceneManager::getSun()
     m_sun->setTranformation(mtw);
 
     return m_sun;
+}
+
+void SceneManager::setNorthOrientation(float north_x, float north_y, float north_z)
+{
+    m_lighting_manager.setNorthOrientation(north_x, north_y, north_z);
+    m_terrain->invalidateIllumination(); // Illumination data needs to be recalculated
 }
 
 /***********

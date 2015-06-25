@@ -2,18 +2,22 @@
 #include <QPainter>
 #include <QBrush>
 #include <math.h>
+#include <QAction>
+#include <QBrush>
+#include "geom.h"
+#include "glm_rotations.h"
 
-OrientationWidget::OrientationWidget(float pitch, float yaw, QWidget * parent, Qt::WindowFlags f) :
-    QWidget(parent), m_font("times", 40, QFont::Bold), m_font_metrics(m_font), m_north_rotation(0),
-    m_orientation_edit_mode(false)
+const glm::vec3 OrientationWidget::_BASE_NORTH_ORIENTATION = glm::vec3(0,0,-1);
+
+OrientationWidget::OrientationWidget(float pitch, float yaw, QAction * edit_mode_trigger_action, QWidget * parent, Qt::WindowFlags f) :QWidget(parent, f),
+    m_font("times", 40, QFont::Bold), m_font_metrics(m_font), m_north_yaw(0), m_edit_mode(false), m_north_orientation(OrientationWidget::_BASE_NORTH_ORIENTATION),
+    m_edit_mode_trigger_action(edit_mode_trigger_action), m_edit_mode_brush(QColor(0, 250, 0, 150)), m_default_brush(QColor(100, 100, 100, 150))
 {
-    QPalette pal = palette();
-    pal.setBrush(QPalette::Window, QColor(100, 100, 100, 255) );
-    setPalette(pal);
     setAutoFillBackground(true);
-
-    init_pens();   
+    init_pens();
+    establish_connections();
     setCameraOrientation(pitch, yaw);
+    toggle_edit_mode(false);
 }
 
 OrientationWidget::~OrientationWidget()
@@ -21,15 +25,14 @@ OrientationWidget::~OrientationWidget()
 
 }
 
-void OrientationWidget::saveOrientation()
+bool OrientationWidget::editMode()
 {
-    m_orientation_edit_mode = false;
-    update();
+    return m_edit_mode;
 }
 
-void OrientationWidget::triggerEditMode()
+void OrientationWidget::saveOrientation()
 {
-    m_orientation_edit_mode = true;
+    m_edit_mode = false;
     update();
 }
 
@@ -42,13 +45,12 @@ void OrientationWidget::paintEvent(QPaintEvent * event)
 {
     QWidget::paintEvent(event);
     QPainter painter(this);
+
     int w (width());
     int h (height());
     int line_seperation(w/(2*HALF_SECONDARY_LINE_COUNT)-1);
 
-    float slide (0.f);
-    if(!m_orientation_edit_mode)
-        slide = w-((fmod(m_yaw+45.0,90.0) / 90.0f) * w);
+    float slide ( w-((fmod(normalize(m_camera_yaw+m_north_yaw+45.0),90.0) / 90.0f) * w) );
 
     // Primary Line
     int start_x(slide); // TODO: Change this to reflect current yaw
@@ -64,7 +66,7 @@ void OrientationWidget::paintEvent(QPaintEvent * event)
 
     // Draw the text (N, E, S, W)
     {
-        QChar orientation_char(OrientationWidget::angle_to_letter(m_yaw));
+        QChar orientation_char(OrientationWidget::angle_to_letter(normalize(m_camera_yaw+m_north_yaw)));
         int pixels_wide(m_font_metrics.width(orientation_char));
 
         painter.setPen(m_text_drawing_pen);
@@ -103,7 +105,7 @@ void OrientationWidget::paintEvent(QPaintEvent * event)
 void OrientationWidget::setCameraOrientation(float pitch, float yaw)
 {
     m_pitch = pitch;
-    m_yaw = yaw;
+    m_camera_yaw = yaw;
 
     repaint();
 }
@@ -124,7 +126,7 @@ void OrientationWidget::init_pens()
 
     m_secondary_line_pen.setStyle(Qt::SolidLine);
     m_secondary_line_pen.setWidth(1);
-    m_secondary_line_pen.setBrush(Qt::black);
+    m_secondary_line_pen.setBrush(Qt::white);
     m_secondary_line_pen.setCapStyle(Qt::RoundCap);
     m_secondary_line_pen.setJoinStyle(Qt::RoundJoin);
 }
@@ -141,3 +143,37 @@ QChar OrientationWidget::angle_to_letter(float angle)
         return QChar('N');
 }
 
+void OrientationWidget::toggle_edit_mode(bool checked)
+{
+    QPalette pal = palette();
+    pal.setBrush(QPalette::Window, checked ? m_edit_mode_brush : m_default_brush);
+    setPalette(pal);
+
+    m_edit_mode = checked;
+
+    update();
+}
+
+void OrientationWidget::establish_connections()
+{
+    connect(m_edit_mode_trigger_action, SIGNAL(triggered(bool)), this, SLOT(toggle_edit_mode(bool)));
+}
+
+void OrientationWidget::rotateNorth(int amount)
+{
+    m_north_yaw += amount;
+    Geom::normalizeDegrees(m_north_yaw);
+
+    m_north_orientation = glm::rotateY(OrientationWidget::_BASE_NORTH_ORIENTATION, Geom::toRadians(m_north_yaw));
+
+    update();
+
+    emit northOrientationChanged(m_north_orientation[0], m_north_orientation[1], m_north_orientation[2]);
+}
+
+float OrientationWidget::normalize(const float & degrees)
+{
+    float ret(degrees);
+    Geom::normalizeDegrees(ret);
+    return ret;
+}
