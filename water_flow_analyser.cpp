@@ -84,10 +84,8 @@ void WaterFlowAnalyzer:: generateWaterFlow(const TerragenFile & height_map, glm:
     glm::vec2 p2;
     while(get_lowest_neighbour(height_map, p1, p2))
     {
-        qCritical() << "Looking for closest neighbour to: " << p1[0] << ", " << p1[1];
         m_water_flow->add(glm::vec3(p1[0], height_map(p1[0],p1[1])+1, p1[1]), glm::vec3(p2[0], height_map(p2[0],p2[1])+1, p2[1]));
         p1 = p2;
-        qCritical() << "Nearest neighbour: " << p1[0] << ", " << p1[1];
     }
 }
 

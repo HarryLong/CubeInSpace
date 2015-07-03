@@ -1,14 +1,28 @@
 #ifndef SHADER_PROGRAMS
 #define SHADER_PROGRAMS
 
-#include <QGLShaderProgram>
+#include <QOpenGLShaderProgram>
 
-class ShaderProgram : public QGLShaderProgram
+/************************************
+ * VERTEX & FRAGMENT SHADER PROGRAM *
+ ************************************/
+class ShaderProgram : public QOpenGLShaderProgram
 {
     Q_OBJECT
 public:
     ShaderProgram(const QString & vertex_shader_filename, const QString & fragment_shader_filename, QObject * parent = 0);
     ~ShaderProgram();
+};
+
+/**************************
+ * COMPUTE SHADER PROGRAM *
+ **************************/
+class ComputeShaderProgram : public QOpenGLShaderProgram
+{
+    Q_OBJECT
+public:
+    ComputeShaderProgram(const QString & computer_shader_filename, QObject * parent = 0);
+    ~ComputeShaderProgram();
 };
 
 /***************
@@ -49,6 +63,25 @@ class NormalsGeneratorShader : public ShaderProgram
 public:
     NormalsGeneratorShader(QObject * parent = 0);
     ~NormalsGeneratorShader();
+};
+
+/*******************************
+ * WATER FLUX GENERATOR SHADER *
+ *******************************/
+class WaterFluxGeneratorShader : public ComputeShaderProgram
+{
+public:
+    WaterFluxGeneratorShader(QObject * parent = 0);
+    ~WaterFluxGeneratorShader();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+
+    struct Uniforms{
+        static const QString _TERRAIN_HEIGHTMAP;
+        static const QString _WATER_HEIGHTMAP;
+    };
 };
 
 #endif //SHADER_PROGRAMS

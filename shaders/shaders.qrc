@@ -1,12 +1,13 @@
 <RCC>
     <qresource prefix="/">
         <file>base.frag</file>
-	<file>base.vert</file>
+        <file>base.vert</file>
         <file>normals_generator.frag</file>
         <file>normals_generator.vert</file>
         <file>terrain.frag</file>
         <file>terrain.vert</file>
         <file>terrain_elements.frag</file>
         <file>terrain_elements.vert</file>
+        <file>water_flux.comp</file>
     </qresource>
 </RCC>

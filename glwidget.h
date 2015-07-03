@@ -44,17 +44,19 @@ private:
 /*******************
  * SHADER PROGRAMS *
  *******************/
-class QGLShaderProgram;
+class QOpenGLShaderProgram;
+class WaterFluxGeneratorShader;
 class ShaderPrograms {
 
 public:
     ShaderPrograms(QObject * parent);
     ~ShaderPrograms();
 
-    QGLShaderProgram * m_base;
-    QGLShaderProgram * m_terrain;
-    QGLShaderProgram * m_terrain_elements;
-    QGLShaderProgram * m_normals_generator;
+    QOpenGLShaderProgram * m_base;
+    QOpenGLShaderProgram * m_terrain;
+    QOpenGLShaderProgram * m_terrain_elements;
+    QOpenGLShaderProgram * m_normals_generator;
+    WaterFluxGeneratorShader * m_water_flux_generator;
 };
 
 class Actions;
@@ -64,7 +66,7 @@ class GLWidget : public QOpenGLWidget
 public:
     GLWidget(ViewControllers view_controllers, TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
              Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions, Actions * edit_actions,
-             QWidget * parent = NULL);
+             Actions * tmp_actions, QWidget * parent = NULL);
     ~GLWidget();
     void loadTerrain(QString filename);
 
@@ -95,6 +97,8 @@ private slots:
     void display_info_pointer_dlg(bool display);
     void clear_rays();
 
+    void tmp_function1();
+
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
     void setNavigationEnabled(bool enabled);
@@ -121,6 +125,7 @@ private:
     Actions * m_control_actions;
     Actions * m_show_actions;
     Actions * m_edit_actions;
+    Actions * m_tmp_actions;
 
     ProgressBarWidget * m_progress_bar_widget;
     PointerInformationDialog * m_pointer_info_dlg;

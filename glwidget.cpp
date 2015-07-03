@@ -13,6 +13,7 @@
 #include "actions.h"
 #include "glheader.h"
 #include "shader_programs.h"
+#include <QOpenGLFunctions_4_3_Core>
 
 /*****************
  * MOUSE TRACKER *
@@ -69,7 +70,8 @@ float MouseTracker::getDiffZ()
 ShaderPrograms::ShaderPrograms(QObject * parent) :
     m_base(new BaseShader(parent)), m_terrain(new TerrainShader(parent)),
     m_terrain_elements(new TerrainElementsShader(parent)),
-    m_normals_generator(new NormalsGeneratorShader(parent))
+    m_normals_generator(new NormalsGeneratorShader(parent)),
+    m_water_flux_generator(new WaterFluxGeneratorShader(parent))
 {
 
 }
@@ -80,6 +82,7 @@ ShaderPrograms::~ShaderPrograms()
     delete m_terrain;
     delete m_terrain_elements;
     delete m_normals_generator;
+    delete m_water_flux_generator;
 }
 
 
@@ -88,12 +91,12 @@ ShaderPrograms::~ShaderPrograms()
 
 GLWidget::GLWidget(ViewControllers view_controllers, TerrainControllers terrain_controllers, TemperatureEditDialog * temp_edit_dlg,
                    Actions * render_actions, Actions* overlay_actions, Actions * control_actions, Actions * show_actions,
-                   Actions * edit_actions, QWidget * parent) :
+                   Actions * edit_actions, Actions * tmp_actions, QWidget * parent) :
   QOpenGLWidget(parent),
   m_progress_bar_widget(new ProgressBarWidget(this)),
   m_pointer_info_dlg(new PointerInformationDialog(this)),
   m_render_actions(render_actions), m_control_actions(control_actions), m_show_actions(show_actions),
-  m_edit_actions(edit_actions),
+  m_edit_actions(edit_actions), m_tmp_actions(tmp_actions),
   m_overlay_widgets((*m_edit_actions)(EditActions::_LATITUDE), (*m_edit_actions)(EditActions::_TIME_OF_DAY), (*m_edit_actions)(EditActions::_MONTH_OF_YEAR), this),
   m_scene_manager(new SceneManager(PositionControllers(m_overlay_widgets(ControllerWidgetsWrapper::Type::_LATITUDE)->getSlider()),
                                    TimeControllers(m_overlay_widgets(ControllerWidgetsWrapper::Type::_TIME)->getSlider(),
@@ -146,6 +149,9 @@ void GLWidget::establish_connections()
     connect((*m_render_actions)(RenderActions::_RAYS), SIGNAL(triggered(bool)), this, SLOT(clear_rays()));
 
     connect(&m_orientation_widget, SIGNAL(northOrientationChanged(float,float,float)), m_scene_manager, SLOT(setNorthOrientation(float,float,float)));
+
+    // TMP STUFF
+    connect((*m_tmp_actions)(TmpActions::_ACTION1), SIGNAL(triggered(bool)), this, SLOT(tmp_function1()));
 }
 
 void GLWidget::control_changed()
@@ -167,6 +173,11 @@ void GLWidget::initializeGL() // Override
     std::cout << "** OPEN GL INFO **" << std::endl;
     std::cout << "- Version: " << glGetString(GL_VERSION) << std::endl;
 
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
     glDisable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CW);
@@ -174,14 +185,25 @@ void GLWidget::initializeGL() // Override
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     setMouseTracking(true);
 
+    int v[3];
+    f->glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &v[0]);
+    f->glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &v[1]);
+    f->glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &v[2]);
+    std::cout << "MAX COMPUTER WORK GROUP SIZE: " << v[0] << ", " << v[1] << ", " << v[2] <<std::endl;
+    int v2;
+    f->glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &v2);
+    std::cout << "MAX COMPUTER WORK GROUP INVOCATIONS: " << v2 <<std::endl;
+    int v3;
+    f->glGetIntegerv(GL_MAX_COMPUTE_SHARED_MEMORY_SIZE, &v3);
+    std::cout << "MAX SHARED MEMORY: " << v3 << " bytes" << std::endl;
     m_shaders = new ShaderPrograms(this);
     emit GLReady(); // Other things need to be setup...
-    m_scene_manager->initScene();
+    m_scene_manager->initScene(); CE();
 }
 
 void GLWidget::paintGL() // Override
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
     std::vector<Asset*> assets_to_render;
     Terrain * terrain (m_scene_manager->getTerrain());
@@ -190,7 +212,7 @@ void GLWidget::paintGL() // Override
     if(render_grid())
     {
         std::vector<Asset*> grid_assets (m_scene_manager->getGrid().getAssets());
-        assets_to_render.insert(assets_to_render.end(), grid_assets.begin(), grid_assets.end());
+        assets_to_render.insert(assets_to_render.end(), grid_assets.begin(), grid_assets.end());CE();
     }
 
     // Draw the terrain
@@ -200,7 +222,7 @@ void GLWidget::paintGL() // Override
         if(!terrain->normalsValid())
         {
 //            setFormat(terrain->getNormals().getOffscreenSurface());
-            context()->swapBuffers(terrain->getNormals()->getOffscreenSurface());
+            context()->swapBuffers(terrain->getNormals()->getOffscreenSurface()); CE();
             m_renderer.calculateNormals(m_shaders->m_normals_generator, terrain);
             makeCurrent();
         }
@@ -595,6 +617,9 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
         // Slope
         float slope(terrain->getSlope(intersection_point));
 
+        // Water height
+        int water_height(terrain->getWaterHeight(intersection_point));
+
         // Shade
         bool shaded;
         bool shade_data_valid(terrain->isShaded(intersection_point, shaded));
@@ -607,7 +632,7 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
         int min_daily_illumination, max_daily_illumination;
         bool daily_illumination_valid(terrain->getDailyIlluminations(intersection_point, min_daily_illumination, max_daily_illumination));
 
-        m_pointer_info_dlg->update(altitude, slope,
+        m_pointer_info_dlg->update(altitude, slope, water_height,
                                    shade_data_valid, shaded,
                                    temp_data_valid, min_temp, max_temp,
                                    daily_illumination_valid, min_daily_illumination, max_daily_illumination);
@@ -705,3 +730,14 @@ void GLWidget::mouse_tracking_callback()
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
+
+
+// TMP
+
+void GLWidget::tmp_function1()
+{
+    makeCurrent();
+    m_renderer.tmp_function1(m_shaders->m_water_flux_generator, m_scene_manager->getTerrain());
+    update();
+}
+

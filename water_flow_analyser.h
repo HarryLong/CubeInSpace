@@ -3,7 +3,7 @@
 
 #include "asset.h"
 #include <glm/common.hpp>
-#include "terragen_file.h"
+#include "terragen_file_manager/terragen_file.h"
 
 /********************
  * WATER FLOW ASSET *

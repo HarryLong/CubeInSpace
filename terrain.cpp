@@ -10,31 +10,24 @@
 #include "actions.h"
 #include "shape_factory.h"
 
-/***********************
- * MATERIAL PROPERTIES *
- ***********************/
-const glm::vec4 TerrainMaterialProperties::diffuse = glm::vec4(0.7f, 0.6f, 0.5f, 1.0f); // colour of terrain
-const glm::vec4 TerrainMaterialProperties::specular = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
-const glm::vec4 TerrainMaterialProperties::ambient = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-
 //-------------------------------------------------------------------
-#define BASE_TERRAIN_SIZE 1000
+#define BASE_TERRAIN_SIZE 100
 BaseTerrain::BaseTerrain()
 {
     int width(BASE_TERRAIN_SIZE);
     int depth(BASE_TERRAIN_SIZE);
-    m_height_data = (float*) malloc(sizeof(float) * width * depth);
+    m_height_data = (float*) malloc(sizeof(int) * width * depth);
 
-#pragma omp parallel for
-    for(int z = 0; z < depth; z++)
-    {
-        for(int x = 0; x < width; x++)
-        {
-            m_height_data[z*depth+x] = -0.001;
-        }
-    }
+//#pragma omp parallel for
+//    for(int z = 0; z < depth; z++)
+//    {
+//        for(int x = 0; x < width; x++)
+//        {
+//            m_height_data[z*depth+x] = -0.001;
+//        }
+//    }
 
-//    memset(m_height_data, 0, width * depth);
+    memset(m_height_data, 0, sizeof(int) * width * depth);
     m_header_data.base_height = 0;
     m_header_data.depth = BASE_TERRAIN_SIZE;
     m_header_data.width = BASE_TERRAIN_SIZE;
@@ -156,6 +149,9 @@ void DrawableTerrain::refreshHeightmapTexture(const TerragenFile & terragen_file
 /***********
  * TERRAIN *
  ***********/
+const glm::vec4 Terrain::MaterialProperties::_DIFFUSE = glm::vec4(0.7f, 0.6f, 0.5f, 1.0f);
+const glm::vec4 Terrain::MaterialProperties::_SPECULAR = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+const glm::vec4 Terrain::MaterialProperties::_AMBIENT = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 Terrain::Terrain(TerrainControllers & terrain_controllers, TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions) :
     m_terrain_controllers(terrain_controllers), m_overlay_actions(overlay_actions),
     m_selection_rectangle(ShapeFactory::getSelectionRectangle()),
@@ -163,6 +159,7 @@ Terrain::Terrain(TerrainControllers & terrain_controllers, TemperatureEditDialog
     m_terrain_min_temp(new TerrainTemperature), m_terrain_max_temp(new TerrainTemperature),
     m_terrain_min_daily_illumination(new TerrainDailyIllumination),
     m_terrain_max_daily_illumination(new TerrainDailyIllumination),
+    m_terrain_water(new TerrainWater),
     m_temp_edit_dlg(temp_edit_dlg)
 {
     establish_connections();
@@ -181,6 +178,7 @@ Terrain::~Terrain()
     delete m_terrain_max_temp;
     delete m_terrain_min_daily_illumination;
     delete m_terrain_max_daily_illumination;
+    delete m_terrain_water;
 }
 
 void Terrain::establish_connections()
@@ -218,6 +216,7 @@ void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
     invalidate_shade();
     invalidate_temp();
     invalidateIllumination();
+    invalidate_water();
 
     emit terrainDimensionsChanged(getWidth(true), getDepth(true), getBaseHeight(true), getMaxHeight(true));
 }
@@ -245,11 +244,6 @@ int Terrain::getWidth(bool scaled) const
 int Terrain::getDepth(bool scaled) const
 {
     return (scaled ? m_scale : 1) * m_terragen_file.m_header_data.depth;
-}
-
-const TerrainMaterialProperties & Terrain::getMaterialProperties()
-{
-    return m_material_properties;
 }
 
 const SphericalAccelerationStructure<Hierarchical> & Terrain::getSphereAccelerationStructure()
@@ -301,8 +295,7 @@ void Terrain::refreshShade(QString display_message)
 
     GLubyte * shade_data = NULL;
 
-    if(!m_terrain_shade->isValid())
-    {
+    if(!m_terrain_shade->isValid())    {
         // Generate the data
         shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
 
@@ -466,6 +459,22 @@ void Terrain::invalidate_temp()
     }
 }
 
+void Terrain::invalidate_water()
+{
+    int sz(sizeof(GLuint) * m_terragen_file.m_header_data.width * m_terragen_file.m_header_data.depth);
+    GLuint * base_water = (GLuint*) malloc(sz);
+
+#pragma omp parallel for
+    for(int i = 0; i < m_terragen_file.m_header_data.depth * m_terragen_file.m_header_data.width; i++)
+    {
+        base_water[i] = (GLuint) 100;
+    }
+
+//    memset(base_water, 0, sz);
+
+    m_terrain_water->setData(base_water, m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);CE();
+}
+
 bool Terrain::traceRay(glm::vec3 start_point, glm::vec3 direction, glm::vec3 & intersection_point)
 {
     return ray_intersect(start_point, direction, intersection_point);
@@ -582,6 +591,11 @@ TerrainDailyIllumination * Terrain::getMaxDailyIllumination()
     return m_terrain_max_daily_illumination;
 }
 
+TerrainWater * Terrain::getTerrainWater()
+{
+    return m_terrain_water;
+}
+
 void Terrain::selected_overlay_changed()
 {
     if(overlayShade() && !m_terrain_shade->isValid())
@@ -613,6 +627,11 @@ bool Terrain::getTemperatures(const glm::vec3 &point, float &min, float &max)
 bool Terrain::getDailyIlluminations(const glm::vec3 & point, int & min, int & max)
 {
     return get_daily_illuminations(glm::vec2(point[0]/m_scale, point[2]/m_scale), min, max);
+}
+
+int Terrain::getWaterHeight(const glm::vec3 & point)
+{
+    return get_water_height(glm::vec2(point[0]/m_scale, point[2]/m_scale));
 }
 
 const TerragenFile & Terrain::getHeightMap()
@@ -660,6 +679,11 @@ bool Terrain::get_daily_illuminations(const glm::vec2 & point, int & min, int & 
     }
 
     return false;
+}
+
+int Terrain::get_water_height(const glm::vec2 & point)
+{
+    return (*m_terrain_water)(point[0], point[1]);
 }
 
 bool Terrain::is_shaded(const glm::vec2 &point, bool &shaded)

@@ -12,9 +12,12 @@ public:
     bool isValid() const;
     void setData(T * data, int width, int depth);
     void invalidate();
+    virtual void synchronize_from_GPU();
     virtual T operator()(int x, int z) const;
-
     const T * getRawData() const;
+    QOpenGLTexture::TextureFormat getTextureFormat() const;
+    QOpenGLTexture::PixelFormat getPixelFormat() const;
+    QOpenGLTexture::PixelType getPixelType() const;
 
 protected:
     T * m_raw_data;

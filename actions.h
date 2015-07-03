@@ -131,4 +131,17 @@ private:
     virtual void init_actions();
 };
 
+/*****************
+ * TMP ACTTIONS *
+ *****************/
+class TmpActions : public Actions{
+public:
+    const static QString _ACTION1;
+    TmpActions();
+    ~TmpActions();
+
+private:
+    virtual void init_actions();
+};
+
 #endif // ACTIONS_H

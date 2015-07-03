@@ -59,6 +59,8 @@ BaseActions::~BaseActions()
 void BaseActions::init_actions()
 {
     m_actions[BaseActions::_CLOSE_APP] = new QAction(BaseActions::_CLOSE_APP, NULL);
+    m_actions[BaseActions::_CLOSE_APP]->setShortcut(QKeySequence::Close);
+
     m_actions[BaseActions::_LOAD_TERRAIN] = new QAction(BaseActions::_LOAD_TERRAIN, NULL);
     m_actions[BaseActions::_OPEN_SETTINGS] = new QAction(BaseActions::_OPEN_SETTINGS, NULL);
 }
@@ -205,4 +207,25 @@ void EditActions::init_actions()
     m_actions[EditActions::_TIME_OF_DAY] = new QAction(EditActions::_TIME_OF_DAY, NULL);
     m_actions[EditActions::_MONTH_OF_YEAR] = new QAction(EditActions::_MONTH_OF_YEAR, NULL);
     m_actions[EditActions::_LATITUDE] = new QAction(EditActions::_LATITUDE, NULL);
+}
+
+/*****************
+ * TMP ACTTIONS *
+ *****************/
+const QString TmpActions::_ACTION1 = "ACTION 1";
+TmpActions::TmpActions() :  Actions(true, false)
+{
+    init_actions();
+    finalise();
+}
+
+TmpActions::~TmpActions()
+{
+
+}
+
+void TmpActions::init_actions()
+{
+    m_actions[TmpActions::_ACTION1] = new QAction(TmpActions::_ACTION1, NULL);
+    m_actions[TmpActions::_ACTION1]->setShortcut(QKeySequence::Copy);
 }

@@ -4,9 +4,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "view_manager.h"
 #include <iostream>
-#include <QGLShaderProgram>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QOpenGLFunctions_4_3_Core>
+#include "shader_programs.h"
 
 Renderer::Renderer()
 {
@@ -15,37 +16,15 @@ Renderer::Renderer()
 
 Renderer::~Renderer()
 {
-//    for(auto it = m_shaders.begin(); it != m_shaders.end(); it++)
-//    {
-//        delete it->second;
-//    }
+
 }
 
 void Renderer::init()
 {
     init_uniforms();
-//    init_shaders();
 }
 
-void Renderer::append_shader(const ShaderType & shader_type, const QString & description)
-{
-//    // Compile and link the shader
-//    ShaderProgram * sp(new ShaderProgram(g_fragment_shader_files[shader_type], g_vertex_shader_files[shader_type], description));
-//    if(!sp->compileAndLink())
-//        std::cerr << "Failed to compile shader: " << sp->getDescription().toStdString() << std::endl;
-//    else // Insert the shader
-//        m_shaders.insert( std::pair<ShaderType, ShaderProgram *>(shader_type, sp) );
-}
-
-void Renderer::init_shaders()
-{
-    append_shader(ShaderType::BASE, "Base Shader");
-    append_shader(ShaderType::TERRAIN, "Terrain Shader");
-    append_shader(ShaderType::TERRAIN_ELEMENTS, "Terrain Elements Shader");
-    append_shader(ShaderType::NORMALS, "Normals Generator Shader");
-}
-
-void Renderer::calculateNormals(QGLShaderProgram * shader, Terrain * terrain)
+void Renderer::calculateNormals(QOpenGLShaderProgram * shader, Terrain * terrain)
 {
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
 
@@ -63,7 +42,7 @@ void Renderer::calculateNormals(QGLShaderProgram * shader, Terrain * terrain)
     // The heightmap texture
     {
         f->glActiveTexture(texture_unit); CE();
-        shader->setUniformValue(m_texture_uniforms[HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();    // Terrain size
+        shader->setUniformValue(m_texture_uniforms[TERRAIN_HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();    // Terrain size
         terrain->getDrawableTerrain().bind();
         texture_unit++;
     }
@@ -80,7 +59,7 @@ void Renderer::calculateNormals(QGLShaderProgram * shader, Terrain * terrain)
     shader->release(); CE();
 }
 
-void Renderer::renderTerrain(QGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties)
+void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties)
 {
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -93,19 +72,27 @@ void Renderer::renderTerrain(QGLShaderProgram * shader, const ViewManager & p_vi
     shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_view_mat)))); CE();
     shader->setUniformValue(m_transformation_uniforms[SCALE], terrain->getScale()); CE();
 
-    // The heightmap texture
+    // Terrain heightmap texture
     {
         f->glActiveTexture(texture_unit); CE();
-        shader->setUniformValue(m_texture_uniforms[HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        terrain->getDrawableTerrain().bind();
+        shader->setUniformValue(m_texture_uniforms[TERRAIN_HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();
+        terrain->getDrawableTerrain().bind();CE();
+        texture_unit++;
+    }
+
+    // Water heightmap texture
+    {
+        f->glActiveTexture(texture_unit); CE();
+        shader->setUniformValue(m_texture_uniforms[WATER_HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();
+        terrain->getTerrainWater()->bind();CE();
         texture_unit++;
     }
 
     // Normals texture
     {
-        f->glActiveTexture(texture_unit);
+        f->glActiveTexture(texture_unit);CE();
         shader->setUniformValue(m_texture_uniforms[NORMALS_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        f->glBindTexture(GL_TEXTURE_2D, terrain->getNormals()->getTextureUnit());
+        f->glBindTexture(GL_TEXTURE_2D, terrain->getNormals()->getTextureUnit());CE();
         texture_unit++;
     }
 
@@ -121,41 +108,41 @@ void Renderer::renderTerrain(QGLShaderProgram * shader, const ViewManager & p_vi
     else if(terrain->overlayShade() && terrain->getShade()->isValid())
     {
         shader->setUniformValue(m_overlay_uniforms[SHADE_OVERLAY], true); CE();
-        f->glActiveTexture(texture_unit);
+        f->glActiveTexture(texture_unit);CE();
         shader->setUniformValue(m_texture_uniforms[SHADE_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        terrain->getShade()->bind();
+        terrain->getShade()->bind();CE();
         texture_unit++;
     }
     else if(terrain->overlayMinTemp() && terrain->getMinTemp()->isValid())
     {
         shader->setUniformValue(m_overlay_uniforms[TEMPERATURE_MIN], true); CE();
-        f->glActiveTexture(texture_unit);
+        f->glActiveTexture(texture_unit);CE();
         shader->setUniformValue(m_texture_uniforms[MIN_TEMPERATURE_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        terrain->getMinTemp()->bind();
+        terrain->getMinTemp()->bind();CE();
         texture_unit++;
     }
     else if(terrain->overlayMaxTemp() && terrain->getMaxTemp()->isValid())
     {
         shader->setUniformValue(m_overlay_uniforms[TEMPERATURE_MAX], true); CE();
-        f->glActiveTexture(texture_unit);
+        f->glActiveTexture(texture_unit);CE();
         shader->setUniformValue(m_texture_uniforms[MAX_TEMPERATURE_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        terrain->getMaxTemp()->bind();
+        terrain->getMaxTemp()->bind();CE();
         texture_unit++;
     }
     else if(terrain->overlayMinDailyIllumination() && terrain->getMinDailyIllumination()->isValid())
     {
         shader->setUniformValue(m_overlay_uniforms[DAILY_ILLUMINATION_MIN], true); CE();
-        f->glActiveTexture(texture_unit);
+        f->glActiveTexture(texture_unit);CE();
         shader->setUniformValue(m_texture_uniforms[MIN_DAILY_ILLUMINATION_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        terrain->getMinDailyIllumination()->bind();
+        terrain->getMinDailyIllumination()->bind();CE();
         texture_unit++;
     }
     else if(terrain->overlayMaxDailyIllumination() && terrain->getMaxDailyIllumination()->isValid())
     {
         shader->setUniformValue(m_overlay_uniforms[DAILY_ILLUMINATION_MAX], true); CE();
-        f->glActiveTexture(texture_unit);
+        f->glActiveTexture(texture_unit);CE();
         shader->setUniformValue(m_texture_uniforms[MAX_DAILY_ILLUMINATION_TEXTURE], texture_unit-GL_TEXTURE0); CE();
-        terrain->getMaxDailyIllumination()->bind();
+        terrain->getMaxDailyIllumination()->bind();CE();
         texture_unit++;
     }
 
@@ -165,10 +152,16 @@ void Renderer::renderTerrain(QGLShaderProgram * shader, const ViewManager & p_vi
     // Heightmap base height
     shader->setUniformValue(m_terrain_uniforms[BASE_HEIGHT], (GLfloat)(terrain->getBaseHeight(true))); CE();
 
-    // Material properties
-    const TerrainMaterialProperties & terrain_material_properties (terrain->getMaterialProperties());
-    shader->setUniformValueArray(m_terrain_uniforms[MATERIAL_DIFFUSE], glm::value_ptr(terrain_material_properties.diffuse), 1, 4); CE();
-    shader->setUniformValueArray(m_terrain_uniforms[MATERIAL_AMBIENT], glm::value_ptr(terrain_material_properties.ambient), 1, 4); CE();
+    // Terrain Material properties
+    {
+        shader->setUniformValueArray(m_terrain_uniforms[TERRAIN_MATERIAL_AMBIENT], glm::value_ptr(Terrain::MaterialProperties::_AMBIENT), 1, 4); CE();
+        shader->setUniformValueArray(m_terrain_uniforms[TERRAIN_MATERIAL_DIFFUSE], glm::value_ptr(Terrain::MaterialProperties::_DIFFUSE), 1, 4); CE();
+    }
+    // Water Material properties
+    {
+        shader->setUniformValueArray(m_water_uniforms[WATER_MATERIAL_AMBIENT], glm::value_ptr(TerrainWater::MaterialProperties::_AMBIENT), 1, 4); CE();
+        shader->setUniformValueArray(m_water_uniforms[WATER_MATERIAL_DIFFUSE], glm::value_ptr(TerrainWater::MaterialProperties::_DIFFUSE), 1, 4); CE();
+    }
 
     // Sun Light
     shader->setUniformValueArray(m_lighting_uniforms[LIGHT_DIFFUSE_COLOR], glm::value_ptr(sunlight_properties.m_diffuse_color), 1, 4); CE();
@@ -180,7 +173,7 @@ void Renderer::renderTerrain(QGLShaderProgram * shader, const ViewManager & p_vi
     shader->release();
 }
 
-void Renderer::renderTerrainElements(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain)
+void Renderer::renderTerrainElements(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain)
 {
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -196,7 +189,7 @@ void Renderer::renderTerrainElements(QGLShaderProgram * shader, const ViewManage
     // The heightmap texture
     {
         f->glActiveTexture(texture_unit); CE();
-        shader->setUniformValue(m_texture_uniforms[HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();
+        shader->setUniformValue(m_texture_uniforms[TERRAIN_HEIGHT_MAP_TEXTURE], texture_unit-GL_TEXTURE0); CE();
         terrain->getDrawableTerrain().bind();
         texture_unit++;
     }
@@ -225,7 +218,7 @@ void Renderer::renderTerrainElements(QGLShaderProgram * shader, const ViewManage
     shader->release();
 }
 
-void Renderer::renderAssets(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets)
+void Renderer::renderAssets(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets)
 {
     shader->bind();
 
@@ -258,7 +251,59 @@ void Renderer::renderAssets(QGLShaderProgram * shader, const ViewManager & p_vie
     shader->release();
 }
 
-void Renderer::reset_overlays(QGLShaderProgram * shader)
+void Renderer::tmp_function1(WaterFluxGeneratorShader * shader, Terrain * terrain)
+{
+//    terrain->getTerrainWater()->tmp_calculateTotalWater();
+
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
+    shader->bind();  CE();
+
+    if(terrain->getTerrainWater()->width() != terrain->getDrawableTerrain().width())
+        qCritical() << "TEXTURES AREN'T THE SAME WIDTH!";
+    if(terrain->getTerrainWater()->height() != terrain->getDrawableTerrain().height())
+        qCritical() << "TEXTURES AREN'T THE SAME HEIGHT!";
+
+    /*******************
+     * WATER HEIGHTMAP *
+     *******************/
+    f->glBindImageTexture(0, terrain->getTerrainWater()->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);  CE();
+    shader->setUniformValue(WaterFluxGeneratorShader::Uniforms::_WATER_HEIGHTMAP.toStdString().c_str(), 0);CE();
+
+    /*********************
+     * TERRAIN HEIGHTMAP *
+     *********************/
+    f->glBindImageTexture(1, terrain->getDrawableTerrain().textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
+    shader->setUniformValue(WaterFluxGeneratorShader::Uniforms::_TERRAIN_HEIGHTMAP.toStdString().c_str(), 1);CE();
+
+    // Calculate the number of groups necessary
+    GLuint n_groups_x(std::ceil(((float)terrain->getWidth()) / WaterFluxGeneratorShader::_GROUP_SIZE_X));
+    GLuint n_groups_y(std::ceil(((float)terrain->getDepth()) / WaterFluxGeneratorShader::_GROUP_SIZE_Y));
+    GLuint n_groups_z(1);
+
+//    GLuint n_groups_x(1);
+//    GLuint n_groups_y(1);
+//    GLuint n_groups_z(1);
+
+    qCritical() << "N groups x: " << n_groups_x;
+    qCritical() << "N groups y: " << n_groups_y;
+    qCritical() << "N groups z: " << n_groups_z;
+
+    f->glDispatchCompute(n_groups_x, n_groups_y, n_groups_z);  CE();
+    f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+    shader->release();
+
+    // Trigger a refresh from the GPU
+    terrain->getTerrainWater()->synchronize_from_GPU();
+    terrain->getDrawableTerrain().synchronize_from_GPU();
+
+//    terrain->getTerrainWater()->tmp_calculateTotalWater();
+}
+
+void Renderer::reset_overlays(QOpenGLShaderProgram * shader)
 {
     shader->setUniformValue(m_overlay_uniforms[SLOPE_OVERLAY], false); CE();
     shader->setUniformValue(m_overlay_uniforms[ALTITUDE_OVERLAY], false); CE();
@@ -281,11 +326,12 @@ void Renderer::init_uniforms()
     m_terrain_uniforms[TerrainUniforms::MAX_HEIGHT] = "max_height";
     m_terrain_uniforms[TerrainUniforms::BASE_HEIGHT] = "base_height";
     m_terrain_uniforms[TerrainUniforms::TERRAIN_SIZE] = "terrain_size";
-    m_terrain_uniforms[TerrainUniforms::MATERIAL_DIFFUSE] = "material_diffuse";
-    m_terrain_uniforms[TerrainUniforms::MATERIAL_AMBIENT] = "material_ambient";
+    m_terrain_uniforms[TerrainUniforms::TERRAIN_MATERIAL_AMBIENT] = "terrain_material_ambient";
+    m_terrain_uniforms[TerrainUniforms::TERRAIN_MATERIAL_DIFFUSE] = "terrain_material_diffuse";
 
     // Texture uniforms
-    m_texture_uniforms[TextureUniforms::HEIGHT_MAP_TEXTURE] = "height_map_texture";
+    m_texture_uniforms[TextureUniforms::TERRAIN_HEIGHT_MAP_TEXTURE] = "terrain_height_map_texture";
+    m_texture_uniforms[TextureUniforms::WATER_HEIGHT_MAP_TEXTURE] = "water_height_map_texture";
     m_texture_uniforms[TextureUniforms::NORMALS_TEXTURE] = "normals_texture";
     m_texture_uniforms[TextureUniforms::SHADE_TEXTURE] = "shade_texture";
     m_texture_uniforms[TextureUniforms::MIN_TEMPERATURE_TEXTURE] = "min_temp_texture";
@@ -314,4 +360,8 @@ void Renderer::init_uniforms()
     // Asset uniforms
     m_asset_uniforms[AssetUniforms::UNIFORM_COLOR] = "uniform_color";
     m_asset_uniforms[AssetUniforms::USE_UNIFORM_COLOR] = "use_uniform_color";
+
+    // Water uniforms
+    m_water_uniforms[WaterUniforms::WATER_MATERIAL_AMBIENT] = "water_material_ambient";
+    m_water_uniforms[WaterUniforms::WATER_MATERIAL_DIFFUSE] = "water_material_diffuse";
 }

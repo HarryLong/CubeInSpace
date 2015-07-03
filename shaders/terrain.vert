@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 layout(location = 0) in vec3 vPos;
 layout(location = 1) in vec2 textureCoord;
@@ -28,7 +28,8 @@ uniform OverlayMode overlay;
 uniform float max_height;
 uniform float base_height;
 
-uniform sampler2D height_map_texture;
+uniform sampler2D terrain_height_map_texture;
+uniform usampler2D water_height_map_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D shade_texture;
 uniform sampler2D min_temp_texture;
@@ -37,8 +38,10 @@ uniform sampler2D min_daily_illumination_texture;
 uniform sampler2D max_daily_illumination_texture;
 
 //colours and material
-uniform vec4 material_diffuse;
-uniform vec4 material_ambient;
+uniform vec4 terrain_material_diffuse;
+uniform vec4 terrain_material_ambient;
+uniform vec4 water_material_diffuse;
+uniform vec4 water_material_ambient;
 uniform vec4 light_position; // in world space
 uniform vec4 light_diffuse_color;
 uniform vec4 light_ambient_color;
@@ -59,10 +62,22 @@ out float max_temperature;
 out float min_daily_illumination;
 out float max_daily_illumination;
 
+float mm_to_meters(in uint mm)
+{
+    return float(mm)/1000;
+}
+
 void main()
 {
     // Fetch the y coordinate from the heightmap texture
-    vec3 world_space_pos = vec3(vPos.x*transform.scale, texture2D(height_map_texture, textureCoord).r * transform.scale, vPos.z * transform.scale);
+    vec3 world_space_pos = vec3(vPos.x*transform.scale, texture(terrain_height_map_texture, textureCoord).r * transform.scale, vPos.z * transform.scale);
+
+    uint water_height = texture(water_height_map_texture, textureCoord).r;
+    if(water_height > 0)
+    {
+        world_space_pos.y += mm_to_meters(water_height);
+    }
+
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);
     gl_Position = transform.projMat * camera_space_pos;
 
@@ -72,15 +87,15 @@ void main()
     }
     else if(overlay.temperature_min)
     {
-        min_temperature = texture2D(min_temp_texture, textureCoord).r * 127;
+        min_temperature = texture(min_temp_texture, textureCoord).r * 127;
     }
     else if(overlay.temperature_max)
     {
-        max_temperature = texture2D(max_temp_texture, textureCoord).r * 127;
+        max_temperature = texture(max_temp_texture, textureCoord).r * 127;
     }
     else if(overlay.shade)
     {
-        if(texture2D(shade_texture, textureCoord).r > 0)
+        if(texture(shade_texture, textureCoord).r > 0)
         {
             shade = 1;
         }
@@ -91,15 +106,15 @@ void main()
     }
     else if(overlay.daily_illumination_min)
     {
-        min_daily_illumination = texture2D(min_daily_illumination_texture, textureCoord).r * 255;
+        min_daily_illumination = texture(min_daily_illumination_texture, textureCoord).r * 255;
     }
     else if(overlay.daily_illumination_max)
     {
-        max_daily_illumination = texture2D(max_daily_illumination_texture, textureCoord).r * 255;
+        max_daily_illumination = texture(max_daily_illumination_texture, textureCoord).r * 255;
     }
     else // Default
     {
-        vec3 normal = texture2D(normals_texture, textureCoord).rgb;
+        vec3 normal = texture(normals_texture, textureCoord).rgb;
         if(overlay.slope)
         {
             vec3 vertical_vector = vec3(0,1,0);
@@ -110,8 +125,17 @@ void main()
             // map normal to camera space for lighting calculations
             camera_space_normal = normalize(mat3(transform.viewMat) * normal);
 
-            diffuse = material_diffuse * light_diffuse_color;
-            ambient = material_ambient * light_ambient_color;
+            if(water_height > 0) // water
+            {
+                diffuse = water_material_diffuse * light_diffuse_color;
+                ambient = water_material_ambient * light_ambient_color;
+            }
+            else // bear terrain
+            {
+                diffuse = terrain_material_diffuse * light_diffuse_color;
+                ambient = terrain_material_ambient * light_ambient_color;
+            }
+
             if(light_position.y >= base_height) // Day
             {
                 vec4 camera_space_light_pos = transform.viewMat * light_position;

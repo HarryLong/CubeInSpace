@@ -48,6 +48,7 @@ private:
     Actions * m_overlay_actions;
     Actions * m_show_actions;
     Actions * m_edit_actions;
+    Actions * m_tmp_actions;
 
     // Menu elements
     QMenu * m_file_menu;
@@ -56,6 +57,7 @@ private:
     QMenu * m_overlay_menu;
     QMenu * m_show_menu;
     QMenu * m_edit_menu;
+    QMenu * m_tmp_menu;
 
     GLWidget * m_glwidget;
 };

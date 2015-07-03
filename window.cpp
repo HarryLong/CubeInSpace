@@ -34,6 +34,7 @@ MainWindow::MainWindow() :
                               m_control_actions,
                               m_show_actions,
                               m_edit_actions,
+                              m_tmp_actions,
                               this);
 
     setCentralWidget(m_glwidget); // Takes ownership of widget
@@ -49,6 +50,7 @@ MainWindow::~MainWindow()
     delete m_overlay_menu;
     delete m_show_menu;
     delete m_edit_menu;
+    delete m_tmp_menu;
 
     // Actions
     delete m_base_actions;
@@ -57,6 +59,7 @@ MainWindow::~MainWindow()
     delete m_overlay_actions;
     delete m_show_actions;
     delete m_edit_actions;
+    delete m_tmp_actions;
 
     // Dialogs
     delete m_dialogs.m_settings_dlg;
@@ -70,6 +73,7 @@ void MainWindow::init_actions()
     m_overlay_actions = new OverlayActions;
     m_show_actions = new ShowActions;
     m_edit_actions = new EditActions;
+    m_tmp_actions = new TmpActions;
 }
 
 void MainWindow::show_settings_dlg()
@@ -89,60 +93,53 @@ void MainWindow::init_menu()
 {
     // BASE ACTIONS
     {
-        (*m_base_actions)(BaseActions::_CLOSE_APP)->setShortcut(QKeySequence::Close);
         m_file_menu = menuBar()->addMenu("File");
-        m_file_menu->addAction((*m_base_actions)(BaseActions::_CLOSE_APP));
-        m_file_menu->addAction((*m_base_actions)(BaseActions::_LOAD_TERRAIN));
-        m_file_menu->addAction((*m_base_actions)(BaseActions::_OPEN_SETTINGS));
+        for(QAction * a : m_base_actions->getActionGroup()->actions())
+            m_file_menu->addAction(a);
     }
 
 
     // RENDER MENU
     {
         m_render_menu = menuBar()->addMenu("Render");
-        m_render_menu->addAction((*m_render_actions)(RenderActions::_GRID));
-        m_render_menu->addAction((*m_render_actions)(RenderActions::_TERRAIN));
-        m_render_menu->addAction((*m_render_actions)(RenderActions::_ACCELERATION_STRUCTURE));
-        m_render_menu->addAction((*m_render_actions)(RenderActions::_RAYS));
-        m_render_menu->addAction((*m_render_actions)(RenderActions::_SUN));
+        for(QAction * a : m_render_actions->getActionGroup()->actions())
+            m_render_menu->addAction(a);
     }
 
     // CONTROLS MENU
     {
         m_controls_menu = menuBar()->addMenu("Controls");
-        m_controls_menu->addAction((*m_control_actions)(ControlActions::_SOFTIMAGE));
-        m_controls_menu->addAction((*m_control_actions)(ControlActions::_FPS));
+        for(QAction * a : m_control_actions->getActionGroup()->actions())
+            m_controls_menu->addAction(a);
     }
 
     // OVERLAY MENU
     {
 ;
         m_overlay_menu = menuBar()->addMenu("Overlay");
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_NONE));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_ALTITUDE));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_SLOPE));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_SHADE));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MIN_TEMP));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MAX_TEMP));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MIN_DAILY_ILLUMINATION));
-        m_overlay_menu->addAction((*m_overlay_actions)(OverlayActions::_MAX_DAILY_ILLUMINATION));
+        for(QAction * a : m_overlay_actions->getActionGroup()->actions())
+            m_overlay_menu->addAction(a);
     }
 
     // SHOW MENU
     {
         m_show_menu = menuBar()->addMenu("Show");
-        m_show_menu->addAction((*m_show_actions)(ShowActions::_POINTER_INFO));
+        for(QAction * a : m_show_actions->getActionGroup()->actions())
+            m_show_menu->addAction(a);
     }
 
     // EDIT MENU
     {
         m_edit_menu = menuBar()->addMenu("Edit");
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_HUMIDITY));
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_LATITUDE));
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_ORIENTATION));
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_TEMPERATURE));
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_TIME_OF_DAY));
-        m_edit_menu->addAction((*m_edit_actions)(EditActions::_MONTH_OF_YEAR));
+        for(QAction * a : m_edit_actions->getActionGroup()->actions())
+            m_edit_menu->addAction(a);
+    }
+
+    // TMP MENU
+    {
+        m_tmp_menu = menuBar()->addMenu("Tmp");
+        for(QAction * a : m_tmp_actions->getActionGroup()->actions())
+            m_tmp_menu->addAction(a);
     }
 }
 

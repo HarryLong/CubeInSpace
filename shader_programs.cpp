@@ -1,13 +1,16 @@
 #include "shader_programs.h"
 #include "glheader.h"
 
+/************************************
+ * VERTEX & FRAGMENT SHADER PROGRAM *
+ ************************************/
 ShaderProgram::ShaderProgram(const QString & vertex_shader_filename, const QString & fragment_shader_filename,
-                             QObject * parent) : QGLShaderProgram(parent)
+                             QObject * parent) : QOpenGLShaderProgram(parent)
 {
-    bool succ (addShaderFromSourceFile(QGLShader::Vertex, vertex_shader_filename)); CE();
+    bool succ (addShaderFromSourceFile(QOpenGLShader::Vertex, vertex_shader_filename)); CE();
     if (!succ) qWarning() << "Shader compile log:" << log();
 
-    succ = addShaderFromSourceFile(QGLShader::Fragment, fragment_shader_filename);
+    succ = addShaderFromSourceFile(QOpenGLShader::Fragment, fragment_shader_filename); CE();
     if (!succ) qWarning() << "Shader compile log:" << log();
 
     succ = link();
@@ -15,6 +18,23 @@ ShaderProgram::ShaderProgram(const QString & vertex_shader_filename, const QStri
 }
 
 ShaderProgram::~ShaderProgram()
+{
+
+}
+
+/**************************
+ * COMPUTE SHADER PROGRAM *
+ **************************/
+ComputeShaderProgram::ComputeShaderProgram(const QString & computer_shader_filename, QObject * parent) :  QOpenGLShaderProgram(parent)
+{
+    bool succ (addShaderFromSourceFile(QOpenGLShader::Compute, computer_shader_filename)); CE();
+    if (!succ) qWarning() << "Shader compile log:" << log();
+
+    succ = link();
+    if (!succ) qWarning() << "Shader compile log:" << log();
+}
+
+ComputeShaderProgram::~ComputeShaderProgram()
 {
 
 }
@@ -67,6 +87,24 @@ NormalsGeneratorShader::NormalsGeneratorShader(QObject * parent) : ShaderProgram
 }
 
 NormalsGeneratorShader::~NormalsGeneratorShader()
+{
+
+}
+
+/*******************************
+ * WATER FLUX GENERATOR SHADER *
+ *******************************/
+const int WaterFluxGeneratorShader::_GROUP_SIZE_X = 16;
+const int WaterFluxGeneratorShader::_GROUP_SIZE_Y = 16;
+const int WaterFluxGeneratorShader::_GROUP_SIZE_Z = 1;
+const QString WaterFluxGeneratorShader::Uniforms::_TERRAIN_HEIGHTMAP = "terrain_heightmap";
+const QString WaterFluxGeneratorShader::Uniforms::_WATER_HEIGHTMAP = "water_heightmap";
+WaterFluxGeneratorShader::WaterFluxGeneratorShader(QObject * parent) : ComputeShaderProgram(":/water_flux.comp")
+{
+
+}
+
+WaterFluxGeneratorShader::~WaterFluxGeneratorShader()
 {
 
 }

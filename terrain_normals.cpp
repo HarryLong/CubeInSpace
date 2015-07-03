@@ -139,12 +139,12 @@ void TerrainNormals::render()
 
     f->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  CE();
 
+    m_vao_constraints.release();
+    m_fbo_normal_map->release();
+
     // Retrieve the data
     f->glBindTexture(GL_TEXTURE_2D, m_fbo_normal_map->texture()); CE();
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, (GLvoid*) m_normals ); CE();
-
-    m_vao_constraints.release();
-    m_fbo_normal_map->release();
 }
 
 GLenum TerrainNormals::getTextureUnit() const

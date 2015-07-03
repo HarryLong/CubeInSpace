@@ -12,16 +12,8 @@
 #include "terrain_shade.h"
 #include "terrain_temperature.h"
 #include "terrain_daily_illimination.h"
+#include "terrain_water.h"
 #include <QOpenGLTexture>
-
-/***********************
- * MATERIAL PROPERTIES *
- ***********************/
-struct TerrainMaterialProperties{
-    static const glm::vec4 diffuse;
-    static const glm::vec4 specular;
-    static const glm::vec4 ambient;
-};
 
 /****************
  * BASE TERRAIN *
@@ -78,7 +70,6 @@ public:
     int getDepth(bool scaled = false) const;
     bool traceRay(glm::vec3 start_point, glm::vec3 direction, glm::vec3 & intersection_point);
     void setSelectionRectangle(glm::vec3 min, glm::vec3 max);
-    const TerrainMaterialProperties & getMaterialProperties();
     const SphericalAccelerationStructure<Hierarchical>& getSphereAccelerationStructure();
     float getScale();
     void loadBaseTerrain();
@@ -92,6 +83,8 @@ public:
     bool isShaded(const glm::vec3 & point, bool & shaded);
     bool getTemperatures(const glm::vec3 & point, float & min, float & max);
     bool getDailyIlluminations(const glm::vec3 & point, int & min, int & max);
+    int getWaterHeight(const glm::vec3 & point);
+
     const TerragenFile & getHeightMap();
 
     // Heightmap functions
@@ -121,6 +114,13 @@ public:
     TerrainTemperature * getMaxTemp();
     TerrainDailyIllumination * getMinDailyIllumination();
     TerrainDailyIllumination * getMaxDailyIllumination();
+    TerrainWater * getTerrainWater();
+
+    struct MaterialProperties{
+        static const glm::vec4 _DIFFUSE;
+        static const glm::vec4 _SPECULAR;
+        static const glm::vec4 _AMBIENT;
+    };
 
 signals:
     void terrainDimensionsChanged(int width, int depth, int base_height, int max_height);
@@ -145,6 +145,7 @@ private slots:
     void invalidate_temp();
     void refresh_illumination();
     void reset_overlay();
+    void invalidate_water();
 
 private:
     bool ray_intersect(const glm::vec3 & start, const glm::vec3 & direction, glm::vec3 & intersection_point, bool search_closest = true);
@@ -154,6 +155,8 @@ private:
     bool get_temperatures(const glm::vec2 & point, float & min, float & max);
     bool is_shaded(const glm::vec2 & point, bool & shaded);
     bool get_daily_illuminations(const glm::vec2 & point, int & min, int & max);
+    int get_water_height(const glm::vec2 & point);
+
     void clear_selection_rectangle();
 
     TerrainControllers m_terrain_controllers;
@@ -161,13 +164,13 @@ private:
     TerragenFile m_terragen_file;
     SphericalAccelerationStructure<Hierarchical> m_sphere_acceleration_structure;
     GLSelectionRect * m_selection_rectangle;
-    TerrainMaterialProperties m_material_properties;
     float m_scale;
     DrawableTerrain m_drawable_terrain;
     TerrainShade * m_terrain_shade;
     TerrainNormals * m_terrain_normals;
     TerrainTemperature * m_terrain_min_temp;
     TerrainTemperature * m_terrain_max_temp;
+    TerrainWater * m_terrain_water;
     TerrainDailyIllumination * m_terrain_min_daily_illumination;
     TerrainDailyIllumination * m_terrain_max_daily_illumination;
     Actions * m_overlay_actions;

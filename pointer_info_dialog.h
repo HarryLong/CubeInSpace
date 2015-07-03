@@ -2,6 +2,7 @@
 #define POINTER_INFO_DIALOG_H
 
 #include <QDialog>
+#include <map>
 
 class QLabel;
 class PointerInformationDialog : public QDialog
@@ -14,7 +15,7 @@ public:
     virtual QSize minimumSizeHint() const;
 
 public slots:
-    void update(float altitude, float slope,
+    void update(float altitude, float slope, int water_height,
                 bool shade_set, bool shaded,
                 bool temp_set, float min_temp, float max_temp,
                 bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination);
@@ -28,18 +29,25 @@ private slots:
     void setShaded(bool shaded);
     void setMinDailyIllumination(int min_daily_illumination);
     void setMaxDailyIllumination(int max_daily_illumination);
+    void setWaterHeight(int water_height);
 
     void setInvalid(QLabel * lbl);
 
 private:
+    void init_labels();
     void init_layout();
-    QLabel * m_altitude_lbl;
-    QLabel * m_slope_lbl;
-    QLabel * m_shade_lbl;
-    QLabel * m_min_temp_lbl;
-    QLabel * m_max_temp_lbl;
-    QLabel * m_daily_min_illumination_lbl;
-    QLabel * m_daily_max_illumination_lbl;
+
+    enum LabelType {
+        _ALTITUDE,
+        _SLOPE,
+        _SHADE,
+        _MIN_TEMP,
+        _MAX_TEMP,
+        _MIN_DAILY_ILLUMINATION,
+        _MAX_DAILY_ILLUMINATION,
+        _WATER_HEIGHT
+    };
+    std::map<LabelType, QLabel*> m_labels;
 };
 
 

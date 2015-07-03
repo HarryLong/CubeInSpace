@@ -12,30 +12,17 @@
 #include <QMatrix>
 #include "grid.h"
 
-class QGLShaderProgram;
+class QOpenGLShaderProgram;
+class TerrainWater;
+class WaterFluxGeneratorShader;
 
 /* SHADERS */
 enum ShaderType {
     BASE = 0,
     TERRAIN,
     TERRAIN_ELEMENTS,
-    NORMALS
-};
-
-// ensure to respect order defines in shader enum
-const QString g_vertex_shader_files[] = {
-    ":/base.vert",
-    ":/terrain.vert",
-    ":/terrain_elements.vert",
-    ":/normals_generator.vert"
-};
-
-// ensure to respect order defines in shader enum
-const QString g_fragment_shader_files[] = {
-    ":/base.frag",
-    ":/terrain.frag",
-    ":/terrain_elements.frag",
-    ":/normals_generator.frag"
+    NORMALS,
+    WATER_FLUX
 };
 
 enum AssetUniforms {
@@ -55,13 +42,20 @@ enum TerrainUniforms
     MAX_HEIGHT,
     BASE_HEIGHT,
     TERRAIN_SIZE,
-    MATERIAL_DIFFUSE,
-    MATERIAL_AMBIENT,
+    TERRAIN_MATERIAL_DIFFUSE,
+    TERRAIN_MATERIAL_AMBIENT
+};
+
+enum WaterUniforms
+{
+    WATER_MATERIAL_DIFFUSE,
+    WATER_MATERIAL_AMBIENT
 };
 
 enum TextureUniforms
 {
-    HEIGHT_MAP_TEXTURE,
+    TERRAIN_HEIGHT_MAP_TEXTURE,
+    WATER_HEIGHT_MAP_TEXTURE,
     NORMALS_TEXTURE,
     SHADE_TEXTURE,
     MIN_TEMPERATURE_TEXTURE,
@@ -110,16 +104,18 @@ public:
     ~Renderer();
     void init();
 
-    void renderTerrain(QGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties);
-    void renderTerrainElements(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain);
-    void renderAssets(QGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets);
-    void calculateNormals(QGLShaderProgram * shader, Terrain * terrain);
+    void renderTerrain(QOpenGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties);
+    void renderTerrainElements(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain);
+    void renderAssets(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets);
+    void calculateNormals(QOpenGLShaderProgram * shader, Terrain * terrain);
+
+    void tmp_function1(WaterFluxGeneratorShader * shader, Terrain * terrain);
 
 private:
     void init_uniforms();
     void init_shaders();
     void append_shader(const ShaderType & shader_type, const QString & description);
-    void reset_overlays(QGLShaderProgram * shader);
+    void reset_overlays(QOpenGLShaderProgram * shader);
 //    std::map<ShaderType, ShaderProgram *> m_shaders;
 
     // Uniform holders
@@ -130,6 +126,7 @@ private:
     std::map<OptionUniforms,const char *> m_options_uniforms;
     std::map<AssetUniforms,const char *> m_asset_uniforms;
     std::map<TextureUniforms,const char *> m_texture_uniforms;
+    std::map<WaterUniforms,const char *> m_water_uniforms;
 };
 
 #endif // RENDERER_H
