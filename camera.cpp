@@ -1,282 +1,184 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  CloudClean
- *  Copyright (c) 2013, Rickert Mulder
- *
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Rickert Mulder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- */
-
+//camera.cpp
 #include "camera.h"
-#include <cmath>
-#include <mutex>
-#include <Eigen/LU>
-#include <Eigen/Dense>
-#include <QDebug>
+#include "geom.h"
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 #include <QTimer>
-#include <iostream>
+#include <QDebug>
 
-using Eigen::Vector3f;
-using Eigen::Vector2f;
-using Eigen::AngleAxis;
-
-Camera::Camera() {
-    //mtx_ = new std::mutex();
-    fov_current_ = 60.0f;
-    fov_future_ = 60.0f;
-    aspect_ = 1.0f;
-    depth_near_ = 1.0f;
-    depth_far_ = 1000.f;
-
-    roll_correction_ = true;
-    always_update_ = false;
-
-    rotation_current_ = AngleAxis<float>(-M_PI/2.0, Vector3f(1.0f, 0.0f, 0.0f));
-    rotation_future_ = AngleAxis<float>(-M_PI/2.0, Vector3f(1.0f, 0.0f, 0.0f));
-
-    translation_current_ = Vector3f(0, 0, 0);
-    translation_future_ = Vector3f(0, 0, 0);
-
-    translation_speed_ = 1;
-
-    projection_dirty_ = true;
-
-    timer_ = new QTimer();
-    timer_->connect(timer_, &QTimer::timeout, [&] () {
-        Eigen::Vector3f trans_diff = translation_future_ - translation_current_;
-        bool good_enough_rotation = rotation_current_.isApprox(rotation_future_);
-        float fov_diff = fov_future_ - fov_current_;
-
-        if(trans_diff.norm() > 1e-4 || !good_enough_rotation || fabs(fov_diff) > 1e-10) {
-
-            translation_current_ = translation_current_ + trans_diff * 0.5;
-            rotation_current_ = rotation_current_.slerp(0.5, rotation_future_);
-            fov_current_ = fov_future_ * 0.5 + fov_current_ * 0.5;
-
-            if(fabs(fov_diff) > 1e-10)
-                projection_dirty_ = true;
-
-            emit updated();
-        }
-        else {
-            if(always_update_)
-                emit updated();
-            translation_speed_ = 1;
-        }
-
-
-    });
-
-    timer_->start(1000/60);
+const float Camera::_MAX_TRANSLATION_SCALE = 5.0f;
+const float Camera::_MAX_ROTATION_SCALE = 2.0f;
+Camera::Camera(ViewControllers view_controllers) :
+    m_view_controllers(view_controllers),
+    camera_type(Camera::Type::FREE),
+    m_camera_up(glm::vec3(0, 1, 0)),
+    m_fov(M_PI/2.0),
+    m_camera_position(0,0,1),
+    m_camera_look_at(0,0,0),
+    m_camera_direction(glm::normalize(m_camera_look_at - m_camera_position)),
+    m_camera_position_delta(0, 0, 0),
+    m_near_clip(.1),
+    m_far_clip(1000),
+    m_camera_yaw(0),
+    m_camera_pitch(0),
+    m_timer(new QTimer)
+{
+    init_connections();
+    setTranslationScale(view_controllers.translation_sensitivity->value());
+    setRotationScale(view_controllers.translation_sensitivity->value());
+    m_timer->start(1000/60);
 }
 
-Camera::~Camera() {
-    //delete mtx_;
+Camera::~Camera()
+{
+    m_timer->stop();
+    delete m_timer;
 }
 
-void Camera::setFoV(float fov) {
-    fov_future_ = fov;
-    projection_dirty_ = true;
+void Camera::reset() {
+    m_camera_up = glm::vec3(0, 1, 0);
 }
 
-void Camera::setAspect(float aspect) {
-    aspect_ = aspect;
-    projection_dirty_ = true;
+void Camera::update() {
+    m_camera_direction = glm::normalize(m_camera_look_at - m_camera_position);
+	//need to set the matrix state. this is only important because lighting doesn't work if this isn't done
+//	glViewport(viewport_x, viewport_y, window_width, window_height);
+
+    if (camera_type == ORTHO) {
+		//our projection matrix will be an orthogonal one in this case
+		//if the values are not floating point, this command does not work properly
+		//need to multiply by aspect!!! (otherise will not scale properly)
+        m_proj = glm::ortho(-1.5f * float(m_aspect), 1.5f * float(m_aspect), -1.5f, 1.5f, -10.0f, 10.f);
+    } else if (camera_type == FREE) {
+        m_proj = glm::perspective(m_fov, m_aspect, m_near_clip, m_far_clip);
+		//detmine axis for pitch rotation
+        glm::vec3 left_right_axis = glm::cross(m_camera_direction, m_camera_up);
+		//compute quaternion for pitch based on the camera pitch angle
+        glm::quat pitch_quat = glm::angleAxis(m_camera_pitch, left_right_axis);
+		//determine heading quaternion from the camera up vector and the heading angle
+        glm::quat yaw_quat = glm::angleAxis(m_camera_yaw, m_camera_up);
+		//add the two quaternions
+        glm::quat temp = glm::cross(pitch_quat, yaw_quat);
+		temp = glm::normalize(temp);
+		//update the direction from the quaternion
+        m_camera_direction = glm::rotate(temp, m_camera_direction);
+		//add the camera delta
+        m_camera_position += m_camera_position_delta;
+		//set the look at to be infront of the camera
+        m_camera_look_at = m_camera_position + m_camera_direction * 1.0f;
+		//damping for smooth camera
+        m_camera_yaw *= .5;
+        m_camera_pitch *= .5;
+        m_camera_position_delta = m_camera_position_delta * .8f;
+	}
+	//compute the MVP
+    m_view = glm::lookAt(m_camera_position, m_camera_look_at, m_camera_up);
+    m_MVP = m_proj * m_view;
 }
 
-void Camera::setDepthRange(float near, float far) {
-    depth_near_ = near;
-    depth_far_ = far;
-    projection_dirty_ = true;
+//Setting Functions
+void Camera::setType(Type cam_mode) {
+    camera_type = cam_mode;
+    reset();
 }
 
-void Camera::setPosition(const Eigen::Vector3f& pos) {
-    translation_future_ = pos;
+void Camera::setPosition(glm::vec3 pos) {
+    m_camera_position = pos;
 }
 
+void Camera::lookAt(glm::vec3 pos) {
+    m_camera_look_at = pos;
+}
 
-void Camera::recalculateProjectionMatrix() {
-    // Code from Mesa project, src/glu/sgi/libutil/project.c
-    projection_matrix_.setIdentity();
-    float radians = fov_current_ / 2 * M_PI / 180;
+void Camera::setFOV(double fov) {
+    m_fov = fov;
+}
 
-    float deltaZ = depth_far_ - depth_near_;
-    float sine = sin(radians);
-    if ((deltaZ == 0) || (sine == 0) || (aspect_ == 0)) {
-        return;
+void Camera::setAspect(double aspect)
+{
+    m_aspect = aspect;
+}
+
+void Camera::setClipping(double near_clip_distance, double far_clip_distance) {
+    m_near_clip = near_clip_distance;
+    m_far_clip = far_clip_distance;
+}
+
+void Camera::move(Direction dir) {
+    if (camera_type == FREE) {
+		switch (dir) {
+			case UP:
+                m_camera_position_delta += m_camera_up * m_translation_scale;
+				break;
+			case DOWN:
+                m_camera_position_delta -= m_camera_up * m_translation_scale;
+				break;
+			case LEFT:
+                m_camera_position_delta -= glm::cross(m_camera_direction, m_camera_up) * m_translation_scale;
+				break;
+			case RIGHT:
+                m_camera_position_delta += glm::cross(m_camera_direction, m_camera_up) * m_translation_scale;
+				break;
+			case FORWARD:
+                m_camera_position_delta += m_camera_direction * m_translation_scale;
+				break;
+			case BACK:
+                m_camera_position_delta -= m_camera_direction * m_translation_scale;
+				break;
+		}
     }
-    float cotangent = cos(radians) / sine;
-
-    projection_matrix_(0, 0) = cotangent / aspect_;
-    projection_matrix_(1, 1) = cotangent;
-    projection_matrix_(2, 2) = -(depth_far_ + depth_near_) / deltaZ;
-    projection_matrix_(3, 2) = -1;
-    projection_matrix_(2, 3) = -2 * depth_near_ * depth_far_ / deltaZ;
-    projection_matrix_(3, 3) = 0;
-    projection_dirty_ = false;
 }
 
-Eigen::Affine3f Camera::modelviewMatrix() {
-    return rotation_current_  * Eigen::Translation3f(translation_current_) * Eigen::Affine3f::Identity();
+void Camera::pitch(float radians) {
+    m_camera_pitch += radians;
 }
 
-Eigen::Affine3f Camera::projectionMatrix() const {
-    if (projection_dirty_) {
-        const_cast<Camera*>(this)->recalculateProjectionMatrix();
-    }
-    return projection_matrix_;
+void Camera::yaw(float radians) {
+    m_camera_yaw += radians;
 }
 
-void Camera::translate(const Eigen::Vector3f& pos) {
-    translation_future_ = Eigen::Translation3f(rotation_current_.inverse() * (translation_speed_ * pos)) * translation_current_;
-
-    if(translation_speed_ < 10)
-        translation_speed_ *= 1.1f; // If succesive tranlations are performed, speed things up
+void Camera::rotate(float x, float y) {
+    yaw(-m_rotation_scale * x);
+    pitch(-m_rotation_scale * y);
+    emit_camera_direction_changed();
 }
 
-void Camera::setRotate3D(const Eigen::Vector3f& rot) {
-    Eigen::AngleAxis<float> aaZ(rot.z(), Eigen::Vector3f::UnitZ());
-    Eigen::AngleAxis<float> aaY(rot.y(), Eigen::Vector3f::UnitY());
-    Eigen::AngleAxis<float> aaX(rot.x(), Eigen::Vector3f::UnitX());
-
-    rotation_future_ = aaZ * aaY * aaX;
+Camera::Type Camera::getType() const
+{
+    return camera_type;
 }
 
-void Camera::rotate2D(float x, float y) {
-    Vector2f rot = Vector2f(x, y);
-
-    AngleAxis<float> rotX(rot.x(), Vector3f::UnitY()); // look left right
-    AngleAxis<float> rotY(rot.y(), Vector3f::UnitX()); // look up down
-
-    rotation_future_ = (rotX * rotY) * rotation_current_;
-
-    auto clamp = [] (double num, double low, double high) {
-        if (num > high)
-            return high;
-        if (num < low)
-            return low;
-        return num;
-    };
-
-    Eigen::Matrix3f r = rotation_future_.toRotationMatrix();
-    double roll = -atan2(r(0,2), r(1, 2));
-    double pitch = acos(r(2,2));
-    //double yaw = atan2(r(2, 0), r(2, 1));
-
-
-    Vector3f dir = rotation_future_ * Vector3f::UnitZ();
-    double dotp = dir.dot(Vector3f::UnitZ());
-
-    double sign = dir.dot(Vector3f::UnitY()) > 0 ? 1.0 : -1.0;
-    double angle = sign * acos(dotp);
-
-    double correction_factor = 1.0 - fabs(pitch-M_PI/2)/(M_PI/2);
-    correction_factor = -0.5 + 1.5 * correction_factor;
-    correction_factor = clamp(correction_factor, 0, 1);
-
-    if(angle < 0)
-        correction_factor = 0;
-
-    if(!roll_correction_)
-        correction_factor = 0;
-
-    AngleAxis<float> roll_correction(correction_factor*-roll, Vector3f::UnitZ());
-    rotation_future_ = roll_correction * rotation_future_;
-    rotation_future_.normalize();
-
-
+void Camera::getTransforms(glm::mat4 &proj, glm::mat4 &view)
+{
+    proj = m_proj;
+    view = m_view;
 }
 
-void Camera::rotate3D(float _yaw, float _pitch, float _roll) {
-
-    AngleAxis<float> rotX(_yaw, Vector3f::UnitY()); // look left right
-    AngleAxis<float> rotY(_pitch, Vector3f::UnitX()); // look up down
-
-    rotation_future_ = (rotX * rotY) * rotation_future_;
-
-    auto clamp = [] (double num, double low, double high) {
-        if (num > high)
-            return high;
-        if (num < low)
-            return low;
-        return num;
-    };
-
-    Eigen::Matrix3f r = rotation_future_.toRotationMatrix();
-    double roll = -atan2(r(0,2), r(1, 2));
-    double pitch = acos(r(2,2));
-    //double yaw = atan2(r(2, 0), r(2, 1));
-
-
-    Vector3f dir = rotation_future_ * Vector3f::UnitZ();
-    double dotp = dir.dot(Vector3f::UnitZ());
-
-    double sign = dir.dot(Vector3f::UnitY()) > 0 ? 1.0 : -1.0;
-    double angle = sign * acos(dotp);
-
-/*
-    qDebug() << "Y angle" << angle;
-    qDebug() << "Y angle (DEG)" << (angle/M_PI) * 180;
-    qDebug() << "Roll" << roll;
-    qDebug() << "Pitch" << pitch;
-    qDebug() << "Yaw" << yaw;
-*/
-    double correction_factor = 1.0 - fabs(pitch-M_PI/2)/(M_PI/2);
-    correction_factor = -0.5 + 1.5 * correction_factor;
-    correction_factor = clamp(correction_factor, 0, 1);
-
-    if(angle < 0)
-        correction_factor = 0;
-
-    //qDebug() << "Correction factor:" << correction_factor;
-
-    AngleAxis<float> roll_correction(correction_factor*-roll, Vector3f::UnitZ());
-    rotation_future_ = roll_correction * rotation_future_;
-    rotation_future_.normalize();
-
+void Camera::setTranslationScale(int scale)
+{
+    m_translation_scale = (((float)scale) / m_view_controllers.translation_sensitivity->maximum()) * _MAX_TRANSLATION_SCALE;
 }
 
-void Camera::adjustFov(int val) {
-    // Mouse seems to move in increments of 120
-    val = -val/60.0f;
-    if (fov_future_ + val < 100.0f && fov_future_ + val > 2.0f)
-        setFoV(fov_future_ + val);
-
+void Camera::setRotationScale(int scale)
+{
+    m_rotation_scale = (((float)scale) / m_view_controllers.translation_sensitivity->maximum()) * _MAX_ROTATION_SCALE;
 }
 
-void Camera::birds_eye() {
-    rotation_future_ = AngleAxis<float>(0, Vector3f(1, 0, 0));
-    translation_future_ = 20 * -Vector3f::UnitZ();
+void Camera::init_connections()
+{
+    connect(m_view_controllers.rotation_sensitivity, SIGNAL(valueChanged(int)), this, SLOT(setRotationScale(int)));
+    connect(m_view_controllers.translation_sensitivity, SIGNAL(valueChanged(int)), this, SLOT(setTranslationScale(int)));
+
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
-void Camera::toggleRollCorrection(){
-    roll_correction_ = !roll_correction_;
+glm::vec3 Camera::getCameraDirection() const
+{
+    return m_camera_direction;
+}
+
+void Camera::emit_camera_direction_changed()
+{
+    emit cameraDirectionChanged(m_camera_direction.x, m_camera_direction.y, m_camera_direction.z);
 }

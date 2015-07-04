@@ -3,7 +3,7 @@
 #include "constants.h"
 #include <math.h>
 #include "geom.h"
-#include "glm_rotations.h"
+#include "glm_wrapper.h"
 #include <QSlider>
 
 /**********************
@@ -36,7 +36,7 @@ ViewManager::ViewManager(ViewControllers & view_controllers) : m_camera_sensitiv
     m_z_movement_sensitivity(view_controllers.z_movement_sensitivity_slider->value()),
     m_x_y_movement_sensitivity(view_controllers.x_y_movement_sensitivity_slider->value())
 {
-    m_transformation_matrices.projection = glm::frustum(LEFT, RIGHT, BOTTOM, TOP, Z_NEAR, Z_FAR);
+//    m_transformation_matrices.projection = glm::frustum(LEFT, RIGHT, BOTTOM, TOP, Z_NEAR, Z_FAR);
 
     connect(view_controllers.camera_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(set_camera_sensitivity(int)));
     connect(view_controllers.x_y_movement_sensitivity_slider, SIGNAL(valueChanged(int)), this, SLOT(set_x_y_movements_sensitivity(int)));

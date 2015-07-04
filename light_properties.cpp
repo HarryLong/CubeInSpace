@@ -1,6 +1,6 @@
 #include "light_properties.h"
 #include <algorithm>
-#include "glm_rotations.h"
+#include "glm_wrapper.h"
 #include <iostream>
 #include "constants.h"
 #include "orientation_widget.h"

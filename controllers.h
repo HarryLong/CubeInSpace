@@ -20,13 +20,11 @@ public:
 };
 struct ViewControllers{
 public:
-    ViewControllers(QSlider * camera_sensitivity_slider, QSlider * z_movement_sensitivity_slider, QSlider * x_y_movement_sensitivity_slider) :
-        camera_sensitivity_slider(camera_sensitivity_slider), z_movement_sensitivity_slider(z_movement_sensitivity_slider),
-        x_y_movement_sensitivity_slider(x_y_movement_sensitivity_slider) {}
+    ViewControllers(QSlider * translation_sensitivity, QSlider * rotation_sensitivity) :
+        translation_sensitivity(translation_sensitivity), rotation_sensitivity(rotation_sensitivity)  {}
 
-    QSlider * camera_sensitivity_slider;
-    QSlider * z_movement_sensitivity_slider;
-    QSlider * x_y_movement_sensitivity_slider;
+    QSlider * translation_sensitivity;
+    QSlider * rotation_sensitivity;
 };
 struct TerrainControllers{
 public:

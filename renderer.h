@@ -4,13 +4,13 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "view_manager.h"
 #include <QDir>
 #include "terrain.h"
 #include "constants.h"
 #include "light_properties.h"
 #include <QMatrix>
 #include "grid.h"
+#include "transform.h"
 
 class QOpenGLShaderProgram;
 class TerrainWater;
@@ -87,16 +87,16 @@ enum OptionUniforms{
 
 const glm::vec4 default_grid_color(1,1,1,.1);
 
-class Transform{
-public:
-    Transform(glm::mat4x4 projection_mat, glm::mat4x4 view_mat, glm::mat4x4 mtw_mat = glm::mat4x4(), float scale = 1.0f) :
-        m_projection_mat(projection_mat), m_mtw_mat(mtw_mat), m_view_mat(view_mat), m_scale(scale) {}
+//class Transform{
+//public:
+//    Transform(glm::mat4x4 projection_mat, glm::mat4x4 view_mat, glm::mat4x4 mtw_mat = glm::mat4x4(), float scale = 1.0f) :
+//        m_projection_mat(projection_mat), m_mtw_mat(mtw_mat), m_view_mat(view_mat), m_scale(scale) {}
 
-    glm::mat4x4 m_projection_mat;
-    glm::mat4x4 m_view_mat;
-    glm::mat4x4 m_mtw_mat;
-    float m_scale;
-};
+//    glm::mat4x4 m_projection_mat;
+//    glm::mat4x4 m_view_mat;
+//    glm::mat4x4 m_mtw_mat;
+//    float m_scale;
+//};
 
 class Renderer {
 public:
@@ -104,9 +104,9 @@ public:
     ~Renderer();
     void init();
 
-    void renderTerrain(QOpenGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties);
-    void renderTerrainElements(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain);
-    void renderAssets(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets);
+    void renderTerrain(QOpenGLShaderProgram * shader, const Transform & p_transforms, Terrain * terrain, const LightProperties & sunlight_properties);
+    void renderTerrainElements(QOpenGLShaderProgram * shader, const Transform & p_transforms, const std::vector<Asset*> & p_assets, Terrain * terrain);
+    void renderAssets(QOpenGLShaderProgram * shader, const Transform & p_transforms, const std::vector<Asset*> & p_assets);
     void calculateNormals(QOpenGLShaderProgram * shader, Terrain * terrain);
 
     void tmp_function1(WaterFluxGeneratorShader * shader, Terrain * terrain);

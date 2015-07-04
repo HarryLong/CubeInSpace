@@ -2,7 +2,6 @@
 #include "glheader.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "view_manager.h"
 #include <iostream>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
@@ -59,17 +58,15 @@ void Renderer::calculateNormals(QOpenGLShaderProgram * shader, Terrain * terrain
     shader->release(); CE();
 }
 
-void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const ViewManager & p_view, Terrain * terrain, const LightProperties & sunlight_properties)
+void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const Transform & transforms, Terrain * terrain, const LightProperties & sunlight_properties)
 {
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     shader->bind();
 
-    Transform transform(p_view.getProjMtx(), p_view.getViewMatrix());
-
-    shader->setUniformValue(m_transformation_uniforms[PROJECTION_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_projection_mat)))); CE();
-    shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_view_mat)))); CE();
+    shader->setUniformValue(m_transformation_uniforms[PROJECTION_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transforms._Proj)))); CE();
+    shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
     shader->setUniformValue(m_transformation_uniforms[SCALE], terrain->getScale()); CE();
 
     // Terrain heightmap texture
@@ -173,7 +170,7 @@ void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const ViewManager & 
     shader->release();
 }
 
-void Renderer::renderTerrainElements(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets, Terrain * terrain)
+void Renderer::renderTerrainElements(QOpenGLShaderProgram * shader, const Transform & transforms, const std::vector<Asset*> & p_assets, Terrain * terrain)
 {
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -181,10 +178,9 @@ void Renderer::renderTerrainElements(QOpenGLShaderProgram * shader, const ViewMa
     shader->bind();
 
     // The transformation matrices
-    Transform transform(p_view.getProjMtx(), p_view.getViewMatrix());
-    shader->setUniformValue(m_transformation_uniforms[PROJECTION_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_projection_mat)))); CE();
-    shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_view_mat)))); CE();
-    shader->setUniformValue(m_transformation_uniforms[SCALE], terrain->getScale()); CE();
+    shader->setUniformValue(m_transformation_uniforms[PROJECTION_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transforms._Proj)))); CE();
+    shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
+    shader->setUniformValue(m_transformation_uniforms[SCALE], transforms._scale); CE();
 
     // The heightmap texture
     {
@@ -207,9 +203,7 @@ void Renderer::renderTerrainElements(QOpenGLShaderProgram * shader, const ViewMa
 
         for(Asset::AssetTransformations asset_transform : asset->getTransformations())
         {
-            transform.m_mtw_mat = asset_transform.mtw;
-
-            shader->setUniformValue(m_transformation_uniforms[MTW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_mtw_mat)))); CE();
+            shader->setUniformValue(m_transformation_uniforms[MTW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(asset_transform.mtw)))); CE();
 
             asset->render();
         }
@@ -218,14 +212,13 @@ void Renderer::renderTerrainElements(QOpenGLShaderProgram * shader, const ViewMa
     shader->release();
 }
 
-void Renderer::renderAssets(QOpenGLShaderProgram * shader, const ViewManager & p_view, const std::vector<Asset*> & p_assets)
+void Renderer::renderAssets(QOpenGLShaderProgram * shader, const Transform & transforms, const std::vector<Asset*> & p_assets)
 {
     shader->bind();
 
-    Transform transform(p_view.getProjMtx(), p_view.getViewMatrix());
-    shader->setUniformValue(m_transformation_uniforms[PROJECTION_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_projection_mat)))); CE();
-    shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_view_mat)))); CE();
-    int i (0);
+    shader->setUniformValue(m_transformation_uniforms[PROJECTION_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transforms._Proj)))); CE();
+    shader->setUniformValue(m_transformation_uniforms[VIEW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
+
     // Draw all the assets
     for(Asset * asset : p_assets)
     {
@@ -238,11 +231,8 @@ void Renderer::renderAssets(QOpenGLShaderProgram * shader, const ViewManager & p
 
         for(Asset::AssetTransformations asset_transform : asset->getTransformations())
         {
-            transform.m_mtw_mat = asset_transform.mtw;
-            transform.m_scale = asset_transform.scale;
-
-            shader->setUniformValue(m_transformation_uniforms[MTW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(transform.m_mtw_mat)))); CE();
-            shader->setUniformValue(m_transformation_uniforms[SCALE], transform.m_scale); CE();
+            shader->setUniformValue(m_transformation_uniforms[MTW_MAT], QMatrix4x4(glm::value_ptr(glm::transpose(asset_transform.mtw)))); CE();
+            shader->setUniformValue(m_transformation_uniforms[SCALE], asset_transform.scale); CE();
 
             asset->render();
         }

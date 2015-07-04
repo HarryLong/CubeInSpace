@@ -31,7 +31,6 @@ public:
     void initScene();
 
 signals:
-    void refreshRender();
     void processing(QString description);
     void processingUpdate(int percent_complete);
     void processingComplete();
@@ -40,7 +39,6 @@ public slots:
     void sunPositionChanged(float pos_x, float pos_y, float pos_z);
     void setNorthOrientation(float north_x, float north_y, float north_z);
     void refreshAccelerationStructureViewer();
-    void emitRefreshRenderRequest();
     void refreshDailyIllumination();
 
 private slots:

@@ -1,8 +1,7 @@
 #include "scene_manager.h"
 
-#include "glm_rotations.h"
+#include "glm_wrapper.h"
 #include "grid.h"
-#include "glm_utils.h"
 #include <QSlider>
 #include "include/terragen_file_manager/terragen_file_manager.h"
 #include <cstring>
@@ -36,9 +35,6 @@ void SceneManager::establish_connections()
 {
     connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
     connect(m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refreshAccelerationStructureViewer()));
-
-    // When the terrain overlay changes, a re-render must be triggered
-    connect(m_terrain, SIGNAL(activeOverlayChanged()), this, SLOT(emitRefreshRenderRequest()));
 
     // When the sun position changes we must recalculate shade and re-render
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
@@ -102,12 +98,6 @@ void SceneManager::refreshAccelerationStructureViewer()
 void SceneManager::sunPositionChanged(float pos_x, float pos_y, float pos_z)
 {
     m_terrain->setSunPosition(pos_x, pos_y, pos_z);
-    emit refreshRender();
-}
-
-void SceneManager::emitRefreshRenderRequest()
-{
-    emit refreshRender();
 }
 
 void SceneManager::emitProcessing(QString description)
@@ -198,7 +188,8 @@ Asset* SceneManager::getSun()
     if(!m_sun)
         m_sun = ShapeFactory::getSphere(SUN_RADIUS, SUN_SLICES, SUN_STACKS, glm::vec4(1,1,0,1));
 
-    glm::mat4x4 mtw( glm::translate(glm::mat4x4(), glmutils::toVec3(m_lighting_manager.getSunlightProperties().getPosition())) );
+    glm::vec4 sun_position (m_lighting_manager.getSunlightProperties().getPosition());
+    glm::mat4x4 mtw( glm::translate(glm::mat4x4(), glm::vec3(sun_position.x, sun_position.y, sun_position.z)));
     m_sun->setTranformation(mtw);
 
     return m_sun;

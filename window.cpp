@@ -25,8 +25,7 @@ MainWindow::MainWindow() :
     establish_connections();
     init_menu();
 
-    m_glwidget = new GLWidget(ViewControllers(m_dialogs.m_settings_dlg->m_camera_sensitivity_slider, m_dialogs.m_settings_dlg->m_z_movement_sensitivity_slider,
-                                            m_dialogs.m_settings_dlg->m_x_y_movement_sensitivity_slider),
+    m_glwidget = new GLWidget(ViewControllers(m_dialogs.m_settings_dlg->m_translation_sensitivity_slider, m_dialogs.m_settings_dlg->m_rotation_sensitivity_slider),
                               TerrainControllers(m_dialogs.m_settings_dlg->m_terrain_scale_le, m_dialogs.m_settings_dlg->m_default_scale_cb),
                               m_dialogs.m_temp_editor_dlg,
                               m_render_actions,

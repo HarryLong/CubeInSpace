@@ -46,6 +46,7 @@ private:
  *******************/
 class QOpenGLShaderProgram;
 class WaterFluxGeneratorShader;
+class QTimer;
 class ShaderPrograms {
 
 public:
@@ -105,9 +106,9 @@ private:
     void reset_fps_cursor();
     bool get_intersection_point_with_terrain(int screen_x, int screen_y, glm::vec3 & intersection_point);
     bool get_intersection_point_with_base_plane(int screen_x, int screen_y, glm::vec3 & intersection_point);
-    void set_center_camera_position();
     void establish_connections();
     void update_info_pointer_dlg(const glm::vec2 & screen_pos);
+    glm::vec3 to_world(const glm::vec3 & screen_coord);
 
     bool render_rays();
     bool render_grid();
@@ -133,7 +134,7 @@ private:
 
     Renderer m_renderer;
     SceneManager * m_scene_manager; // Pointer to ensure GL context is current on deletion
-    ViewManager m_view_manager;
+    Camera m_camera;
     RayDrawer m_rays;
     MouseTracker m_mouse_position_tracker;
     MouseTracker m_terrain_position_tracker;
@@ -154,6 +155,10 @@ private:
     ShaderPrograms * m_shaders;
     OrientationWidget m_orientation_widget;
     WaterFlowAnalyzer m_water_flow_analyzer;
+
+    QTimer * m_fps_callback_timer;
+
+    static const int _TARGET_FPS;
 };
 
 #endif

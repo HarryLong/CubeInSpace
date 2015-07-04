@@ -1,138 +1,113 @@
 /*
- * Software License Agreement (BSD License)
- *
- *  CloudClean
- *  Copyright (c) 2013, Rickert Mulder
- *
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Rickert Mulder nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
+ camera.h
+ OpenGL Camera Code
+ Capable of 2 modes, orthogonal, and free
+ Quaternion camera code adapted from: http://hamelot.co.uk/visualization/opengl-camera/
+ Written by Hammad Mazhar
  */
+#ifndef CAMERA_H
+#define CAMERA_H
 
-#ifndef CLOUDCLEAN_SRC_CLOUDCLEAN_CAMERA_H_
-#define CLOUDCLEAN_SRC_CLOUDCLEAN_CAMERA_H_
+//#ifdef __APPLE__
+//#include <GLUT/glut.h>
+//#else
+//#include <GL/freeglut.h>
+//#endif
 
-#include <Eigen/Geometry>
+#include "glm_wrapper.h"
+#include "controllers.h"
 #include <QObject>
-
 class QTimer;
-class GLWidget;
-
-namespace std {
-    class mutex;
-}
-
-class Camera : public QObject {
+class Camera : public QObject{
     Q_OBJECT
+public:
+    enum Direction {
+        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+    };
+    enum Type {
+        ORTHO, FREE
+    };
 
- public:
-    Camera();
-
+    Camera(ViewControllers view_controllers);
     ~Camera();
 
-    void setViewport(int x, int y, int width, int height);
+    void reset();
 
-    void setFoV(float fov);
+    //Given a specific moving direction, the camera will be moved in the appropriate direction
+    //For a spherical camera this will be around the look_at point
+    //For a free camera a delta will be computed for the direction of movement.
+    void move(Camera::Direction dir);
+    //Change the yaw and pitch of the camera based on the 2d movement of the mouse
+    void rotate(float x, float y);
 
-    void setAspect(float aspect);
+    //Setting Functions
+    //Changes the camera mode, only three valid modes, Ortho, Free, and Spherical
+    void setType(Type cam_mode);
+    //Set the position of the camera
+    void setPosition(glm::vec3 pos);
+    //Set's the look at point for the camera
+    void lookAt(glm::vec3 pos);
+    //Changes the Field of View (FOV) for the camera
+    void setFOV(double fov);
+    //Change the viewport location and size
+    void setAspect(double m_aspect);
+    //Change the clipping distance for the camera
+    void setClipping(double near_clip_distance, double far_clip_distance);
+    glm::vec3 getCameraDirection() const;
 
-    void setDepthRange(float near, float far);
+    //Getting Functions
+    Camera::Type getType() const;
+    //		void GetViewport(int &loc_x, int &loc_y, int &width, int &height);
+    void getTransforms(glm::mat4 & proj, glm::mat4 & view);
 
-    inline float getNear(){
-        return depth_near_;
-    }
+signals:
+    void cameraDirectionChanged(float camera_direction_x, float camera_directiony, float camera_direction_z);
 
-    inline float getFar(){
-        return depth_far_;
-    }
+private slots:
+    void setTranslationScale(int scale);
+    void setRotationScale(int scale);
+    void update();
 
-    void setPosition(const Eigen::Vector3f& pos);
-    void setPosition(float x, float y, float z)  {
-        setPosition(Eigen::Vector3f(x, y, z));
-    }
+private:
+    //This function updates the camera
+    //Depending on the current camera mode, the projection and viewport matricies are computed
+    //Then the position and location of the camera is updated
+    void init_connections();
+    //Change the pitch (up, down) for the free camera
+    void pitch(float radians);
+    //Change yaw (left, right) for the free camera
+    void yaw(float radians);
+    void emit_camera_direction_changed();
 
-    Eigen::Affine3f modelviewMatrix();
-    Eigen::Affine3f projectionMatrix() const;
+    Camera::Type camera_type;
 
-    void translate(const Eigen::Vector3f& pos);
-    void translate(float x, float y, float z)  {
-        translate(Eigen::Vector3f(x, y, z));
-    }
+    double m_aspect;
+    double m_fov;
+    double m_near_clip;
+    double m_far_clip;
 
-    void setRotate3D(const Eigen::Vector3f& rot);
-    void setRotate3D(float yaw, float pitch, float roll) {
-        setRotate3D(Eigen::Vector3f(yaw, pitch, roll));
-    }
+    float m_camera_yaw;
+    float m_camera_pitch;
 
-    void rotate2D(float x, float y);
-    void rotate3D(float _yaw, float _pitch, float _roll);
-    void adjustFov(int val);
+    glm::vec3 m_camera_position;
+    glm::vec3 m_camera_position_delta;
+    glm::vec3 m_camera_look_at;
+    glm::vec3 m_camera_direction;
 
-    void alwaysUpdate(bool on){
-        always_update_ = on;
-    }
+    glm::vec3 m_camera_up;
 
- public slots:
-    void birds_eye();
-    void toggleRollCorrection();
+    glm::mat4 m_proj;
+    glm::mat4 m_view;
+    glm::mat4 m_MVP;
 
- signals:
-    void updated();
+    float m_translation_scale;
+    float m_rotation_scale;
 
- private:
-    void recalculateProjectionMatrix();
+    ViewControllers m_view_controllers;
 
- private:
-    Eigen::Quaternion<float> rotation_current_;
-    Eigen::Quaternion<float> rotation_future_;
+    QTimer * m_timer;
 
-    Eigen::Vector3f translation_current_;
-    Eigen::Vector3f translation_future_;
-
-    float fov_current_;
-    float fov_future_;
-
-    float aspect_, depth_near_, depth_far_;
-
-    Eigen::Affine3f projection_matrix_;
-
-    bool projection_dirty_;
-    bool modelview_dirty_;
-
-    QTimer *timer_;
-
-    float translation_speed_;
-
-    //std::mutex * mtx_;
-    bool roll_correction_;
-    bool always_update_;
-//    friend class GLWidget;
+    static const float _MAX_TRANSLATION_SCALE;
+    static const float _MAX_ROTATION_SCALE;
 };
-
-#endif  // CLOUDCLEAN_SRC_CLOUDCLEAN_CAMERA_H_
+#endif

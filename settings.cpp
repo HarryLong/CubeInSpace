@@ -5,21 +5,24 @@
 #include <iostream>
 #include <QLabel>
 #include <QCoreApplication>
-#include <QSlider>
 #include <QPushButton>
 #include <QCheckBox>
 #include "custom_line_edit.h"
 
+const int SensitivitySlider::_DEFAULT = 50;
+SensitivitySlider::SensitivitySlider(QWidget * parent) : QSlider(Qt::Orientation::Horizontal, parent)
+{
+    setRange(0,100);
+    setValue(SensitivitySlider::_DEFAULT);
+}
+
+
 // Defaults
-const int Settings::_default_camera_sensitivity (1);
-const int Settings::_default_z_sensitivity (5) ;
-const int Settings::_default_x_y_sensitivity (5);
 const int Settings::_default_scale (30);
 const bool Settings::_default_use_terrain_default_scale (true);
 // Keys
-const QString Settings::_key_camera_sensitivity ("camera_sensitivity");
-const QString Settings::_key_z_sensitivity ("z_sensitivity");
-const QString Settings::_key_x_y_sensitivity ("x_y_sensitivity");
+const QString Settings::_key_rotation_sensitivity ("rotation_sensitivity");
+const QString Settings::_key_translation_sensitivity ("translation_sensitivity");
 const QString Settings::_key_terrain_scale ("meters_per_terrain_unit");
 const QString Settings::_key_use_terrain_default_scale ("use_terrain_default_meters_per_terrain_unit");
 Settings::Settings() : m_core_settings(QCoreApplication::organizationName(), QCoreApplication::applicationName())
@@ -32,21 +35,15 @@ Settings::~Settings()
 
 }
 
-void Settings::setCameraSensitivity(int sensitivity)
+void Settings::setRotationSensitivity(int sensitivity)
 {
-    m_core_settings.setValue(Settings::_key_camera_sensitivity, sensitivity);
+    m_core_settings.setValue(Settings::_key_rotation_sensitivity, sensitivity);
     m_core_settings.sync();
 }
 
-void Settings::setZSensitivity(int sensitivity)
+void Settings::setTranslationSensitivity(int sensitivity)
 {
-    m_core_settings.setValue(Settings::_key_z_sensitivity, sensitivity);
-    m_core_settings.sync();
-}
-
-void Settings::setXYSensitivity(int sensitivity)
-{
-    m_core_settings.setValue(Settings::_key_x_y_sensitivity, sensitivity);
+    m_core_settings.setValue(Settings::_key_translation_sensitivity, sensitivity);
     m_core_settings.sync();
 }
 
@@ -62,19 +59,14 @@ void Settings::setUseTerrainDefaultScale(bool use_default)
     m_core_settings.sync();
 }
 
-int Settings::getCameraSensitivity() const
+int Settings::getRotationSensitivity() const
 {
-    return m_core_settings.value(Settings::_key_camera_sensitivity, _default_camera_sensitivity).toInt();
+    return m_core_settings.value(Settings::_key_rotation_sensitivity, SensitivitySlider::_DEFAULT).toInt();
 }
 
-int Settings::getZSensitivity() const
+int Settings::getTranslationSensitivity() const
 {
-    return m_core_settings.value(Settings::_key_z_sensitivity, _default_z_sensitivity).toInt();
-}
-
-int Settings::getXYSensitivity() const
-{
-    return m_core_settings.value(Settings::_key_x_y_sensitivity, _default_x_y_sensitivity).toInt();
+    return m_core_settings.value(Settings::_key_translation_sensitivity, SensitivitySlider::_DEFAULT).toInt();
 }
 
 int Settings::getTerrainScale() const
@@ -90,8 +82,13 @@ bool Settings::useTerrainDefaultScale() const
 /*******************
  * SETTINGS EDITOR *
  *******************/
-SettingsDialog::SettingsDialog ( QWidget * parent, Qt::WindowFlags f) : QDialog(parent,f)
+SettingsDialog::SettingsDialog ( QWidget * parent, Qt::WindowFlags f) : QDialog(parent,f),
+    m_rotation_sensitivity_slider(new SensitivitySlider(parent)),
+    m_translation_sensitivity_slider(new SensitivitySlider(parent))
 {
+    m_rotation_sensitivity_slider->setValue(m_settings.getRotationSensitivity());
+    m_translation_sensitivity_slider->setValue(m_settings.getTranslationSensitivity());
+
     setModal(true);
     setWindowTitle("Settings");
     init_layout();
@@ -105,18 +102,6 @@ SettingsDialog::~SettingsDialog()
 
 void SettingsDialog::init_layout()
 {
-    m_camera_sensitivity_slider = new QSlider(Qt::Horizontal, this);
-    m_camera_sensitivity_slider->setRange(1,50);
-    m_camera_sensitivity_slider->setValue(m_settings.getCameraSensitivity());
-
-    m_z_movement_sensitivity_slider = new QSlider(Qt::Horizontal, this);
-    m_z_movement_sensitivity_slider->setRange(1,100);
-    m_z_movement_sensitivity_slider->setValue(m_settings.getZSensitivity());
-
-    m_x_y_movement_sensitivity_slider = new QSlider(Qt::Horizontal, this);
-    m_x_y_movement_sensitivity_slider->setRange(1,50);
-    m_x_y_movement_sensitivity_slider->setValue(m_settings.getXYSensitivity());
-
     m_terrain_scale_le = new QIntLineEdit(1, 100, this);
     m_terrain_scale_le->setText(QString::number(m_settings.getTerrainScale()));
 
@@ -127,24 +112,16 @@ void SettingsDialog::init_layout()
     // Camera sensitivity
     {
         QHBoxLayout * layout = new QHBoxLayout();
-        layout->addWidget(new QLabel("Camera sensitivity: "));
-        layout->addWidget(m_camera_sensitivity_slider,1);
+        layout->addWidget(new QLabel("Rotation sensitivity: "));
+        layout->addWidget(m_rotation_sensitivity_slider,1);
         main_layout->addLayout(layout);
     }
 
     // Z sensitivity
     {
         QHBoxLayout * layout = new QHBoxLayout();
-        layout->addWidget(new QLabel("ZX plane (forward/back) movement sensitivity: "));
-        layout->addWidget(m_z_movement_sensitivity_slider,1);
-        main_layout->addLayout(layout);
-    }
-
-    // X-Y sensitivity
-    {
-        QHBoxLayout * layout = new QHBoxLayout();
-        layout->addWidget(new QLabel("XY plane (side/up) movement sensitivity: "));
-        layout->addWidget(m_x_y_movement_sensitivity_slider,1);
+        layout->addWidget(new QLabel("Translation sensitivity "));
+        layout->addWidget(m_translation_sensitivity_slider,1);
         main_layout->addLayout(layout);
     }
 
@@ -165,9 +142,8 @@ void SettingsDialog::init_layout()
 
 void SettingsDialog::init_signals()
 {
-    connect(m_camera_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setCameraSensitivity(int)));
-    connect(m_z_movement_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setZSensitivity(int)));
-    connect(m_x_y_movement_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setXYSensitivity(int)));
+    connect(m_rotation_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setRotationSensitivity(int)));
+    connect(m_translation_sensitivity_slider, SIGNAL(valueChanged(int)), &m_settings, SLOT(setTranslationSensitivity(int)));
     connect(m_terrain_scale_le, SIGNAL(valueChanged(int)), &m_settings, SLOT(setTerrainScale(int)));
     connect(m_default_scale_cb, SIGNAL(clicked(bool)), &m_settings, SLOT(setUseTerrainDefaultScale(bool)));
 

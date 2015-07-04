@@ -5,11 +5,20 @@
 #include <QFile>
 #include <QDialog>
 #include <QSettings>
-class QSlider;
+#include <QSlider>
+
 class QLabel;
 class QPushButton;
 class QIntLineEdit;
 class QCheckBox;
+class SensitivitySlider : public QSlider
+{
+public:
+    SensitivitySlider(QWidget * parent);
+    static const int _DEFAULT;
+
+};
+
 struct Settings : public QObject
 {
 Q_OBJECT
@@ -17,23 +26,20 @@ public:
     Settings();
     ~Settings();
 
-    int getCameraSensitivity() const;
-    int getZSensitivity() const;
-    int getXYSensitivity() const;
+    int getRotationSensitivity() const;
+    int getTranslationSensitivity() const;
     int getTerrainScale() const;
     bool useTerrainDefaultScale() const;
 
 public slots:
-    void setCameraSensitivity(int sensitivity);
-    void setZSensitivity(int sensitivity);
-    void setXYSensitivity(int sensitivity);
+    void setRotationSensitivity(int sensitivity);
+    void setTranslationSensitivity(int sensitivity);
     void setTerrainScale(int scale);
     void setUseTerrainDefaultScale(bool use_default);
 
 private:
-    static const QString _key_camera_sensitivity;
-    static const QString _key_z_sensitivity;
-    static const QString _key_x_y_sensitivity;
+    static const QString _key_rotation_sensitivity;
+    static const QString _key_translation_sensitivity;
     static const QString _key_terrain_scale;
     static const QString _key_use_terrain_default_scale;
 
@@ -58,9 +64,8 @@ public:
 
     static QString get_two_number_digit(int digit);
 
-    QSlider * m_camera_sensitivity_slider;
-    QSlider * m_z_movement_sensitivity_slider;
-    QSlider * m_x_y_movement_sensitivity_slider;
+    SensitivitySlider * m_rotation_sensitivity_slider;
+    SensitivitySlider * m_translation_sensitivity_slider;
 
     QIntLineEdit * m_terrain_scale_le;
     QCheckBox * m_default_scale_cb;
@@ -72,7 +77,6 @@ private:
     void init_signals();
 
     Settings m_settings;
-
 };
 
 #endif // SETTINGS_H

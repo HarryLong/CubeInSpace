@@ -6,6 +6,7 @@
 #include "glheader.h"
 #include "glm/matrix.hpp"
 #include "controllers.h"
+#include "camera.h"
 
 enum TransformType{
     Translation,
@@ -71,6 +72,8 @@ private:
     TransformationMatrices m_transformation_matrices;
     TransformationMatrices m_cached_transformation_matrices;
     int m_z_movement_sensitivity, m_x_y_movement_sensitivity, m_camera_sensitivity;
+
+    Camera m_camera;
 };
 
 #endif //VIEW_H

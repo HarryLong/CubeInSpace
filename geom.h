@@ -6,6 +6,7 @@
 #include <vector>
 #include <gl.h>
 #include <QString>
+#include <QDebug>
 
 namespace Geom{
     inline float squaredLength(const glm::vec3 & vector)
@@ -94,6 +95,24 @@ namespace Geom{
 
         while(p_angle > 360.f)
             p_angle -= 360;            
+    }
+
+    inline void normalizeRadians(float& p_angle)
+    {
+        float tmp(p_angle);
+
+        while(p_angle < 0)
+            p_angle += 2*M_PI;
+
+        while(p_angle > 2*M_PI)
+            p_angle -= 2*M_PI;
+
+        if(tmp != p_angle)
+        {
+
+            qCritical() << "Unnormalized: " << tmp;
+            qCritical() << "Normalized: " << p_angle;
+        }
     }
 
     inline float toRadians(const float & degrees_angle)

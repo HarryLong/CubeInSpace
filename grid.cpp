@@ -1,5 +1,4 @@
 #include "grid.h"
-#include "view_manager.h"
 #include "constants.h"
 
 #define HALF_GRID_COUNT 1500

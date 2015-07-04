@@ -11,7 +11,14 @@ class OrientationWidget : public QWidget
 {
     Q_OBJECT
 public:
-    OrientationWidget(float pitch, float yaw, QAction * edit_mode_trigger_action, QWidget * parent = 0, Qt::WindowFlags f = 0);
+    enum Orientation{
+        NORTH,
+        EAST,
+        SOUTH,
+        WEST
+    };
+
+    OrientationWidget(glm::vec3 camera_direction, QAction * edit_mode_trigger_action, QWidget * parent = 0, Qt::WindowFlags f = 0);
     ~OrientationWidget();
 
     bool editMode();
@@ -22,9 +29,9 @@ signals:
     void northOrientationChanged(float north_orientation_x, float north_orientation_y, float north_orientation_z);
 
 public slots:
-    void setCameraOrientation(float pitch, float yaw);
+    void setCameraDirection(float camera_direction_x, float camera_direction_y, float camera_direction_z);
     void saveOrientation();
-    void rotateNorth(int amount);
+    void rotateNorth(Orientation orientation);
 
 protected:
     virtual void paintEvent(QPaintEvent * event);
@@ -37,12 +44,6 @@ private:
     void establish_connections();
     static QChar angle_to_letter(float angle);
     float normalize(const float & degrees);
-
-    float m_pitch;
-
-    float m_camera_yaw;
-
-    float m_north_yaw;
 
     QPen m_primary_line_pen;
     QPen m_text_drawing_pen;
@@ -57,7 +58,8 @@ private:
     QBrush m_edit_mode_brush;
     QBrush m_default_brush;
 
-    glm::vec3 m_north_orientation;
+    glm::vec3 m_camera_direction;
+    glm::vec3 m_north_direction;
 };
 
 
