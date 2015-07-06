@@ -39,22 +39,17 @@ public:
 
     float getTemperature();
     float getLapseRate();
-    bool isValid();
+    bool valid();
     void reset();
 
     void push();
     void pop();
 
-public slots:
-    void setTemperatureValid(bool valid);
-
 signals:
-    void valid_input();
-    void invalid_input();
+    void text_changed();
 
 private slots:
-    void emit_valid_input_signal();
-    void emit_invalid_input_signal();
+    void emit_text_changed();
 
 private:
     void init_layout();
@@ -63,8 +58,6 @@ private:
     LapseLineEdit * m_lapse_rate_le;
 
     QString m_cached_temp, m_cached_lapse;
-
-    bool m_temp_valid;
 };
 
 struct TemperatureAttributes{
@@ -87,13 +80,13 @@ public:
 
     bool isValid();
     void reset();
-    TemperatureAttributes getMinTemperatureAttributes();
-    TemperatureAttributes getMaxTemperatureAttributes();
+    TemperatureAttributes getJunTemperatureAttributes();
+    TemperatureAttributes getDecTemperatureAttributes();
 
     QPushButton * m_ok_btn;
 
-signals:
-    void temperatureValuesChanged(float min_at_zero, float min_lapse_rate, float max_at_zero, float max_lapse_rate);
+signals:    
+    void temperatureValuesChanged(float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec);
 
 public slots:
     virtual void reject();
@@ -101,7 +94,6 @@ public slots:
 
 private slots:
     void perform_input_validity_check();
-    void invalid();
 
 protected:
     virtual void showEvent(QShowEvent * event);
@@ -110,8 +102,8 @@ private:
     void init_layout();
 
     QPushButton * m_cancel_btn;
-    TemperatureEditWidget * m_min_temp_edit;
-    TemperatureEditWidget * m_max_temp_edit;
+    TemperatureEditWidget * m_jun_temp_edit;
+    TemperatureEditWidget * m_dec_temp_edit;
     QLabel * m_info_lbl;
 };
 #endif // TEMP_EDIT_DIALOG_H

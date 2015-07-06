@@ -12,8 +12,8 @@ Actions::Actions(bool multiselect, bool checkable) :
 
 Actions::~Actions()
 {
-    for(std::pair<const QString, QAction*> a : m_actions)
-        delete a.second;
+    for(QAction* a : m_actions.values())
+        delete a;
 }
 
 QAction * Actions::operator()(QString key)
@@ -31,13 +31,12 @@ void Actions::finalise()
     m_action_group = new QActionGroup(this);
     m_action_group->setExclusive(!m_multiselect);
 
-    for(std::pair<const QString, QAction*> a : m_actions)
+    for(QAction * a : m_actions.values())
     {
-        a.second->setActionGroup(m_action_group);
-        a.second->setCheckable(m_checkable);
+        a->setActionGroup(m_action_group);
+        a->setCheckable(m_checkable);
     }
 }
-
 
 /*****************
  * BASE ACTTIONS *
@@ -127,8 +126,7 @@ const QString OverlayActions::_NONE = "None";
 const QString OverlayActions::_SLOPE = "Slope";
 const QString OverlayActions::_ALTITUDE = "Altitude";
 const QString OverlayActions::_SHADE = "Shade";
-const QString OverlayActions::_MIN_TEMP = "Min. Temperature";
-const QString OverlayActions::_MAX_TEMP = "Max. Temperature";
+const QString OverlayActions::_TEMPERATURE = "Temperature";
 const QString OverlayActions::_MIN_DAILY_ILLUMINATION = "Min. Daily Illumination";
 const QString OverlayActions::_MAX_DAILY_ILLUMINATION = "Max. Daily Illumination";
 OverlayActions::OverlayActions() : Actions(false, true)
@@ -150,8 +148,7 @@ void OverlayActions::init_actions()
     m_actions[OverlayActions::_SLOPE] = new QAction(OverlayActions::_SLOPE, NULL);
     m_actions[OverlayActions::_ALTITUDE] = new QAction(OverlayActions::_ALTITUDE, NULL);
     m_actions[OverlayActions::_SHADE] = new QAction(OverlayActions::_SHADE, NULL);
-    m_actions[OverlayActions::_MIN_TEMP] = new QAction(OverlayActions::_MIN_TEMP, NULL);
-    m_actions[OverlayActions::_MAX_TEMP] = new QAction(OverlayActions::_MAX_TEMP, NULL);
+    m_actions[OverlayActions::_TEMPERATURE] = new QAction(OverlayActions::_TEMPERATURE, NULL);
     m_actions[OverlayActions::_MIN_DAILY_ILLUMINATION] = new QAction(OverlayActions::_MIN_DAILY_ILLUMINATION, NULL);
     m_actions[OverlayActions::_MAX_DAILY_ILLUMINATION] = new QAction(OverlayActions::_MAX_DAILY_ILLUMINATION, NULL);
 }
@@ -192,6 +189,8 @@ EditActions::EditActions() : Actions(true, true)
 {
     init_actions();
     finalise();
+
+    m_actions[EditActions::_TEMPERATURE]->setCheckable(false);
 }
 
 EditActions::~EditActions()

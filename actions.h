@@ -4,6 +4,7 @@
 #include <map>
 #include <QString>
 #include <QObject>
+#include <QHash>
 
 class QAction;
 class QActionGroup;
@@ -21,7 +22,7 @@ public:
 
 protected:
     void finalise();
-    std::map<const QString, QAction*> m_actions;
+    QHash<const QString, QAction*> m_actions;
 
 private:
     virtual void init_actions() = 0;
@@ -87,8 +88,7 @@ public:
     const static QString _SLOPE;
     const static QString _ALTITUDE;
     const static QString _SHADE;
-    const static QString _MIN_TEMP;
-    const static QString _MAX_TEMP;
+    const static QString _TEMPERATURE;
     const static QString _MIN_DAILY_ILLUMINATION;
     const static QString _MAX_DAILY_ILLUMINATION;
     OverlayActions();

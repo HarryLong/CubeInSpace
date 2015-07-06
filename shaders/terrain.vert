@@ -17,8 +17,7 @@ struct OverlayMode
     bool slope;
     bool altitude;
     bool shade;
-    bool temperature_min;
-    bool temperature_max;
+    bool temperature;
     bool daily_illumination_min;
     bool daily_illumination_max;
 };
@@ -27,13 +26,14 @@ uniform Transformation transform;
 uniform OverlayMode overlay;
 uniform float max_height;
 uniform float base_height;
+uniform int month;
 
 uniform sampler2D terrain_height_map_texture;
 uniform usampler2D water_height_map_texture;
 uniform sampler2D normals_texture;
 uniform sampler2D shade_texture;
-uniform sampler2D min_temp_texture;
-uniform sampler2D max_temp_texture;
+uniform sampler2D jun_temperature_texture;
+uniform sampler2D dec_temperature_texture;
 uniform sampler2D min_daily_illumination_texture;
 uniform sampler2D max_daily_illumination_texture;
 
@@ -56,11 +56,12 @@ out float slope;
 out float altitude;
 out float shade;
 
-out float min_temperature;
-out float max_temperature;
+out float temperature;
 
 out float min_daily_illumination;
 out float max_daily_illumination;
+
+out vec3 world_space_pos;
 
 float mm_to_meters(in uint mm)
 {
@@ -70,8 +71,7 @@ float mm_to_meters(in uint mm)
 void main()
 {
     // Fetch the y coordinate from the heightmap texture
-    vec3 world_space_pos = vec3(vPos.x*transform.scale, texture(terrain_height_map_texture, textureCoord).r * transform.scale, vPos.z * transform.scale);
-
+    world_space_pos = vec3(vPos.x*transform.scale, texture(terrain_height_map_texture, textureCoord).r * transform.scale, vPos.z * transform.scale);
     uint water_height = texture(water_height_map_texture, textureCoord).r;
     if(water_height > 0)
     {
@@ -85,13 +85,15 @@ void main()
     {
         altitude = (world_space_pos.y-base_height)/(max_height-base_height);
     }
-    else if(overlay.temperature_min)
+    else if(overlay.temperature)
     {
-        min_temperature = texture(min_temp_texture, textureCoord).r * 127;
-    }
-    else if(overlay.temperature_max)
-    {
-        max_temperature = texture(max_temp_texture, textureCoord).r * 127;
+        float jun_temperature = texture(jun_temperature_texture, textureCoord).r * 127;
+        float dec_temperature = texture(dec_temperature_texture, textureCoord).r * 127;
+        float temp_diff = jun_temperature - dec_temperature;
+
+        float jun_percentage = (6.0-(abs(6-month)))/6.0;
+
+        temperature = dec_temperature + (jun_percentage * temp_diff);
     }
     else if(overlay.shade)
     {

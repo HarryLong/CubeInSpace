@@ -59,6 +59,9 @@ private:
     QMenu * m_edit_menu;
     QMenu * m_tmp_menu;
 
+    // Submenu elements
+    QMenu * m_illumination_submenu;
+
     GLWidget * m_glwidget;
 };
 

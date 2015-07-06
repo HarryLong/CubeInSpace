@@ -22,7 +22,8 @@ public:
     ~Renderer();
     void init();
 
-    void renderTerrain(QOpenGLShaderProgram * shader, const Transform & p_transforms, Terrain * terrain, const LightProperties & sunlight_properties);
+    void renderTerrain(QOpenGLShaderProgram * shader, const Transform & p_transforms, Terrain * terrain, const LightProperties & sunlight_properties,
+                       int month);
     void renderTerrainElements(QOpenGLShaderProgram * shader, const Transform & p_transforms, const std::vector<Asset*> & p_assets, Terrain * terrain);
     void renderAssets(QOpenGLShaderProgram * shader, const Transform & p_transforms, const std::vector<Asset*> & p_assets);
     void calculateNormals(QOpenGLShaderProgram * shader, Terrain * terrain);

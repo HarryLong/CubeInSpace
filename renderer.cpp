@@ -50,7 +50,8 @@ void Renderer::calculateNormals(QOpenGLShaderProgram * shader, Terrain * terrain
     shader->release(); CE();
 }
 
-void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const Transform & transforms, Terrain * terrain, const LightProperties & sunlight_properties)
+void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const Transform & transforms, Terrain * terrain,
+                             const LightProperties & sunlight_properties, int month)
 {
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -60,6 +61,9 @@ void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const Transform & tr
     shader->setUniformValue(Uniforms::Transform::_PROJECTION, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._Proj)))); CE();
     shader->setUniformValue(Uniforms::Transform::_VIEW, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
     shader->setUniformValue(Uniforms::Transform::_SCALE, transforms._scale); CE();
+
+    // Month
+    shader->setUniformValue(Uniforms::Timing::_MONTH, month); CE();
 
     // Terrain heightmap texture
     {
@@ -102,21 +106,23 @@ void Renderer::renderTerrain(QOpenGLShaderProgram * shader, const Transform & tr
         terrain->getShade()->bind();CE();
         texture_unit++;
     }
-    else if(terrain->overlayMinTemp() && terrain->getMinTemp()->isValid())
+    else if(terrain->overlayTemperature() && terrain->getTemperature()->isValid())
     {
-        shader->setUniformValue(Uniforms::Overlay::_MIN_TEMP, true); CE();
-        f->glActiveTexture(texture_unit);CE();
-        shader->setUniformValue(Uniforms::Texture::_MIN_TEMP, texture_unit-GL_TEXTURE0); CE();
-        terrain->getMinTemp()->bind();CE();
-        texture_unit++;
-    }
-    else if(terrain->overlayMaxTemp() && terrain->getMaxTemp()->isValid())
-    {
-        shader->setUniformValue(Uniforms::Overlay::_MAX_TEMP, true); CE();
-        f->glActiveTexture(texture_unit);CE();
-        shader->setUniformValue(Uniforms::Texture::_MAX_TEMP, texture_unit-GL_TEXTURE0); CE();
-        terrain->getMaxTemp()->bind();CE();
-        texture_unit++;
+        shader->setUniformValue(Uniforms::Overlay::_TEMPERATURE, true); CE();
+
+        // June temperature
+        {
+            f->glActiveTexture(texture_unit);CE();
+            shader->setUniformValue(Uniforms::Texture::_TEMPERATURE_JUN, texture_unit-GL_TEXTURE0); CE();
+            terrain->getTemperature()->getJunTemperature()->bind();CE();
+            texture_unit++;
+        }
+        {
+            f->glActiveTexture(texture_unit);CE();
+            shader->setUniformValue(Uniforms::Texture::_TEMPERATURE_DEC, texture_unit-GL_TEXTURE0); CE();
+            terrain->getTemperature()->getDecTemperature()->bind();CE();
+            texture_unit++;
+        }
     }
     else if(terrain->overlayMinDailyIllumination() && terrain->getMinDailyIllumination()->isValid())
     {
@@ -272,8 +278,7 @@ void Renderer::reset_overlays(QOpenGLShaderProgram * shader)
     shader->setUniformValue(Uniforms::Overlay::_SLOPE, false); CE();
     shader->setUniformValue(Uniforms::Overlay::_ALTITUDE, false); CE();
     shader->setUniformValue(Uniforms::Overlay::_SHADE, false); CE();
-    shader->setUniformValue(Uniforms::Overlay::_MIN_TEMP, false); CE();
-    shader->setUniformValue(Uniforms::Overlay::_MAX_TEMP, false); CE();
+    shader->setUniformValue(Uniforms::Overlay::_TEMPERATURE, false); CE();
     shader->setUniformValue(Uniforms::Overlay::_MIN_DAILY_ILLUMINATION, false); CE();
     shader->setUniformValue(Uniforms::Overlay::_MAX_DAILY_ILLUMINATION, false); CE();
 }

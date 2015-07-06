@@ -31,16 +31,14 @@ bool CustomLineEdit::valid()
 
 void CustomLineEdit::checkValidity()
 {
-    if(valid())
-    {
-        setValid(true);
+    bool is_valid(valid());
+
+    setValid(is_valid);
+
+    if(is_valid)
         emit inputValid();
-    }
     else
-    {
-        setValid(false);
         emit inputInvalid();
-    }
 }
 
 /********************

@@ -21,8 +21,8 @@ const char * Uniforms::Texture::_TERRAIN_HEIGHTMAP = "terrain_height_map_texture
 const char * Uniforms::Texture::_WATER_HEIGHTMAP = "water_height_map_texture";
 const char * Uniforms::Texture::_NORMALS = "normals_texture";
 const char * Uniforms::Texture::_SHADE = "shade_texture";
-const char * Uniforms::Texture::_MIN_TEMP = "min_temp_texture";
-const char * Uniforms::Texture::_MAX_TEMP = "max_temp_texture";
+const char * Uniforms::Texture::_TEMPERATURE_JUN = "jun_temperature_texture";
+const char * Uniforms::Texture::_TEMPERATURE_DEC = "dec_temperature_texture";
 const char * Uniforms::Texture::_MIN_DAILY_ILLUMINATION = "min_daily_illumination_texture";
 const char * Uniforms::Texture::_MAX_DAILY_ILLUMINATION = "max_daily_illumination_texture";
 
@@ -31,8 +31,7 @@ const char * Uniforms::Overlay::_NONE = "overlay.none";
 const char * Uniforms::Overlay::_SLOPE = "overlay.slope";
 const char * Uniforms::Overlay::_ALTITUDE = "overlay.altitude";
 const char * Uniforms::Overlay::_SHADE = "overlay.shade";
-const char * Uniforms::Overlay::_MIN_TEMP = "overlay.temperature_min";
-const char * Uniforms::Overlay::_MAX_TEMP = "overlay.temperature_max";
+const char * Uniforms::Overlay::_TEMPERATURE = "overlay.temperature";
 const char * Uniforms::Overlay::_MIN_DAILY_ILLUMINATION = "overlay.daily_illumination_min";
 const char * Uniforms::Overlay::_MAX_DAILY_ILLUMINATION = "overlay.daily_illumination_max";
 
@@ -44,3 +43,6 @@ const char * Uniforms::Lighting::_AMBIENT_COLOR = "light_ambient_color";
 // ASSETS
 const char * Uniforms::Assets::_UNIFORM_COLOR = "uniform_color";
 const char * Uniforms::Assets::_USE_UNIFORM_COLOR = "use_uniform_color";
+
+// TIMING
+const char * Uniforms::Timing::_MONTH= "month";

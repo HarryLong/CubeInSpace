@@ -1,13 +1,18 @@
 #version 430
 
+const vec4 color_at_minus_fifty_degrees = vec4(0,0,1,1);
+const vec4 color_at_plus_fifty_degrees = vec4(1,0,0,1);
+
+const float contour_width = 2;
+const float contour_separation = 10;
+
 struct OverlayMode
 {
     bool none;
     bool slope;
     bool altitude;
     bool shade;
-    bool temperature_min;
-    bool temperature_max;
+    bool temperature;
     bool daily_illumination_min;
     bool daily_illumination_max;
 };
@@ -25,28 +30,21 @@ in vec4 ambient;
 in float slope;
 in float altitude; // ratio over max
 in float shade;
-in float min_temperature;
-in float max_temperature;
+in float temperature;
 in float min_daily_illumination;
 in float max_daily_illumination;
 
+in vec3 world_space_pos;
+
 out vec4 outputColor;
 
-vec4 temp_to_output_color(in float temp)
+vec4 temp_to_output_color(in float temperature)
 {
-    if(temp <= -10) // Blue color band
-    {
-        return vec4(0,0,temp/-50.0, 1.0);
-    }
-    else if(temp <= 10) // White color band
-    {
-        float strength = (temp+10.0)/20.0;
-        return vec4(strength,strength,strength, 1.0);
-    }
-    else // Red color band
-    {
-        return vec4(temp/50.0,0,0, 1.0);
-    }
+    float color_at_plus_fifty_degrees_percentage = (temperature+50)/100.0;
+    float color_at_minus_fifty_degrees_percentage = 1-color_at_plus_fifty_degrees_percentage;
+
+    return (color_at_plus_fifty_degrees_percentage * color_at_plus_fifty_degrees) +
+                (color_at_minus_fifty_degrees_percentage * color_at_minus_fifty_degrees);
 }
 
 vec4 slope_to_output_color(in float slope)
@@ -87,13 +85,9 @@ void main()
     {
         outputColor = slope_to_output_color(slope);
     }
-    else if(overlay.temperature_min)
+    else if(overlay.temperature)
     {
-        outputColor = temp_to_output_color(min_temperature);
-    }
-    else if(overlay.temperature_max)
-    {
-        outputColor = temp_to_output_color(max_temperature);
+        outputColor = temp_to_output_color(temperature);
     }
     else if(overlay.shade)
     {
@@ -111,7 +105,6 @@ void main()
     {
         outputColor = ambient;
         float normal_dot_lightdir = dot(camera_space_normal.xyz, light_direction);
-
         if(normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
         {
             outputColor += diffuse * normal_dot_lightdir;
@@ -122,6 +115,14 @@ void main()
             {
                 outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
             }
+
+            // Contour lines
+            float f  = abs(fract (world_space_pos.y * 0.5) - 0.5);
+            float df = fwidth(world_space_pos.y * 0.5);
+            float g = smoothstep(-1.0*df, 1.0*df , f);
+
+            float c = g;
+            outputColor = vec4(c,c,c,1.0) * outputColor;
         }
     }
 }

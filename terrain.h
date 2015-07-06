@@ -81,37 +81,25 @@ public:
     float getAltitude(const glm::vec3 & point);
     float getSlope(const glm::vec3 & point);
     bool isShaded(const glm::vec3 & point, bool & shaded);
-    bool getTemperatures(const glm::vec3 & point, float & min, float & max);
+    bool getTemperatures(const glm::vec3 & point, int month, float & temperature);
     bool getDailyIlluminations(const glm::vec3 & point, int & min, int & max);
     int getWaterHeight(const glm::vec3 & point);
 
     const TerragenFile & getHeightMap();
-
-    // Heightmap functions
-//    GLenum getHeightMapTextureUnit() const;
-//    GLenum getShadeTextureUnit() const;
-//    GLenum getNormalsTextureUnit() const;
-//    GLenum getMinTemperatureTextureUnit() const;
-//    GLenum getMaxTemperatureTextureUnit() const;
-//    GLenum getMinDailyIlluminationTextureUnit() const;
-//    GLenum getMaxDailyIlluminationTextureUnit() const;
-//    GLint getHeightmapTexture() const;
 
     // Overlays
     bool overlayNone() const;
     bool overlaySlope() const;
     bool overlayAltitude() const;
     bool overlayShade() const;
-    bool overlayMinTemp() const;
-    bool overlayMaxTemp() const;
+    bool overlayTemperature() const;
     bool overlayMinDailyIllumination() const;
     bool overlayMaxDailyIllumination() const;
 
     DrawableTerrain & getDrawableTerrain();
     TerrainShade * getShade();
     TerrainNormals * getNormals();
-    TerrainTemperature * getMinTemp();
-    TerrainTemperature * getMaxTemp();
+    TerrainTemperature * getTemperature();
     TerrainDailyIllumination * getMinDailyIllumination();
     TerrainDailyIllumination * getMaxDailyIllumination();
     TerrainWater * getTerrainWater();
@@ -152,7 +140,7 @@ private:
     void establish_connections();
     float get_altitude(const glm::vec2 & point);
     float get_slope(const glm::vec2 & point);
-    bool get_temperatures(const glm::vec2 & point, float & min, float & max);
+    bool get_temperatures(const glm::vec2 & point, int month, float & temperature);
     bool is_shaded(const glm::vec2 & point, bool & shaded);
     bool get_daily_illuminations(const glm::vec2 & point, int & min, int & max);
     int get_water_height(const glm::vec2 & point);
@@ -168,8 +156,7 @@ private:
     DrawableTerrain m_drawable_terrain;
     TerrainShade * m_terrain_shade;
     TerrainNormals * m_terrain_normals;
-    TerrainTemperature * m_terrain_min_temp;
-    TerrainTemperature * m_terrain_max_temp;
+    TerrainTemperature * m_terrain_temperature;
     TerrainWater * m_terrain_water;
     TerrainDailyIllumination * m_terrain_min_daily_illumination;
     TerrainDailyIllumination * m_terrain_max_daily_illumination;

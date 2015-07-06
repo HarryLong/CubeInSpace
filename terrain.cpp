@@ -156,9 +156,9 @@ Terrain::Terrain(TerrainControllers & terrain_controllers, TemperatureEditDialog
     m_terrain_controllers(terrain_controllers), m_overlay_actions(overlay_actions),
     m_selection_rectangle(ShapeFactory::getSelectionRectangle()),
     m_terrain_shade(new TerrainShade), m_terrain_normals(new TerrainNormals),
-    m_terrain_min_temp(new TerrainTemperature), m_terrain_max_temp(new TerrainTemperature),
     m_terrain_min_daily_illumination(new TerrainDailyIllumination),
     m_terrain_max_daily_illumination(new TerrainDailyIllumination),
+    m_terrain_temperature(new TerrainTemperature),
     m_terrain_water(new TerrainWater),
     m_temp_edit_dlg(temp_edit_dlg)
 {
@@ -174,11 +174,10 @@ Terrain::~Terrain()
 {
     delete m_terrain_shade;
     delete m_terrain_normals;
-    delete m_terrain_min_temp;
-    delete m_terrain_max_temp;
     delete m_terrain_min_daily_illumination;
     delete m_terrain_max_daily_illumination;
     delete m_terrain_water;
+    delete m_terrain_temperature;
 }
 
 void Terrain::establish_connections()
@@ -338,25 +337,25 @@ void Terrain::refreshShade(QString display_message)
     emit processing_complete();
 }
 
-void Terrain::refreshTemperature(float min_temp_at_zero, float min_lapse_rate, float max_temp_at_zero, float max_lapse_rate)
+void Terrain::refreshTemperature(float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec)
 {
     int terrain_width(m_terragen_file.m_header_data.width);
     int terrain_depth(m_terragen_file.m_header_data.depth);
-    int n_iterations(terrain_depth*terrain_width);
+    int n_iterations(terrain_depth*terrain_width*2);
 
-    // Minimum temperatures
+    emit processing("Calculating Temperature...");
+    int iteration_counter(0);
+
+    // June temperatures
     {
-        emit processing("Calculating minimum temperature...");
-
-        float temp_at_zero(min_temp_at_zero);
-        float lapse_rate(min_lapse_rate);
+        float temp_at_zero(temp_at_zero_june);
+        float lapse_rate(lapse_rate_june);
 
         GLbyte * temp_data = (GLbyte*) malloc(sizeof(GLbyte) * terrain_width * terrain_depth);
 
-        int i(0);
-        for(int z = 0 ; z < terrain_depth; z++, i += terrain_width)
+        for(int z = 0 ; z < terrain_depth; z++, iteration_counter += terrain_width)
         {
-            emit intermediate_processing_update((((float)i)/n_iterations)*100);
+            emit intermediate_processing_update((((float)iteration_counter)/n_iterations)*100);
 #pragma omp parallel for
             for(int x = 0; x < terrain_width; x++)
             {
@@ -370,24 +369,19 @@ void Terrain::refreshTemperature(float min_temp_at_zero, float min_lapse_rate, f
             }
         }
 
-        m_terrain_min_temp->setData(temp_data, terrain_width, terrain_depth);
-
-        emit processing_complete();
+        m_terrain_temperature->getJunTemperature()->setData(temp_data, terrain_width, terrain_depth);
     }
 
-    // Max temperatures
+    // December temperatures
     {
-        emit processing("Calculating maximum temperature...");
-
-        float temp_at_zero(max_temp_at_zero);
-        float lapse_rate(max_lapse_rate);
+        float temp_at_zero(temp_at_zero_dec);
+        float lapse_rate(lapse_rate_dec);
 
         GLbyte * temp_data = (GLbyte*) malloc(sizeof(GLbyte) * terrain_width * terrain_depth);
-
         int i(0);
-        for(int z = 0 ; z < terrain_depth; z++, i += terrain_width)
+        for(int z = 0 ; z < terrain_depth; z++, iteration_counter += terrain_width)
         {
-            emit intermediate_processing_update((((float)i)/n_iterations)*100);
+            emit intermediate_processing_update((((float)iteration_counter)/n_iterations)*100);
 #pragma omp parallel for
             for(int x = 0; x < terrain_width; x++)
             {
@@ -400,13 +394,11 @@ void Terrain::refreshTemperature(float min_temp_at_zero, float min_lapse_rate, f
                 temp_data[index] = (GLbyte) std::min(50.0f,std::max(-50.0f, temp));
             }
         }
-
-        m_terrain_max_temp->setData(temp_data, terrain_width, terrain_depth);
-        emit processing_complete();
+        m_terrain_temperature->getDecTemperature()->setData(temp_data, terrain_width, terrain_depth);
     }
+    emit processing_complete();
 
-    (*m_overlay_actions)(OverlayActions::_MIN_TEMP)->setEnabled(true);
-    (*m_overlay_actions)(OverlayActions::_MAX_TEMP)->setEnabled(true);
+    (*m_overlay_actions)(OverlayActions::_TEMPERATURE)->setEnabled(true);
 }
 
 void Terrain::reset_overlay()
@@ -448,15 +440,11 @@ void Terrain::invalidateIllumination()
 
 void Terrain::invalidate_temp()
 {
-    (*m_overlay_actions)(OverlayActions::_MIN_TEMP)->setEnabled(false);
-    (*m_overlay_actions)(OverlayActions::_MAX_TEMP)->setEnabled(false);
-    m_terrain_min_temp->invalidate();
-    m_terrain_max_temp->invalidate();
+    (*m_overlay_actions)(OverlayActions::_TEMPERATURE)->setEnabled(false);
+    m_terrain_temperature->invalidate();
 
-    if(overlayMinTemp() || overlayMaxTemp())
-    {
+    if(overlayTemperature())
         reset_overlay();
-    }
 }
 
 void Terrain::invalidate_water()
@@ -571,14 +559,9 @@ TerrainNormals * Terrain::getNormals()
     return m_terrain_normals;
 }
 
-TerrainTemperature * Terrain::getMinTemp()
+TerrainTemperature * Terrain::getTemperature()
 {
-    return m_terrain_min_temp;
-}
-
-TerrainTemperature * Terrain::getMaxTemp()
-{
-    return m_terrain_max_temp;
+    return m_terrain_temperature;
 }
 
 TerrainDailyIllumination * Terrain::getMinDailyIllumination()
@@ -619,9 +602,9 @@ float Terrain::getSlope(const glm::vec3 & point)
     return get_slope(glm::vec2(point[0]/m_scale, point[2]/m_scale));
 }
 
-bool Terrain::getTemperatures(const glm::vec3 &point, float &min, float &max)
+bool Terrain::getTemperatures(const glm::vec3 &point, int month, float & temperature)
 {
-    return get_temperatures(glm::vec2(point[0]/m_scale, point[2]/m_scale), min, max);
+    return get_temperatures(glm::vec2(point[0]/m_scale, point[2]/m_scale), month, temperature);
 }
 
 bool Terrain::getDailyIlluminations(const glm::vec3 & point, int & min, int & max)
@@ -657,12 +640,18 @@ float Terrain::get_slope(const glm::vec2 & point)
     return Geom::toDegrees(std::abs(std::acos(glm::dot(normal, vertical_vector))));
 }
 
-bool Terrain::get_temperatures(const glm::vec2 &point, float &min, float &max)
+bool Terrain::get_temperatures(const glm::vec2 &point, int month, float & temperature)
 {
-    if(m_terrain_min_temp->isValid() && m_terrain_max_temp->isValid())
+    if(m_terrain_temperature->isValid())
     {
-        min = (*m_terrain_min_temp)(point[0], point[1]);
-        max = (*m_terrain_max_temp)(point[0], point[1]);
+        float jun_temperature = (*m_terrain_temperature->getJunTemperature())(point[0], point[1]);
+        float dec_temperature = (*m_terrain_temperature->getDecTemperature())(point[0], point[1]);
+        float temp_diff = jun_temperature - dec_temperature;
+
+        float jun_percentage = (6.0-(abs(6-month)))/6.0;
+
+        temperature = dec_temperature + (jun_percentage * temp_diff);
+
         return true;
     }
 
@@ -717,14 +706,9 @@ bool Terrain::overlayShade() const
     return (*m_overlay_actions)(OverlayActions::_SHADE)->isChecked();
 }
 
-bool Terrain::overlayMinTemp() const
+bool Terrain::overlayTemperature() const
 {
-    return (*m_overlay_actions)(OverlayActions::_MIN_TEMP)->isChecked();
-}
-
-bool Terrain::overlayMaxTemp() const
-{
-    return (*m_overlay_actions)(OverlayActions::_MAX_TEMP)->isChecked();
+    return (*m_overlay_actions)(OverlayActions::_TEMPERATURE)->isChecked();
 }
 
 bool Terrain::overlayMinDailyIllumination() const

@@ -109,6 +109,7 @@ private:
     void establish_connections();
     void update_info_pointer_dlg(const glm::vec2 & screen_pos);
     glm::vec3 to_world(const glm::vec3 & screen_coord);
+    int month();
 
     bool render_rays();
     bool render_grid();

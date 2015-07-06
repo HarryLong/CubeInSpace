@@ -28,8 +28,8 @@ public:
         static const char * _WATER_HEIGHTMAP;
         static const char * _NORMALS;
         static const char * _SHADE;
-        static const char * _MIN_TEMP;
-        static const char * _MAX_TEMP;
+        static const char * _TEMPERATURE_JUN;
+        static const char * _TEMPERATURE_DEC;
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
     };
@@ -39,7 +39,7 @@ public:
         static const char * _SLOPE;
         static const char * _ALTITUDE;
         static const char * _SHADE;
-        static const char * _MIN_TEMP;
+        static const char * _TEMPERATURE;
         static const char * _MAX_TEMP;
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
@@ -54,6 +54,10 @@ public:
     struct Assets {
         static const char * _UNIFORM_COLOR;
         static const char * _USE_UNIFORM_COLOR;
+    };
+
+    struct Timing {
+        static const char * _MONTH;
     };
 };
 

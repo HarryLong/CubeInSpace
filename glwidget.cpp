@@ -234,7 +234,7 @@ void GLWidget::paintGL() // Override
         }
 
         const LightProperties & sunlight_properties (m_scene_manager->getLightingManager().getSunlightProperties());
-        m_renderer.renderTerrain(m_shaders->m_terrain, tranform, terrain, sunlight_properties);
+        m_renderer.renderTerrain(m_shaders->m_terrain, tranform, terrain, sunlight_properties, month());
 
         // Terrain elements
         std::vector<Asset*> terrain_elements_to_render;
@@ -606,8 +606,8 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
         bool shade_data_valid(terrain->isShaded(intersection_point, shaded));
 
         // Temperature
-        float min_temp, max_temp;
-        bool temp_data_valid(terrain->getTemperatures(intersection_point, min_temp, max_temp));
+        float temp;
+        bool temp_data_valid(terrain->getTemperatures(intersection_point, month(), temp));
 
         // Daily illumination
         int min_daily_illumination, max_daily_illumination;
@@ -615,7 +615,7 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
 
         m_pointer_info_dlg->update(altitude, slope, water_height,
                                    shade_data_valid, shaded,
-                                   temp_data_valid, min_temp, max_temp,
+                                   temp_data_valid, temp,
                                    daily_illumination_valid, min_daily_illumination, max_daily_illumination);
     }
     else
@@ -687,6 +687,11 @@ glm::vec3 GLWidget::to_world(const glm::vec3 & screen_coord)
     glm::vec3 window_pos = glm::vec3(window_x, window_y, window_z); // Actual window position
     glm::vec3 world_pos = glm::unProject(window_pos, view_mat, proj_mat, glm::vec4(viewport[0], viewport[1], m_width.load(), m_height.load()));
     return glm::vec3(world_pos.x, world_pos.y, world_pos.z);
+}
+
+int GLWidget::month()
+{
+    m_overlay_widgets(ControllerWidgetsWrapper::Type::_MONTH)->value();
 }
 
 // THREAD

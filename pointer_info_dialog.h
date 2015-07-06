@@ -17,15 +17,14 @@ public:
 public slots:
     void update(float altitude, float slope, int water_height,
                 bool shade_set, bool shaded,
-                bool temp_set, float min_temp, float max_temp,
+                bool temp_set, float temp,
                 bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination);
     void invalidPoint();
 
 private slots:
     void setAltitude(float altitude);
     void setSlope(float slope);
-    void setMinTemp(float min_temp);
-    void setMaxTemp(float max_temp);
+    void setTemp(float temp);
     void setShaded(bool shaded);
     void setMinDailyIllumination(int min_daily_illumination);
     void setMaxDailyIllumination(int max_daily_illumination);
@@ -41,8 +40,7 @@ private:
         _ALTITUDE,
         _SLOPE,
         _SHADE,
-        _MIN_TEMP,
-        _MAX_TEMP,
+        _TEMP,
         _MIN_DAILY_ILLUMINATION,
         _MAX_DAILY_ILLUMINATION,
         _WATER_HEIGHT

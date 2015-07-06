@@ -39,14 +39,11 @@ LapseLineEdit::~LapseLineEdit()
  * TEMPERATURE EDITOR WIDGET *
  *****************************/
 TemperatureEditWidget::TemperatureEditWidget(QWidget * parent, Qt::WindowFlags f) :
-    QWidget(parent, f), m_temp_le(new TemperatureLineEdit(this)), m_lapse_rate_le(new LapseLineEdit(this)), m_temp_valid(false)
+    QWidget(parent, f), m_temp_le(new TemperatureLineEdit(this)), m_lapse_rate_le(new LapseLineEdit(this))
 {
     init_layout();
-    connect(m_temp_le, SIGNAL(inputValid()), this, SLOT(emit_valid_input_signal()));
-    connect(m_temp_le, SIGNAL(inputInvalid()), this, SLOT(emit_invalid_input_signal()));
-
-    connect(m_lapse_rate_le, SIGNAL(inputValid()), this, SLOT(emit_valid_input_signal()));
-    connect(m_lapse_rate_le, SIGNAL(inputInvalid()), this, SLOT(emit_invalid_input_signal()));
+    connect(m_temp_le, SIGNAL(textChanged(QString)), this, SLOT(emit_text_changed()));
+    connect(m_lapse_rate_le, SIGNAL(textChanged(QString)), this, SLOT(emit_text_changed()));
 }
 
 TemperatureEditWidget::~TemperatureEditWidget()
@@ -91,9 +88,9 @@ float TemperatureEditWidget::getLapseRate()
     return m_lapse_rate_le->value();
 }
 
-bool TemperatureEditWidget::isValid()
+bool TemperatureEditWidget::valid()
 {
-    return m_temp_valid && m_temp_le->valid() && m_lapse_rate_le->valid();
+    return m_temp_le->valid() && m_lapse_rate_le->valid();
 }
 
 void TemperatureEditWidget::reset()
@@ -114,27 +111,16 @@ void TemperatureEditWidget::push()
     m_cached_lapse = m_lapse_rate_le->text();
 }
 
-void TemperatureEditWidget::setTemperatureValid(bool valid)
+void TemperatureEditWidget::emit_text_changed()
 {
-    m_temp_valid = valid;
-    m_temp_le->setValid(isValid());
-}
-
-void TemperatureEditWidget::emit_valid_input_signal()
-{
-    emit valid_input();
-}
-
-void TemperatureEditWidget::emit_invalid_input_signal()
-{
-    emit invalid_input();
+    emit text_changed();
 }
 
 /*****************************
  * TEMPERATURE EDITOR DIALOG *
  *****************************/
 TemperatureEditDialog::TemperatureEditDialog(QWidget * parent, Qt::WindowFlags f ) :
-    QDialog(parent,f), m_min_temp_edit(new TemperatureEditWidget), m_max_temp_edit(new TemperatureEditWidget),
+    QDialog(parent,f), m_jun_temp_edit(new TemperatureEditWidget), m_dec_temp_edit(new TemperatureEditWidget),
     m_ok_btn(new QPushButton("OK")), m_cancel_btn(new QPushButton("Cancel")), m_info_lbl(new QLabel(this))
 {
     setWindowTitle("Temperature Editor");
@@ -144,11 +130,8 @@ TemperatureEditDialog::TemperatureEditDialog(QWidget * parent, Qt::WindowFlags f
     connect(m_ok_btn, SIGNAL(clicked()), this, SLOT(accept()));
     connect(m_cancel_btn, SIGNAL(clicked()), this, SLOT(reject()));
 
-    connect(m_min_temp_edit, SIGNAL(invalid_input()), this, SLOT(invalid()));
-    connect(m_max_temp_edit, SIGNAL(invalid_input()), this, SLOT(invalid()));
-
-    connect(m_min_temp_edit, SIGNAL(valid_input()), this, SLOT(perform_input_validity_check()));
-    connect(m_max_temp_edit, SIGNAL(valid_input()), this, SLOT(perform_input_validity_check()));
+    connect(m_jun_temp_edit, SIGNAL(text_changed()), this, SLOT(perform_input_validity_check()));
+    connect(m_dec_temp_edit, SIGNAL(text_changed()), this, SLOT(perform_input_validity_check()));
 
     perform_input_validity_check();
 }
@@ -160,17 +143,17 @@ TemperatureEditDialog::~TemperatureEditDialog()
 
 bool TemperatureEditDialog::isValid()
 {
-    return m_min_temp_edit->isValid() && m_max_temp_edit->isValid();
+    return m_jun_temp_edit->valid() && m_dec_temp_edit->valid();
 }
 
-TemperatureAttributes TemperatureEditDialog::getMinTemperatureAttributes()
+TemperatureAttributes TemperatureEditDialog::getJunTemperatureAttributes()
 {
-    return TemperatureAttributes(m_min_temp_edit->getTemperature(), m_min_temp_edit->getLapseRate());
+    return TemperatureAttributes(m_jun_temp_edit->getTemperature(), m_jun_temp_edit->getLapseRate());
 }
 
-TemperatureAttributes TemperatureEditDialog::getMaxTemperatureAttributes()
+TemperatureAttributes TemperatureEditDialog::getDecTemperatureAttributes()
 {
-    return TemperatureAttributes(m_max_temp_edit->getTemperature(), m_max_temp_edit->getLapseRate());
+    return TemperatureAttributes(m_dec_temp_edit->getTemperature(), m_dec_temp_edit->getLapseRate());
 }
 
 void TemperatureEditDialog::init_layout()
@@ -179,14 +162,14 @@ void TemperatureEditDialog::init_layout()
 
     // Minimum temperature
     {
-        main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> MINIMUM (WINTER) </span> </html>"),0, Qt::AlignCenter);
-        main_layout->addWidget(m_min_temp_edit,0);
+        main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> JUNE </span> </html>"),0, Qt::AlignCenter);
+        main_layout->addWidget(m_jun_temp_edit,0);
     }
 
     // Maximum temperature
     {
-        main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> MAXIMUM (SUMMER) </span> </html>"),0, Qt::AlignCenter);
-        main_layout->addWidget(m_max_temp_edit,0);
+        main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> DECEMBER </span> </html>"),0, Qt::AlignCenter);
+        main_layout->addWidget(m_dec_temp_edit,0);
     }
 
     main_layout->addWidget(m_info_lbl,0, Qt::AlignCenter);
@@ -207,50 +190,32 @@ void TemperatureEditDialog::init_layout()
 
 void TemperatureEditDialog::reject()
 {
-    m_min_temp_edit->pop();
-    m_max_temp_edit->pop();
+    m_jun_temp_edit->pop();
+    m_dec_temp_edit->pop();
 
     QDialog::reject();
 }
 
 void TemperatureEditDialog::accept()
 {
-    emit temperatureValuesChanged(m_min_temp_edit->getTemperature(), m_min_temp_edit->getLapseRate(),
-                                  m_max_temp_edit->getTemperature(), m_max_temp_edit->getLapseRate());
+    emit temperatureValuesChanged(m_jun_temp_edit->getTemperature(), m_jun_temp_edit->getLapseRate(),
+                                  m_dec_temp_edit->getTemperature(), m_dec_temp_edit->getLapseRate());
     QDialog::reject();
 }
 
 void TemperatureEditDialog::showEvent(QShowEvent * event)
 {
-    m_min_temp_edit->push();
-    m_max_temp_edit->push();
+    m_jun_temp_edit->push();
+    m_dec_temp_edit->push();
 }
 
 void TemperatureEditDialog::reset()
 {
-    m_min_temp_edit->reset();
-    m_max_temp_edit->reset();
-}
-
-void TemperatureEditDialog::invalid()
-{
-    m_ok_btn->setEnabled(false);
+    m_jun_temp_edit->reset();
+    m_dec_temp_edit->reset();
 }
 
 void TemperatureEditDialog::perform_input_validity_check()
 {
-    bool temp_check (m_min_temp_edit->getTemperature() <= m_max_temp_edit->getTemperature());
-    if(!temp_check)
-    {
-        m_info_lbl->setText("<html> <span style=\"color:red;\">! Min temp > Max temp !</span> </html>");
-    }
-    else
-    {
-        m_info_lbl->setText(" ");
-    }
-
-    m_min_temp_edit->setTemperatureValid(temp_check);
-    m_max_temp_edit->setTemperatureValid(temp_check);
-
-    m_ok_btn->setEnabled(m_min_temp_edit->isValid() && m_max_temp_edit->isValid());
+    m_ok_btn->setEnabled(isValid());
 }
