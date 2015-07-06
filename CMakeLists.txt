@@ -36,7 +36,7 @@ SET(SOURCE_FILES asset controllers lighting_manager light_properties shape_facto
 window main glheader qtutils renderer debug grid helper gl_drawable constants settings rays geom scene_manager
 glm_wrapper  custom_line_edit acceleration_structure progress_bar_widget pointer_info_dialog temp_edit_dlg
 terrain_normals terrain_shade terrain_temperature terrain_daily_illimination texture_element orientation_widget actions
-shader_programs controller_widgets water_flow_analyser terrain_water camera transform)
+shader_programs controller_widgets water_flow_analyser terrain_water camera uniforms transform)
 
 # Shaders
 add_subdirectory(shaders)

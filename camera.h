@@ -1,18 +1,5 @@
-/*
- camera.h
- OpenGL Camera Code
- Capable of 2 modes, orthogonal, and free
- Quaternion camera code adapted from: http://hamelot.co.uk/visualization/opengl-camera/
- Written by Hammad Mazhar
- */
 #ifndef CAMERA_H
 #define CAMERA_H
-
-//#ifdef __APPLE__
-//#include <GLUT/glut.h>
-//#else
-//#include <GL/freeglut.h>
-//#endif
 
 #include "glm_wrapper.h"
 #include "controllers.h"

@@ -63,6 +63,10 @@ class NormalsGeneratorShader : public ShaderProgram
 public:
     NormalsGeneratorShader(QObject * parent = 0);
     ~NormalsGeneratorShader();
+
+    struct Uniforms{
+        static const char * _TERRAIN_HEIGHTMAP;
+    };
 };
 
 /*******************************
@@ -77,11 +81,6 @@ public:
     static const int _GROUP_SIZE_X;
     static const int _GROUP_SIZE_Y;
     static const int _GROUP_SIZE_Z;
-
-    struct Uniforms{
-        static const QString _TERRAIN_HEIGHTMAP;
-        static const QString _WATER_HEIGHTMAP;
-    };
 };
 
 #endif //SHADER_PROGRAMS

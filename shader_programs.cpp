@@ -97,8 +97,6 @@ NormalsGeneratorShader::~NormalsGeneratorShader()
 const int WaterFluxGeneratorShader::_GROUP_SIZE_X = 16;
 const int WaterFluxGeneratorShader::_GROUP_SIZE_Y = 16;
 const int WaterFluxGeneratorShader::_GROUP_SIZE_Z = 1;
-const QString WaterFluxGeneratorShader::Uniforms::_TERRAIN_HEIGHTMAP = "terrain_heightmap";
-const QString WaterFluxGeneratorShader::Uniforms::_WATER_HEIGHTMAP = "water_heightmap";
 WaterFluxGeneratorShader::WaterFluxGeneratorShader(QObject * parent) : ComputeShaderProgram(":/water_flux.comp")
 {
 

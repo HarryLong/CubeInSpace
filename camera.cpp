@@ -14,7 +14,7 @@ Camera::Camera(ViewControllers view_controllers) :
     camera_type(Camera::Type::FREE),
     m_camera_up(glm::vec3(0, 1, 0)),
     m_fov(M_PI/2.0),
-    m_camera_position(0,0,1),
+    m_camera_position(0,5,5),
     m_camera_look_at(0,0,0),
     m_camera_direction(glm::normalize(m_camera_look_at - m_camera_position)),
     m_camera_position_delta(0, 0, 0),
