@@ -10,9 +10,9 @@
 #include "shape_factory.h"
 
 SceneManager::SceneManager(PositionControllers position_controllers, TimeControllers time_controllers, TerrainControllers terrain_controllers,
-                           TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions) :
+                           TemperatureEditDialog * temp_edit_dlg, RainfallEditDialog * rainfall_edit_dlg, ActionFamily * overlay_actions) :
     m_sun(NULL), m_acceleration_structure_viewer(NULL),  m_lighting_manager(time_controllers, position_controllers),
-    m_terrain(new Terrain(terrain_controllers, temp_edit_dlg, overlay_actions))
+    m_terrain(new Terrain(terrain_controllers, temp_edit_dlg, rainfall_edit_dlg, overlay_actions))
 {
     establish_connections();
 }
@@ -172,8 +172,7 @@ void SceneManager::refreshDailyIllumination()
         }
     }
     free(intermediary_illumination_data);
-    m_terrain->setMinIlluminationData(aggregated_min);
-    m_terrain->setMaxIlluminationData(aggregated_max);
+    m_terrain->setIlluminationData(aggregated_min, aggregated_max);
 
     // Restore time and date
     m_lighting_manager.setMonth(current_month);
@@ -200,13 +199,3 @@ void SceneManager::setNorthOrientation(float north_x, float north_y, float north
     m_lighting_manager.setNorthOrientation(north_x, north_y, north_z);
     m_terrain->invalidateIllumination(); // Illumination data needs to be recalculated
 }
-
-/***********
- * DELETES *
- ***********/
-//void SceneManager::clear_acceleration_structure_viewer()
-//{
-//    for(GlCube * cube : m_acceleration_structure_viewer)
-//        delete cube;
-//    m_acceleration_structure_viewer.clear();
-//}

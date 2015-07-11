@@ -1,32 +1,30 @@
 #include "actions.h"
-#include <QAction>
-#include <QActionGroup>
 
 /***********************
  * BASE ACTTIONS CLASS *
  ***********************/
-Actions::Actions(bool multiselect, bool checkable) :
+ActionFamily::ActionFamily(bool multiselect, bool checkable) :
     m_multiselect(multiselect), m_checkable(checkable)
 {
 }
 
-Actions::~Actions()
+ActionFamily::~ActionFamily()
 {
     for(QAction* a : m_actions.values())
         delete a;
 }
 
-QAction * Actions::operator()(QString key)
+QAction * ActionFamily::operator[](QString key)
 {
     return m_actions[key];
 }
 
-QActionGroup * Actions::getActionGroup()
+QActionGroup * ActionFamily::getActionGroup()
 {
     return m_action_group;
 }
 
-void Actions::finalise()
+void ActionFamily::finalise()
 {
     m_action_group = new QActionGroup(this);
     m_action_group->setExclusive(!m_multiselect);
@@ -41,190 +39,169 @@ void Actions::finalise()
 /*****************
  * BASE ACTTIONS *
  *****************/
-const QString BaseActions::_CLOSE_APP = "Close";
-const QString BaseActions::_LOAD_TERRAIN = "Load Terrain";
-const QString BaseActions::_OPEN_SETTINGS = "Open Settings";
-BaseActions::BaseActions() : Actions(true, false)
+const QString BaseActionFamily::_CLOSE_APP = "Close";
+const QString BaseActionFamily::_LOAD_TERRAIN = "Load Terrain";
+const QString BaseActionFamily::_OPEN_SETTINGS = "Open Settings";
+BaseActionFamily::BaseActionFamily() : ActionFamily(true, false)
 {
     init_actions();
     finalise();
 }
 
-BaseActions::~BaseActions()
+BaseActionFamily::~BaseActionFamily()
 {
 
 }
 
-void BaseActions::init_actions()
+void BaseActionFamily::init_actions()
 {
-    m_actions[BaseActions::_CLOSE_APP] = new QAction(BaseActions::_CLOSE_APP, NULL);
-    m_actions[BaseActions::_CLOSE_APP]->setShortcut(QKeySequence::Close);
-
-    m_actions[BaseActions::_LOAD_TERRAIN] = new QAction(BaseActions::_LOAD_TERRAIN, NULL);
-    m_actions[BaseActions::_OPEN_SETTINGS] = new QAction(BaseActions::_OPEN_SETTINGS, NULL);
+    m_actions[BaseActionFamily::_CLOSE_APP] = new QAction(BaseActionFamily::_CLOSE_APP, NULL);
+    m_actions[BaseActionFamily::_CLOSE_APP]->setShortcut(QKeySequence::Close);
+    m_actions[BaseActionFamily::_LOAD_TERRAIN] = new QAction(BaseActionFamily::_LOAD_TERRAIN, NULL);
+    m_actions[BaseActionFamily::_OPEN_SETTINGS] = new QAction(BaseActionFamily::_OPEN_SETTINGS, NULL);
 }
 
 /*******************
  * RENDER ACTTIONS *
  *******************/
-const QString RenderActions::_GRID = "Grid";
-const QString RenderActions::_TERRAIN = "Terrain";
-const QString RenderActions::_ACCELERATION_STRUCTURE = "Acceleration Structure";
-const QString RenderActions::_RAYS = "Rays";
-const QString RenderActions::_SUN = "Sun";
-RenderActions::RenderActions() :  Actions(true, true)
+const QString RenderActionFamily::_GRID = "Grid";
+const QString RenderActionFamily::_TERRAIN = "Terrain";
+const QString RenderActionFamily::_RAYS = "Rays";
+const QString RenderActionFamily::_SUN = "Sun";
+RenderActionFamily::RenderActionFamily() :  ActionFamily(true, true)
 {
     init_actions();
     finalise();
 
-    m_actions[RenderActions::_GRID]->setChecked(true);
-    m_actions[RenderActions::_TERRAIN]->setChecked(true);
+    m_actions[RenderActionFamily::_GRID]->setChecked(true);
+    m_actions[RenderActionFamily::_TERRAIN]->setChecked(true);
 }
 
-RenderActions::~RenderActions()
+RenderActionFamily::~RenderActionFamily()
 {
 
 }
 
-void RenderActions::init_actions()
+void RenderActionFamily::init_actions()
 {
-    m_actions[RenderActions::_GRID] = new QAction(RenderActions::_GRID, NULL);
-    m_actions[RenderActions::_TERRAIN] = new QAction(RenderActions::_TERRAIN, NULL);
-    m_actions[RenderActions::_ACCELERATION_STRUCTURE] = new QAction(RenderActions::_ACCELERATION_STRUCTURE, NULL);
-    m_actions[RenderActions::_RAYS] = new QAction(RenderActions::_RAYS, NULL);
-    m_actions[RenderActions::_SUN] = new QAction(RenderActions::_SUN, NULL);
+    m_actions[RenderActionFamily::_GRID] = new QAction(RenderActionFamily::_GRID, NULL);
+    m_actions[RenderActionFamily::_TERRAIN] = new QAction(RenderActionFamily::_TERRAIN, NULL);
+    m_actions[RenderActionFamily::_RAYS] = new QAction(RenderActionFamily::_RAYS, NULL);
+    m_actions[RenderActionFamily::_SUN] = new QAction(RenderActionFamily::_SUN, NULL);
 }
 
 /********************
  * CONTROL ACTTIONS *
  ********************/
-const QString ControlActions::_SOFTIMAGE = "Softimage";
-const QString ControlActions::_FPS = "FPS";
-ControlActions::ControlActions() : Actions(false, true)
+const QString ControlActionFamily::_SOFTIMAGE = "Softimage";
+const QString ControlActionFamily::_FPS = "FPS";
+ControlActionFamily::ControlActionFamily() : ActionFamily(false, true)
 {
     init_actions();
     finalise();
 
-    m_actions[ControlActions::_SOFTIMAGE]->setChecked(true);
+    m_actions[ControlActionFamily::_SOFTIMAGE]->setChecked(true);
 }
 
-ControlActions::~ControlActions()
+ControlActionFamily::~ControlActionFamily()
 {
 
 }
 
-void ControlActions::init_actions()
+void ControlActionFamily::init_actions()
 {
-    m_actions[ControlActions::_SOFTIMAGE] = new QAction(ControlActions::_SOFTIMAGE, NULL);
-    m_actions[ControlActions::_FPS] = new QAction(ControlActions::_FPS, NULL);
+    m_actions[ControlActionFamily::_SOFTIMAGE] = new QAction(ControlActionFamily::_SOFTIMAGE, NULL);
+    m_actions[ControlActionFamily::_FPS] = new QAction(ControlActionFamily::_FPS, NULL);
 }
 
 /********************
  * OVERLAY ACTTIONS *
  ********************/
-const QString OverlayActions::_NONE = "None";
-const QString OverlayActions::_SLOPE = "Slope";
-const QString OverlayActions::_ALTITUDE = "Altitude";
-const QString OverlayActions::_SHADE = "Shade";
-const QString OverlayActions::_TEMPERATURE = "Temperature";
-const QString OverlayActions::_MIN_DAILY_ILLUMINATION = "Min. Daily Illumination";
-const QString OverlayActions::_MAX_DAILY_ILLUMINATION = "Max. Daily Illumination";
-OverlayActions::OverlayActions() : Actions(false, true)
+const QString OverlayActionFamily::_NONE = "None";
+const QString OverlayActionFamily::_SLOPE = "Slope";
+const QString OverlayActionFamily::_ALTITUDE = "Altitude";
+const QString OverlayActionFamily::_SHADE = "Shade";
+const QString OverlayActionFamily::_TEMPERATURE = "Temperature";
+const QString OverlayActionFamily::_MIN_DAILY_ILLUMINATION = "Min. Daily Illumination";
+const QString OverlayActionFamily::_MAX_DAILY_ILLUMINATION = "Max. Daily Illumination";
+OverlayActionFamily::OverlayActionFamily() : ActionFamily(false, true)
 {
     init_actions();
     finalise();
 
-    m_actions[OverlayActions::_NONE]->setChecked(true);
+    m_actions[OverlayActionFamily::_NONE]->setChecked(true);
 }
 
-OverlayActions::~OverlayActions()
+OverlayActionFamily::~OverlayActionFamily()
 {
 
 }
 
-void OverlayActions::init_actions()
+void OverlayActionFamily::init_actions()
 {
-    m_actions[OverlayActions::_NONE] = new QAction(OverlayActions::_NONE, NULL);
-    m_actions[OverlayActions::_SLOPE] = new QAction(OverlayActions::_SLOPE, NULL);
-    m_actions[OverlayActions::_ALTITUDE] = new QAction(OverlayActions::_ALTITUDE, NULL);
-    m_actions[OverlayActions::_SHADE] = new QAction(OverlayActions::_SHADE, NULL);
-    m_actions[OverlayActions::_TEMPERATURE] = new QAction(OverlayActions::_TEMPERATURE, NULL);
-    m_actions[OverlayActions::_MIN_DAILY_ILLUMINATION] = new QAction(OverlayActions::_MIN_DAILY_ILLUMINATION, NULL);
-    m_actions[OverlayActions::_MAX_DAILY_ILLUMINATION] = new QAction(OverlayActions::_MAX_DAILY_ILLUMINATION, NULL);
+    m_actions[OverlayActionFamily::_NONE] = new QAction(OverlayActionFamily::_NONE, NULL);
+    m_actions[OverlayActionFamily::_SLOPE] = new QAction(OverlayActionFamily::_SLOPE, NULL);
+    m_actions[OverlayActionFamily::_ALTITUDE] = new QAction(OverlayActionFamily::_ALTITUDE, NULL);
+    m_actions[OverlayActionFamily::_SHADE] = new QAction(OverlayActionFamily::_SHADE, NULL);
+    m_actions[OverlayActionFamily::_TEMPERATURE] = new QAction(OverlayActionFamily::_TEMPERATURE, NULL);
+    m_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION] = new QAction(OverlayActionFamily::_MIN_DAILY_ILLUMINATION, NULL);
+    m_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION] = new QAction(OverlayActionFamily::_MAX_DAILY_ILLUMINATION, NULL);
 }
 
 /****************
  * SHOW ACTIONS *
  ****************/
-const QString ShowActions::_POINTER_INFO = "Pointer Info";
-ShowActions::ShowActions() : Actions(true, true)
+const QString ShowActionFamily::_POINTER_INFO = "Pointer Info";
+ShowActionFamily::ShowActionFamily() : ActionFamily(true, true)
 {
     init_actions();
     finalise();
 
-    m_actions[ShowActions::_POINTER_INFO]->setChecked(false);
+    m_actions[ShowActionFamily::_POINTER_INFO]->setChecked(false);
 }
 
-ShowActions::~ShowActions()
+ShowActionFamily::~ShowActionFamily()
 {
 
 }
 
-void ShowActions::init_actions()
+void ShowActionFamily::init_actions()
 {
-    m_actions[ShowActions::_POINTER_INFO] = new QAction(ShowActions::_POINTER_INFO, NULL);
+    m_actions[ShowActionFamily::_POINTER_INFO] = new QAction(ShowActionFamily::_POINTER_INFO, NULL);
 }
 
 
 /*****************
  * EDIT ACTTIONS *
  *****************/
-const QString EditActions::_TEMPERATURE = "Temperature";
-const QString EditActions::_ORIENTATION = "Orientation";
-const QString EditActions::_HUMIDITY = "Humidity";
-const QString EditActions::_TIME_OF_DAY = "Time of day";
-const QString EditActions::_MONTH_OF_YEAR = "Month of year";
-const QString EditActions::_LATITUDE = "Latitude";
-EditActions::EditActions() : Actions(true, true)
+const QString EditActionFamily::_TEMPERATURE = "Temperature";
+const QString EditActionFamily::_ORIENTATION = "Orientation";
+const QString EditActionFamily::_HUMIDITY = "Humidity";
+const QString EditActionFamily::_TIME_OF_DAY = "Time of day";
+const QString EditActionFamily::_MONTH_OF_YEAR = "Month of year";
+const QString EditActionFamily::_LATITUDE = "Latitude";
+const QString EditActionFamily::_RAINFALL = "Rainfall";
+EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 {
     init_actions();
     finalise();
 
-    m_actions[EditActions::_TEMPERATURE]->setCheckable(false);
+    m_actions[EditActionFamily::_TEMPERATURE]->setCheckable(false);
+    m_actions[EditActionFamily::_RAINFALL]->setCheckable(false);
 }
 
-EditActions::~EditActions()
+EditActionFamily::~EditActionFamily()
 {
 
 }
 
-void EditActions::init_actions()
+void EditActionFamily::init_actions()
 {
-    m_actions[EditActions::_TEMPERATURE] = new QAction(EditActions::_TEMPERATURE, NULL);
-    m_actions[EditActions::_ORIENTATION] = new QAction(EditActions::_ORIENTATION, NULL);
-    m_actions[EditActions::_HUMIDITY] = new QAction(EditActions::_HUMIDITY, NULL);
-    m_actions[EditActions::_TIME_OF_DAY] = new QAction(EditActions::_TIME_OF_DAY, NULL);
-    m_actions[EditActions::_MONTH_OF_YEAR] = new QAction(EditActions::_MONTH_OF_YEAR, NULL);
-    m_actions[EditActions::_LATITUDE] = new QAction(EditActions::_LATITUDE, NULL);
-}
-
-/*****************
- * TMP ACTTIONS *
- *****************/
-const QString TmpActions::_ACTION1 = "ACTION 1";
-TmpActions::TmpActions() :  Actions(true, false)
-{
-    init_actions();
-    finalise();
-}
-
-TmpActions::~TmpActions()
-{
-
-}
-
-void TmpActions::init_actions()
-{
-    m_actions[TmpActions::_ACTION1] = new QAction(TmpActions::_ACTION1, NULL);
-    m_actions[TmpActions::_ACTION1]->setShortcut(QKeySequence::Copy);
+    m_actions[EditActionFamily::_TEMPERATURE] = new QAction(EditActionFamily::_TEMPERATURE, NULL);
+    m_actions[EditActionFamily::_ORIENTATION] = new QAction(EditActionFamily::_ORIENTATION, NULL);
+    m_actions[EditActionFamily::_HUMIDITY] = new QAction(EditActionFamily::_HUMIDITY, NULL);
+    m_actions[EditActionFamily::_TIME_OF_DAY] = new QAction(EditActionFamily::_TIME_OF_DAY, NULL);
+    m_actions[EditActionFamily::_MONTH_OF_YEAR] = new QAction(EditActionFamily::_MONTH_OF_YEAR, NULL);
+    m_actions[EditActionFamily::_LATITUDE] = new QAction(EditActionFamily::_LATITUDE, NULL);
+    m_actions[EditActionFamily::_RAINFALL] = new QAction(EditActionFamily::_RAINFALL, NULL);
 }

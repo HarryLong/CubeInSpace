@@ -13,12 +13,13 @@
 #include "progress_bar_widget.h"
 
 class QSlider;
-class Actions;
+class ActionFamily;
+class RainfallEditDialog;
 class SceneManager : public QObject{
 Q_OBJECT
 public:
     SceneManager(PositionControllers position_controllers, TimeControllers time_controllers, TerrainControllers terrain_controllers,
-                 TemperatureEditDialog * temp_edit_dlg, Actions * overlay_actions);
+                 TemperatureEditDialog * temp_edit_dlg, RainfallEditDialog * rainfall_edit_dlg, ActionFamily * overlay_actions);
     ~SceneManager();
 
     Asset* getAccelerationStructure();

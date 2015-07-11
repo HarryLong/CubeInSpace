@@ -26,13 +26,5 @@ public:
     QSlider * translation_sensitivity;
     QSlider * rotation_sensitivity;
 };
-struct TerrainControllers{
-public:
-    TerrainControllers(QIntLineEdit * terrain_scale_le, QCheckBox * use_default_cb) :
-        terrain_scale_le(terrain_scale_le), use_default_scale_cb(use_default_cb) {}
-
-    QIntLineEdit * terrain_scale_le;
-    QCheckBox * use_default_scale_cb;
-};
 
 #endif // CONTROLLERS_H

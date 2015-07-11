@@ -4,6 +4,7 @@ layout (local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, r32ui) uniform coherent uimage2D water_heightmap;
 layout(binding = 1, r32f) uniform coherent image2D terrain_heightmap;
+layout(binding = 2, r32ui) uniform coherent uimage2D verticies_emptied_counter;
 
 int meters_to_mm(in float meters)
 {
@@ -22,6 +23,8 @@ uvec2 to_global(in uvec2 local_coordinate_to_translate, in uvec2 global_referenc
                  global_reference_cell.y+(local_coordinate_to_translate.y-1));
 }
 
+shared uint emptied_counter[gl_WorkGroupSize.x][gl_WorkGroupSize.y];
+
 void main()
 {
     uvec2 heightmap_size = imageSize(water_heightmap);
@@ -33,6 +36,10 @@ void main()
     ivec2 i_global_idx = ivec2(int(global_idx.x), int(global_idx.y));
 
     bool valid = global_idx.x < heightmap_size.x && global_idx.y < heightmap_size.y && imageLoad(water_heightmap, i_global_idx).x > 0;
+    if(!valid)
+    {
+        emptied_counter[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 0;
+    }
 
     uint water_to_add[3][3];
     uint terrain_heights[3][3];
@@ -126,6 +133,7 @@ void main()
         uint aggregate_water_removed = 0;
         if(aggregate_height_diff >= water_heights[1][1]) // Scenario 1
         {
+            emptied_counter[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 1;
             for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
             {
                 for(uint local_y = local_min.y; local_y <= local_max.y; local_y++)
@@ -160,6 +168,8 @@ void main()
         }
         else // Scenario 2
         {
+            emptied_counter[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 0;
+
             bool cells_in_which_to_insert_water[3][3];
             // First set all cells with lower height to take water
             for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
@@ -260,7 +270,22 @@ void main()
     }
     // Sync threads to ensure all writes have been performed
     barrier();
-    memoryBarrierImage();
+    memoryBarrierShared();
     memoryBarrier();
-}
 
+    if(gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0) // Reduce counter
+    {
+        uint aggregate = 0;
+        for(uint x = 0; x < gl_WorkGroupSize.x; x++)
+        {
+            for(uint y = 0; y < gl_WorkGroupSize.y; y++)
+            {
+                aggregate += emptied_counter[x][y];
+            }
+        }
+
+        // Write to the image texture
+        imageStore(verticies_emptied_counter, ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y), uvec4(aggregate,0,0,0));
+    }
+    memoryBarrierImage();
+}

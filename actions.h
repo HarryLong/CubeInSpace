@@ -5,20 +5,20 @@
 #include <QString>
 #include <QObject>
 #include <QHash>
+#include <QAction>
+#include <QActionGroup>
 
-class QAction;
-class QActionGroup;
-/***********************
- * BASE ACTTIONS CLASS *
- ***********************/
-class Actions : public QObject {
+/****************************
+ * BASE FAMILY ACTION CLASS *
+ ****************************/
+class ActionFamily : public QObject {
     Q_OBJECT
 public:
-    Actions(bool multiselect, bool checkable);
-    virtual ~Actions();
+    ActionFamily(bool multiselect, bool checkable);
+    virtual ~ActionFamily();
 
     QActionGroup * getActionGroup();
-    QAction * operator()(QString key);
+    QAction * operator[](QString key);
 
 protected:
     void finalise();
@@ -35,13 +35,13 @@ private:
 /*****************
  * BASE ACTTIONS *
  *****************/
-class BaseActions : public Actions{
+class BaseActionFamily : public ActionFamily{
 public:
     const static QString _CLOSE_APP;
     const static QString _LOAD_TERRAIN;
     const static QString _OPEN_SETTINGS;
-    BaseActions();
-    ~BaseActions();
+    BaseActionFamily();
+    ~BaseActionFamily();
 
 private:
     virtual void init_actions();
@@ -50,15 +50,14 @@ private:
 /*******************
  * RENDER ACTTIONS *
  *******************/
-class RenderActions : public Actions{
+class RenderActionFamily : public ActionFamily{
 public:
     const static QString _GRID;
     const static QString _TERRAIN;
-    const static QString _ACCELERATION_STRUCTURE;
     const static QString _RAYS;
     const static QString _SUN;
-    RenderActions();
-    ~RenderActions();
+    RenderActionFamily();
+    ~RenderActionFamily();
 
 private:
     virtual void init_actions();
@@ -67,12 +66,12 @@ private:
 /********************
  * CONTROL ACTTIONS *
  ********************/
-class ControlActions : public Actions{
+class ControlActionFamily : public ActionFamily{
 public:
     const static QString _SOFTIMAGE;
     const static QString _FPS;
-    ControlActions();
-    ~ControlActions();
+    ControlActionFamily();
+    ~ControlActionFamily();
 
 private:
     virtual void init_actions();
@@ -82,7 +81,7 @@ private:
 /********************
  * OVERLAY ACTTIONS *
  ********************/
-class OverlayActions : public Actions{
+class OverlayActionFamily : public ActionFamily{
 public:
     const static QString _NONE;
     const static QString _SLOPE;
@@ -91,8 +90,8 @@ public:
     const static QString _TEMPERATURE;
     const static QString _MIN_DAILY_ILLUMINATION;
     const static QString _MAX_DAILY_ILLUMINATION;
-    OverlayActions();
-    ~OverlayActions();
+    OverlayActionFamily();
+    ~OverlayActionFamily();
 
 private:
     virtual void init_actions();
@@ -102,11 +101,11 @@ private:
 /****************
  * SHOW ACTIONS *
  ****************/
-class ShowActions : public Actions{
+class ShowActionFamily : public ActionFamily{
 public:
     const static QString _POINTER_INFO;
-    ShowActions();
-    ~ShowActions();
+    ShowActionFamily();
+    ~ShowActionFamily();
 
 private:
     virtual void init_actions();
@@ -115,7 +114,7 @@ private:
 /*****************
  * EDIT ACTTIONS *
  *****************/
-class EditActions : public Actions{
+class EditActionFamily : public ActionFamily{
 public:
     const static QString _TEMPERATURE;
     const static QString _ORIENTATION;
@@ -123,25 +122,27 @@ public:
     const static QString _TIME_OF_DAY;
     const static QString _MONTH_OF_YEAR;
     const static QString _LATITUDE;
+    const static QString _RAINFALL;
 
-    EditActions();
-    ~EditActions();
+    EditActionFamily();
+    ~EditActionFamily();
 
 private:
     virtual void init_actions();
 };
 
-/*****************
- * TMP ACTTIONS *
- *****************/
-class TmpActions : public Actions{
+class AllActions
+{
 public:
-    const static QString _ACTION1;
-    TmpActions();
-    ~TmpActions();
+    AllActions() {}
+    ~AllActions() {}
 
-private:
-    virtual void init_actions();
+    BaseActionFamily m_base_actions;
+    RenderActionFamily m_render_actions;
+    ControlActionFamily m_control_actions;
+    OverlayActionFamily m_overlay_actions;
+    ShowActionFamily m_show_actions;
+    EditActionFamily m_edit_actions;
 };
 
 #endif // ACTIONS_H

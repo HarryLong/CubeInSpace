@@ -12,7 +12,6 @@ find_package(Qt5OpenGL REQUIRED)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
 find_package(GLU REQUIRED)
-find_package(Eigen REQUIRED)
 find_package(OpenMP REQUIRED)
 
 # Includes
@@ -31,12 +30,29 @@ SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${OpenMP_C
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -O2 -std=c++11")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -O0 -g -DGL_DEBUG -std=c++11")
 SET(CMAKE_BUILD_TYPE Debug)
-#SET(CMAKE_VERBOSE_MAKEFILE true )
-SET(SOURCE_FILES asset controllers lighting_manager light_properties shape_factory terrain glwidget
-window main glheader qtutils renderer debug grid helper gl_drawable constants settings rays geom scene_manager
-glm_wrapper  custom_line_edit acceleration_structure progress_bar_widget pointer_info_dialog temp_edit_dlg
-terrain_normals terrain_shade terrain_temperature terrain_daily_illimination texture_element orientation_widget actions
-shader_programs controller_widgets water_flow_analyser terrain_water camera uniforms transform)
+
+SET(RESOURCES_SOURCE_FILES resources/terrain_shade resources/terrain_daily_illumination resources/terrain_temperature
+resources/terrain_water resources/resource_wrapper)
+SET(LIGHTING_SOURCE_FILES lighting/lighting_manager lighting/light_properties)
+SET(DIALOGS_SOURCE_FILES dialogs/rainfall_edit_dlg dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs)
+SET(SHADER_SOURCE_FILES shaders/shader_programs shaders/shaders shaders/uniforms)
+SET(TERRAIN_SOURCE_FILES terrain/drawable_terrain terrain/terrain terrain/terrain_normals terrain/acceleration_structure)
+SET(WIDGETS_SOURCE_FILES widgets/progress_bar_widget widgets/controller_widgets widgets/orientation_widget)
+SET(GL_ASSETS_SOURCE_FILES gl_assets/asset gl_assets/grid gl_assets/rays gl_assets/shape_factory gl_assets/sun_asset)
+SET(GL_CORE_SOURCE_FILES gl_core/camera gl_core/gl_drawable gl_core/glheader gl_core/renderer gl_core/transform gl_core/glm_wrapper gl_core/glwidget)
+SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/counter_texture)
+
+SET(SOURCE_FILES
+${RESOURCES_SOURCE_FILES}
+${LIGHTING_SOURCE_FILES}
+${DIALOGS_SOURCE_FILES}
+${SHADER_SOURCE_FILES}
+${TERRAIN_SOURCE_FILES}
+${WIDGETS_SOURCE_FILES}
+${GL_ASSETS_SOURCE_FILES}
+${GL_CORE_SOURCE_FILES}
+${GL_TEXTURE_SOURCE_FILES}
+window main debug geom actions )
 
 # Shaders
 add_subdirectory(shaders)
