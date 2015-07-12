@@ -249,7 +249,10 @@ std::map<int, QString> MonthControllerWidget::create_map()
 /******************************
  * CONTROLLER WIDGETS WRAPPER *
  ******************************/
-OverlayWidgets::OverlayWidgets(QWidget * parent)
+OverlayWidgets::OverlayWidgets(QWidget * parent) :
+    m_time_widget(new TimeControllerWidget(Qt::AlignRight, parent)),
+    m_month_widget(new MonthControllerWidget(Qt::AlignLeft, parent)),
+    m_latitude_widget(new LatitudeControllerWidget(Qt::AlignRight, parent))
 {
     m_alignment_sorted_widgets[Qt::AlignTop] = std::vector<BaseControllerWidget*>();
     m_alignment_sorted_widgets[Qt::AlignRight] = std::vector<BaseControllerWidget*>();
@@ -258,98 +261,109 @@ OverlayWidgets::OverlayWidgets(QWidget * parent)
 
     // LATITUDE
     {
-        m_widgets[Type::_LATITUDE] = new LatitudeControllerWidget(Qt::AlignRight, parent);
+        connect(m_latitude_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_latitude_changed(int)));
+
+        m_raw_widgets.push_back(m_latitude_widget);
+        m_alignment_sorted_widgets[m_latitude_widget->alignment()].push_back(m_latitude_widget);
     }
 
-    // MONTH OF YEAR
+    // TIME
     {
-        m_widgets[Type::_MONTH] = new MonthControllerWidget(Qt::AlignRight, parent);
+        connect(m_month_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_month_changed(int)));
+        connect(m_time_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_time_changed(int)));
+
+        m_raw_widgets.push_back(m_month_widget);
+        m_raw_widgets.push_back(m_time_widget);
+
+        m_alignment_sorted_widgets[m_month_widget->alignment()].push_back(m_month_widget);
+        m_alignment_sorted_widgets[m_time_widget->alignment()].push_back(m_time_widget);
     }
-
-    // TIME OF DAY
-    {
-        m_widgets[Type::_TIME] = new TimeControllerWidget(Qt::AlignLeft, parent);
-    }
-
-    // Now insert alignment sorted
-    for(std::pair<Type, BaseControllerWidget*> widget : m_widgets)
-        m_alignment_sorted_widgets[widget.second->alignment()].push_back(widget.second);
-
     hideAll();
 }
 
 OverlayWidgets::~OverlayWidgets()
 {
-    for(std::pair<Type, BaseControllerWidget*> w : m_widgets)
-        delete w.second;
+    for(BaseControllerWidget* w : m_raw_widgets)
+        delete w;
 }
 
-void OverlayWidgets::show_widget(Type type)
+int OverlayWidgets::getLatitude()
 {
-    BaseControllerWidget * w = m_widgets[type];
-    hideAll(w->alignment());
-    w->show();
+    return m_latitude_widget->value();
 }
 
-void OverlayWidgets::hide(Type type)
+int OverlayWidgets::getTime()
 {
-    m_widgets[type]->hide();
+    return m_time_widget->value();
+}
+
+int OverlayWidgets::getMonth()
+{
+    return m_month_widget->value();
 }
 
 void OverlayWidgets::hideAll()
 {
-    for(std::pair<int, BaseControllerWidget *> pair : m_widgets)
-        pair.second->hide();
-}
-
-void OverlayWidgets::hideAll(int alignment)
-{
-    for(BaseControllerWidget * w : m_alignment_sorted_widgets[alignment])
+    for(BaseControllerWidget* w : m_raw_widgets)
         w->hide();
 }
 
-bool OverlayWidgets::isVisible(Type type) const
+void OverlayWidgets::trigger_time_controllers(bool show)
 {
-    return m_widgets.find(type)->second->isVisible();
-}
-
-BaseControllerWidget * OverlayWidgets::operator[](Type type)
-{
-    return m_widgets[type];
-}
-
-void OverlayWidgets::trigger_time_overlay(bool show)
-{
+    hideAll();
     if(show)
-        show_widget(Type::_TIME);
+    {
+        m_time_widget->show();
+        m_month_widget->show();
+    }
     else
-        hide(Type::_TIME);
+    {
+        m_time_widget->hide();
+        m_month_widget->hide();
+    }
+
+    emit timeControllersStateChanged(show);
 }
 
-void OverlayWidgets::trigger_month_overlay(bool show)
+void OverlayWidgets::trigger_latitude_controllers(bool show)
 {
+    hideAll();
     if(show)
-        show_widget(Type::_MONTH);
+    {
+        m_latitude_widget->show();
+    }
     else
-        hide(Type::_MONTH);
+    {
+        m_latitude_widget->hide();
+    }
+
+    emit latitudeControllersStateChanged(show);
 }
 
-void OverlayWidgets::trigger_latitude_overlay(bool show)
-{
-    if(show)
-        show_widget(Type::_LATITUDE);
-    else
-        hide(Type::_LATITUDE);
-}
 
 void OverlayWidgets::resize(int container_width, int container_height)
 {
     for(BaseControllerWidget * w : m_alignment_sorted_widgets[Qt::AlignRight])
         w->move(container_width-w->width(), 0);
 
-    for(std::pair<Type, BaseControllerWidget*> w : m_widgets)
+    for(BaseControllerWidget * w : m_raw_widgets)
     {
-        w.second->setFixedHeight(container_height);
-        w.second->resize();
+        w->setFixedHeight(container_height);
+        w->resize();
     }
+}
+
+void OverlayWidgets::emit_latitude_changed(int latitude)
+{
+    emit latitudeChanged(latitude);
+}
+
+void OverlayWidgets::emit_time_changed(int time)
+{
+    emit timeChanged(time);
+}
+
+void OverlayWidgets::emit_month_changed(int month)
+{
+    emit monthChanged(month);
 }

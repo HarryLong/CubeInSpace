@@ -119,8 +119,7 @@ public:
     const static QString _TEMPERATURE;
     const static QString _ORIENTATION;
     const static QString _HUMIDITY;
-    const static QString _TIME_OF_DAY;
-    const static QString _MONTH_OF_YEAR;
+    const static QString _TIME;
     const static QString _LATITUDE;
     const static QString _RAINFALL;
 

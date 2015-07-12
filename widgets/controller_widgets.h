@@ -127,32 +127,41 @@ private:
 class OverlayWidgets : public QObject{
     Q_OBJECT
 public:
-    enum Type {
-        _LATITUDE = 0,
-        _MONTH,
-        _TIME,
-        _OVERLAY_WIDGET_COUNT
-    };
-
     OverlayWidgets(QWidget * parent);
     ~OverlayWidgets();
 
     void hideAll();
-    bool isVisible(Type type) const;
     void resize(int container_width, int container_height);
-    BaseControllerWidget * operator[](Type type);
+
+    int getLatitude();
+    int getTime();
+    int getMonth();
+
+signals:
+    void timeControllersStateChanged(bool active);
+    void latitudeControllersStateChanged(bool active);
+    void monthChanged(int month);
+    void latitudeChanged(int latitude);
+    void timeChanged(int time);
 
 public slots:
-    void trigger_time_overlay(bool show_widget);
-    void trigger_month_overlay(bool show_widget);
-    void trigger_latitude_overlay(bool show_widget);
+    void trigger_time_controllers(bool show_widget);
+    void trigger_latitude_controllers(bool show_widget);
+
+private slots:
+    void emit_latitude_changed(int latitude);
+    void emit_time_changed(int time);
+    void emit_month_changed(int month);
 
 private:
-    void show_widget(Type type);
-    void hide(Type type);
-    void hideAll(int alignment);
-    std::map<Type, BaseControllerWidget*> m_widgets;
+
+    std::vector<BaseControllerWidget*> m_raw_widgets;
+//    std::map<Type, std::vector<BaseControllerWidget*> > m_type_sorted_widgets;
     std::map<int, std::vector<BaseControllerWidget*> > m_alignment_sorted_widgets;
+
+    BaseControllerWidget * m_time_widget;
+    BaseControllerWidget * m_month_widget;
+    BaseControllerWidget * m_latitude_widget;
 };
 
 

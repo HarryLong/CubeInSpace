@@ -5,6 +5,7 @@
 #include "terrain_daily_illumination.h"
 #include "terrain_temperature.h"
 #include "terrain_water.h"
+#include <atomic>
 
 class LightingManager;
 class ResourceWrapper : public QObject{
@@ -23,10 +24,18 @@ public:
     void refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec);
     void refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec);
 
+    TerrainWater & getTerrainWater();
+
+    bool recalculatingShade();
+    bool recalculatingDailyIllumination();
+    bool recalculatingTemperature();
+    bool recalculatingWater();
+
 signals:
     void processing(QString description);
     void processingUpdate(int percent_complete);
     void processingComplete();
+    void processDescriptionUpdate(QString description);
     void resourceInvalidated();
 
 public slots:
@@ -47,10 +56,17 @@ public slots:
 //    bool getWaterHeight(const glm::vec3 & point, int month, int & height);
 
 private:
+    GLubyte * get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates = true);
+
     TerrainShade m_terrain_shade;
     TerrainDailyIllumination m_terrain_daily_illumination;
     TerrainTemperature m_terrain_temp;
     TerrainWater m_terrain_water;
+
+    std::atomic<bool> m_recalculating_shade;
+    std::atomic<bool> m_recalculating_daily_illumination;
+    std::atomic<bool> m_recalculating_temperature;
+    std::atomic<bool> m_recalculating_water;
 };
 
 #endif // RESOURCE_WRAPPER_H

@@ -38,7 +38,6 @@ private:
     QMenu * m_overlay_menu;
     QMenu * m_show_menu;
     QMenu * m_edit_menu;
-    QMenu * m_tmp_menu;
 
     // Submenu elements
     QMenu * m_illumination_submenu;

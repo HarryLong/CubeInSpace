@@ -3,14 +3,38 @@
 #include "../terrain/terrain.h"
 #include <cstring>
 
-ResourceWrapper::ResourceWrapper()
-{
+ResourceWrapper::ResourceWrapper() :
+    m_recalculating_shade(false),
+    m_recalculating_daily_illumination(false),
+    m_recalculating_temperature(false),
+    m_recalculating_water(false)
 
+{
 }
 
 ResourceWrapper::~ResourceWrapper()
 {
 
+}
+
+bool ResourceWrapper::recalculatingShade()
+{
+    return m_recalculating_shade.load();
+}
+
+bool ResourceWrapper::recalculatingDailyIllumination()
+{
+    return m_recalculating_temperature.load();
+}
+
+bool ResourceWrapper::recalculatingTemperature()
+{
+    return m_recalculating_temperature.load();
+}
+
+bool ResourceWrapper::recalculatingWater()
+{
+    return m_recalculating_water.load();
 }
 
 void ResourceWrapper::valid(bool & shade, bool & daily_illumination, bool & temp)
@@ -114,7 +138,24 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & wa
 
 void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_position)
 {
-    emit processing("Refreshing shade");
+    m_recalculating_shade.store(true);
+
+    m_terrain_shade.setData(get_shade(terrain, sun_position), terrain.getWidth(), terrain.getDepth());
+
+    m_recalculating_shade.store(false);
+}
+
+TerrainWater & ResourceWrapper::getTerrainWater()
+{
+    return m_terrain_water;
+}
+
+GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates)
+{
+    if(emit_progress_updates)
+    {
+        emit processing("Refreshing shade");
+    }
 
     int terrain_width(terrain.getWidth());
     int terrain_depth(terrain.getDepth());
@@ -124,51 +165,57 @@ void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_posi
 
     GLubyte * shade_data = NULL;
 
-    if(!m_terrain_shade.isValid())    {
-        // Generate the data
-        shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
+    // Generate the data
+    shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
 
-        if(sun_position[1] <= terrain.getBaseHeight()) // Optimization - the sun is set. There will be no light
+    if(sun_position[1] <= terrain.getBaseHeight()) // Optimization - the sun is set. There will be no light
+    {
+        memset(shade_data, 0xFF, terrain_depth*terrain_width);
+    }
+    else
+    {
+        glm::vec3 dummy_intersection_point;
+        int i(0);
+        for(int z = 0 ; z < terrain_depth; z++, i+=terrain_width)
         {
-            memset(shade_data, 0xFF, terrain_depth*terrain_width);
-        }
-        else
-        {
-            glm::vec3 dummy_intersection_point;
-            int i(0);
-            for(int z = 0 ; z < terrain_depth; z++, i+=terrain_width)
+            if(emit_progress_updates)
             {
                 emit processingUpdate((((float)i)/n_iterations)*100);
+            }
 #pragma omp parallel for
-                for(int x = 0; x < terrain_width; x++)
+            for(int x = 0; x < terrain_width; x++)
+            {
+                glm::vec3 point_on_terrain(glm::vec3(x, terrain.getHeight(glm::vec2(x,z)), z));
+                glm::vec3 sun_direction(glm::normalize(sun_position - point_on_terrain));
+
+                // First check if the normal is within sun angle
+                int index(z*terrain_depth+x);
+
+                if(glm::dot(terrain_normals(x,z), sun_direction) < 0 ||
+                        terrain.traceRay(point_on_terrain, sun_direction, dummy_intersection_point, false)) // Not within direction
                 {
-                    glm::vec3 point_on_terrain(glm::vec3(x, terrain.getHeight(glm::vec2(x,z)), z));
-                    glm::vec3 sun_direction(glm::normalize(sun_position - point_on_terrain));
-
-                    // First check if the normal is within sun angle
-                    int index(z*terrain_depth+x);
-
-                    if(glm::dot(terrain_normals(x,z), sun_direction) < 0 ||
-                            terrain.traceRay(point_on_terrain, sun_direction, dummy_intersection_point, false)) // Not within direction
-                    {
-                        shade_data[index] = 0xFF;
-                    }
-                    else
-                    {
-                        shade_data[index] = 0x00;
-                    }
+                    shade_data[index] = 0xFF;
+                }
+                else
+                {
+                    shade_data[index] = 0x00;
                 }
             }
         }
-
-        m_terrain_shade.setData(shade_data, terrain_width, terrain_depth);
     }
 
-    emit processingComplete();
+    if(emit_progress_updates)
+    {
+        emit processingComplete();
+    }
+
+    return shade_data;
 }
 
 void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain)
 {
+    m_recalculating_daily_illumination.store(true);
+
     int current_month(lighting_manager.currentMonth());
     int current_time(lighting_manager.currentTime());
 
@@ -180,16 +227,26 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     GLubyte * aggregated_min = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
     GLubyte * aggregated_max = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
 
+    float n_iterations (24 * 12);
+    int iteration(0);
+
+    emit processing("Calculating daily illumination");
+
     for(int month = 1; month < 13; month++)
     {
         lighting_manager.setMonth(month);
         memset(intermediary_illumination_data, 0x00, n_elements);
 
-        for(int hour = 0; hour < 24; hour++)
+        for(int hour = 0; hour < 24; hour++, iteration++)
         {
+            // First update progress dialog
+            QString description("Month: ");
+            description.append(QString::number(month)).append( " | Hour: ").append(QString::number(hour));
+            emit processDescriptionUpdate(description);
+            emit processingUpdate((iteration / n_iterations)*100);
+
             lighting_manager.setTime(hour * 60);
-            refreshShade(terrain, lighting_manager.getSunlightProperties().getPosition() );
-            const GLubyte * shade_data(m_terrain_shade.getRawData());
+            GLubyte * shade_data = get_shade(terrain, lighting_manager.getSunlightProperties().getPosition(), false) ;
 #pragma omp parallel for
             for(int z = 0 ; z < terrain_depth; z++)
             {
@@ -199,6 +256,7 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
                     intermediary_illumination_data[index] += (shade_data[index] > 0 ? 0 : 1);
                 }
             }
+            free(shade_data);
         }
         // Now check if it is the minimum/maximum
         if(month > 1)
@@ -229,10 +287,16 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     // Restore time and date
     lighting_manager.setMonth(current_month);
     lighting_manager.setTime(current_time);
+
+    emit processingComplete();
+
+    m_recalculating_daily_illumination.store(false);
 }
 
 void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec)
 {
+    m_recalculating_temperature.store(true);
+
     int terrain_width(terrain.getWidth());
     int terrain_depth(terrain.getDepth());
     int n_iterations(terrain_depth*terrain_width*2);
@@ -290,10 +354,14 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     m_terrain_temp.setData(jun_temp_data, dec_temp_data, terrain_width, terrain_depth);
 
     emit processingComplete();
+
+    m_recalculating_temperature.store(false);
 }
 
 void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec)
 {
+    m_recalculating_water.store(true);
+
     int sz(sizeof(GLuint) * terrain_width * terrain_depth);
 
     GLuint * jun_water_data = (GLuint*) malloc(sz);
@@ -323,5 +391,7 @@ void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rai
 
     if( rainfall_jun == 0 && rainfall_dec == 0 ) // No point trying to balance
         m_terrain_water.setBalanced(true);
+
+    m_recalculating_water.store(false);
 }
 

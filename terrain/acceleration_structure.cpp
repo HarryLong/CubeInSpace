@@ -150,7 +150,7 @@ void AccelerationTree::clear()
 }
 
 //---------------------------------------------------------------------------------------
-#define MIN_SPHERE_RADIUS 5
+#define MIN_SPHERE_RADIUS 1
 Hierarchical::Hierarchical() :
     m_acceleration_tree(NULL), min_sphere_radius(MIN_SPHERE_RADIUS)
 {

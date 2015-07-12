@@ -30,7 +30,7 @@ public:
 
     void renderAssets(BaseShader & shader, const Transform & transforms, const std::vector<Asset*> & p_assets);
 
-    void balanceWater(WaterFluxGeneratorShader shader, Terrain & terrain, GLuint terrain_water_heightmap_texture_id);
+    void balanceWater(WaterFluxGeneratorShader & shader, Terrain & terrain, GLuint terrain_water_heightmap_texture_id);
 
 private:
     void reset_overlays(TerrainShader & shader);

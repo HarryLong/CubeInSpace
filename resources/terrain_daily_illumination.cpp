@@ -61,6 +61,3 @@ TerrainDailyIlluminationTexture::~TerrainDailyIlluminationTexture()
 {
 
 }
-
-
-

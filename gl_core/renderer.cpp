@@ -247,7 +247,7 @@ void Renderer::renderAssets(BaseShader & shader,
     shader.release();
 }
 
-void Renderer::balanceWater(WaterFluxGeneratorShader shader,
+void Renderer::balanceWater(WaterFluxGeneratorShader & shader,
                             Terrain & terrain,
                             GLuint terrain_water_heightmap_texture_id)
 {

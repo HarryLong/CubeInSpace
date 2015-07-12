@@ -6,7 +6,8 @@
 /********************
  * LIGHTING MANAGER *
  ********************/
-LightingManager::LightingManager()
+LightingManager::LightingManager() :
+    m_signal_sun_position_change(true)
 {
     establish_connections();
 }
@@ -48,7 +49,8 @@ void LightingManager::setNorthOrientation(float north_x, float north_y, float no
 
 void LightingManager::emit_sun_position_change(float pos_x, float pos_y, float pos_z)
 {
-    emit sunPositionChanged(pos_x, pos_y, pos_z);
+    if(m_signal_sun_position_change)
+        emit sunPositionChanged(pos_x, pos_y, pos_z);
 }
 
 int LightingManager::currentMonth() const
@@ -65,3 +67,9 @@ void LightingManager::establish_connections()
 {
     connect(&m_sunlight_properties, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(emit_sun_position_change(float,float,float)));
 }
+
+void LightingManager::signal_sun_position_change(bool enabled)
+{
+    m_signal_sun_position_change = enabled;
+}
+

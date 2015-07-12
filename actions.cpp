@@ -177,8 +177,7 @@ void ShowActionFamily::init_actions()
 const QString EditActionFamily::_TEMPERATURE = "Temperature";
 const QString EditActionFamily::_ORIENTATION = "Orientation";
 const QString EditActionFamily::_HUMIDITY = "Humidity";
-const QString EditActionFamily::_TIME_OF_DAY = "Time of day";
-const QString EditActionFamily::_MONTH_OF_YEAR = "Month of year";
+const QString EditActionFamily::_TIME = "Time";
 const QString EditActionFamily::_LATITUDE = "Latitude";
 const QString EditActionFamily::_RAINFALL = "Rainfall";
 EditActionFamily::EditActionFamily() : ActionFamily(true, true)
@@ -200,8 +199,7 @@ void EditActionFamily::init_actions()
     m_actions[EditActionFamily::_TEMPERATURE] = new QAction(EditActionFamily::_TEMPERATURE, NULL);
     m_actions[EditActionFamily::_ORIENTATION] = new QAction(EditActionFamily::_ORIENTATION, NULL);
     m_actions[EditActionFamily::_HUMIDITY] = new QAction(EditActionFamily::_HUMIDITY, NULL);
-    m_actions[EditActionFamily::_TIME_OF_DAY] = new QAction(EditActionFamily::_TIME_OF_DAY, NULL);
-    m_actions[EditActionFamily::_MONTH_OF_YEAR] = new QAction(EditActionFamily::_MONTH_OF_YEAR, NULL);
+    m_actions[EditActionFamily::_TIME] = new QAction(EditActionFamily::_TIME, NULL);
     m_actions[EditActionFamily::_LATITUDE] = new QAction(EditActionFamily::_LATITUDE, NULL);
     m_actions[EditActionFamily::_RAINFALL] = new QAction(EditActionFamily::_RAINFALL, NULL);
 }

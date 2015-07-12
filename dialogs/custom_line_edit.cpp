@@ -22,6 +22,8 @@ void QDoubleLineEdit::focusOutEvent(QFocusEvent * e)
 {
     if(text().isEmpty())
         setText(QString::number(m_default));
+
+    QLineEdit::focusOutEvent(e);
 }
 
 void QDoubleLineEdit::setRange(double min, double max, int decimals)
@@ -59,6 +61,8 @@ void QIntLineEdit::focusOutEvent(QFocusEvent * e)
 {
     if(text().isEmpty())
         setText(QString::number(m_default));
+
+    QLineEdit::focusOutEvent(e);
 }
 
 void QIntLineEdit::setRange(int min, int max)

@@ -22,6 +22,8 @@ public:
 
     void setData(GLubyte * min_data, GLubyte * max_data, int width, int height);
 
+    void setCalculating(bool calculating);
+
     void invalidate();
     bool isValid();
 

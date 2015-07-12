@@ -21,6 +21,7 @@
 #include "camera.h"
 #include "../gl_assets/sun_asset.h"
 #include "../lighting/lighting_manager.h"
+#include "../actions.h"
 
 class QProgressDialog;
 class QMouseEvent;
@@ -80,6 +81,10 @@ private slots:
     void refresh_water();
     void refresh_illumination();
     void refresh_shade();
+    void reset_overlay();
+    void time_controllers_state_changed(bool active);
+    void latitude_controllers_state_changed(bool active);
+    void enablePositionDependentOverlays(bool enable);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);

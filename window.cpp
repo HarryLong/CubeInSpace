@@ -22,7 +22,6 @@ MainWindow::~MainWindow()
     delete m_overlay_menu;
     delete m_show_menu;
     delete m_edit_menu;
-    delete m_tmp_menu;
 
     // Actions
     delete m_actions;
@@ -86,8 +85,7 @@ void MainWindow::init_menu()
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_ORIENTATION]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_HUMIDITY]);
-        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TIME_OF_DAY]);
-        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_MONTH_OF_YEAR]);
+        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TIME]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_LATITUDE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_RAINFALL]);
     }
