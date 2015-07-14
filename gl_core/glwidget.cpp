@@ -75,7 +75,6 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
   m_fps_callback_timer(new QTimer),
   m_dialogs(parent),
   m_active_overlay(Uniforms::Overlay::_NONE),
-  m_shaders(this),
   m_orientation_widget(this)
 {
     // Set up camera properties
@@ -114,6 +113,9 @@ void GLWidget::establish_connections()
     connect(m_actions->m_edit_actions[EditActionFamily::_TIME], SIGNAL(triggered(bool)), &m_overlay_widgets, SLOT(trigger_time_controllers(bool)));
     connect(m_actions->m_edit_actions[EditActionFamily::_LATITUDE], SIGNAL(triggered(bool)), &m_overlay_widgets, SLOT(trigger_latitude_controllers(bool)));
 
+    // NORMALS NEED RECALCULATING
+    connect(&m_terrain, SIGNAL(normalsInvalid()), this, SLOT(refresh_normals()));
+
     // TERRAIN DIMENSTIONS CHANGED
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refresh_water()));
@@ -130,6 +132,7 @@ void GLWidget::establish_connections()
     connect(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showSettingsDialog()));
     connect(m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showTempDialog()));
     connect(m_actions->m_edit_actions[EditActionFamily::_RAINFALL], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showRainfallDialog()));
+    connect(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showMonthlyRainfallDialog()));
 
     // UPDATE PROGRESS BAR
     connect(&m_resources, SIGNAL(processing(QString)), &m_progress_bar_widget, SLOT(processing(QString)));
@@ -166,6 +169,7 @@ void GLWidget::establish_connections()
 
     // ORIENTATION EDIT
     connect(m_actions->m_edit_actions[EditActionFamily::_ORIENTATION], SIGNAL(triggered(bool)), &m_orientation_widget, SLOT(toggle_edit_mode(bool)));
+    connect(m_actions->m_edit_actions[EditActionFamily::_ORIENTATION], SIGNAL(triggered(bool)), this, SLOT(orientation_controllers_state_changed(bool)));
 
     // CAMERA SENSITIVITY
     connect(&m_dialogs.m_settings_dlg, SIGNAL(rotationSensitivityChanged(float)), &m_camera, SLOT(setRotationSensitivity(float)));
@@ -215,7 +219,7 @@ void GLWidget::initializeGL() // Override
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     setMouseTracking(true);
 
-    m_shaders.compileAndLink();
+    m_renderer.compileAndLinkShaders();
     m_terrain.loadBaseTerrain(); // Load the base terrain
 
     m_fps_callback_timer->start((int)(1000.0f/GLWidget::_TARGET_FPS));
@@ -239,6 +243,12 @@ void GLWidget::paintGL() // Override
 
     std::vector<Asset*> assets_to_render;
 
+    // Check if we need calculate water balance
+    if(!m_resources.getTerrainWater().balanced())
+    {
+        balance_water();
+    }
+
     // Draw the grid
     if(render_grid())
     {
@@ -249,35 +259,13 @@ void GLWidget::paintGL() // Override
     // Draw the terrain
     if(render_terrain())
     {
-        TerrainWater & terrain_water (m_resources.getTerrainWater());
-        // Check if we need calculate water balance
-        if(!terrain_water.balanced())
-        {
-            // Jun water balance
-            m_renderer.balanceWater(m_shaders.m_water_flux_generator, m_terrain, terrain_water.getJunTextureId());
-
-            // Dec water balance
-//            m_renderer.balanceWater(m_shaders.m_water_flux_generator, terrain->getDrawableTerrain(), terrain_water->getDecTextureId());
-
-//            terrain_water->syncFromGPU();
-//            terrain_water->setBalanced(true);
-        }
-
-        // CALCULATE NORMALS
-        if(!m_terrain.normalsValid())
-        {
-//            context()->swapBuffers(m_terrain.getNormals().getOffscreenSurface()); CE();
-            m_renderer.calculateNormals(m_shaders.m_normals_generator, m_terrain);
-            makeCurrent();
-        }
-
         // RENDER TERRAIN
-        m_renderer.renderTerrain(m_shaders.m_terrain, m_terrain, m_resources, tranform, m_lighting_manager.getSunlightProperties(), m_active_overlay, month());
+        m_renderer.renderTerrain(m_terrain, m_resources, tranform, m_lighting_manager.getSunlightProperties(), m_active_overlay, month());
 
         // Terrain elements
         std::vector<Asset*> terrain_elements_to_render;
         terrain_elements_to_render.push_back(m_terrain.getSelectionRect());
-        m_renderer.renderTerrainElements(m_shaders.m_terrain_elements, m_terrain, tranform, terrain_elements_to_render) ;
+        m_renderer.renderTerrainElements(m_terrain, tranform, terrain_elements_to_render) ;
     }
 
     // Draw the rays
@@ -288,7 +276,7 @@ void GLWidget::paintGL() // Override
     if(render_sun())
         assets_to_render.push_back(&m_sun);
 
-    m_renderer.renderAssets(m_shaders.m_base, tranform, assets_to_render);
+    m_renderer.renderAssets(tranform, assets_to_render);
 }
 
 void GLWidget::resizeGL(int w, int h) // Override
@@ -533,6 +521,11 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
         m_ctrl_pressed.store(true);
         return;
     }
+    if(event->key() == Qt::Key_H)
+    {
+        balance_water(true);
+        return;
+    }
     if(m_navigation_enabled)
     {
         if(fps())
@@ -594,9 +587,11 @@ void GLWidget::load_terrain_file()
 
     if (!fileName.isEmpty())
     {
+        m_dialogs.m_rainfall_editor_dlg.reset();
         TerragenFile parsed_terragen_file(fileName.toStdString());
         reset_overlay();
         makeCurrent();
+        m_padded_terrain.invalidate();
         m_terrain.setTerrain(parsed_terragen_file);
     }
 }
@@ -699,8 +694,15 @@ void GLWidget::refresh_temperature()
 
 void GLWidget::refresh_water()
 {
-    // Disable fps callback temporarily
     m_fps_callback_timer->stop();
+
+    if(!m_padded_terrain.isValid())
+    {
+        makeCurrent();
+        m_padded_terrain.refresh(m_terrain);
+    }
+
+    // Disable fps callback temporarily
 
     RainfallEditDialog::RainfallAttributes jun_attributes ( m_dialogs.m_rainfall_editor_dlg.getJunRainfallAttributes() );
     RainfallEditDialog::RainfallAttributes dec_attributes ( m_dialogs.m_rainfall_editor_dlg.getDecRainfallAttributes() );
@@ -735,6 +737,12 @@ void GLWidget::refresh_shade()
     m_fps_callback_timer->start();
 }
 
+void GLWidget::refresh_normals()
+{
+    makeCurrent();
+    m_renderer.calculateNormals(m_terrain);
+}
+
 void GLWidget::sunPositionChanged(float pos_x, float pos_y, float pos_z)
 {
     glm::mat4x4 transform ( glm::translate(glm::mat4x4(), glm::vec3(pos_x, pos_y, pos_z)) );
@@ -744,9 +752,20 @@ void GLWidget::sunPositionChanged(float pos_x, float pos_y, float pos_z)
 void GLWidget::time_controllers_state_changed(bool active)
 {
     enablePositionDependentOverlays(!active);
+
+    if(active)
+        m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
 }
 
 void GLWidget::latitude_controllers_state_changed(bool active)
+{
+    enablePositionDependentOverlays(!active);
+
+    if(active)
+        m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
+}
+
+void GLWidget::orientation_controllers_state_changed(bool active)
 {
     enablePositionDependentOverlays(!active);
 }
@@ -764,6 +783,15 @@ void GLWidget::enablePositionDependentOverlays(bool enable)
     m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]->setEnabled(enable);
     m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]->setEnabled(enable);
     m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->setEnabled(enable);
+}
+
+void GLWidget::balance_water(bool one_step)
+{
+    makeCurrent();
+    m_renderer.balanceWater(m_padded_terrain, m_resources.getTerrainWater(), one_step);
+
+    if(one_step) //  Sync from GPU if a one off
+        m_resources.getTerrainWater().syncFromGPU();
 }
 
 void GLWidget::clear_rays()

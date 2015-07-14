@@ -18,6 +18,7 @@
 #include "widgets/progress_bar_widget.h"
 #include "resources/resource_wrapper.h"
 #include "terrain/terrain.h"
+#include "terrain/padded_terrain.h"
 #include "camera.h"
 #include "../gl_assets/sun_asset.h"
 #include "../lighting/lighting_manager.h"
@@ -84,7 +85,9 @@ private slots:
     void reset_overlay();
     void time_controllers_state_changed(bool active);
     void latitude_controllers_state_changed(bool active);
+    void orientation_controllers_state_changed(bool active);
     void enablePositionDependentOverlays(bool enable);
+    void refresh_normals();
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -96,6 +99,7 @@ private:
     void update_info_pointer_dlg(const glm::vec2 & screen_pos);
     glm::vec3 to_world(const glm::vec3 & screen_coord);
     int month();
+    void balance_water(bool one_step = false);
 
     bool render_rays();
     bool render_grid();
@@ -139,12 +143,12 @@ private:
     bool m_navigation_enabled;
     bool m_authorise_navigation_mode_switch;
 
-    Shaders m_shaders;
     QTimer * m_fps_callback_timer;
 
     static const int _TARGET_FPS;
 
     Terrain m_terrain;
+    PaddedTerrain m_padded_terrain;
     ResourceWrapper m_resources;
     LightingManager m_lighting_manager;
     Grid m_grid;

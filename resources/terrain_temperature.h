@@ -31,8 +31,8 @@ public:
     void getTempData(int x, int z, GLbyte & jun_temp, GLbyte & dec_temp);
 
 private:
-    TerrainTemperatureTexture * m_jun_temp;
-    TerrainTemperatureTexture * m_dec_temp;
+    TerrainTemperatureTexture m_jun_temp;
+    TerrainTemperatureTexture m_dec_temp;
 };
 
 

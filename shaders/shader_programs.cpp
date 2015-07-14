@@ -4,8 +4,8 @@
 /************************************
  * VERTEX & FRAGMENT SHADER PROGRAM *
  ************************************/
-ShaderProgram::ShaderProgram(const QString vertex_shader_filename, const QString fragment_shader_filename, QObject * parent) :
-    QOpenGLShaderProgram(parent), m_vertex_shader_filename(vertex_shader_filename), m_fragment_shader_filename(fragment_shader_filename)
+ShaderProgram::ShaderProgram(const QString vertex_shader_filename, const QString fragment_shader_filename) :
+    m_vertex_shader_filename(vertex_shader_filename), m_fragment_shader_filename(fragment_shader_filename)
 {
 
 }
@@ -30,8 +30,8 @@ void ShaderProgram::compileAndLink()
 /**************************
  * COMPUTE SHADER PROGRAM *
  **************************/
-ComputeShaderProgram::ComputeShaderProgram(const QString compute_shader_filename, QObject * parent) :
-    QOpenGLShaderProgram(parent), m_compute_shader_filename(compute_shader_filename)
+ComputeShaderProgram::ComputeShaderProgram(const QString compute_shader_filename) :
+    m_compute_shader_filename(compute_shader_filename)
 {
 
 }
@@ -53,7 +53,7 @@ void ComputeShaderProgram::compileAndLink()
 /***************
  * BASE SHADER *
  ***************/
-BaseShader::BaseShader(QObject * parent) : ShaderProgram(":/base.vert", ":/base.frag", parent)
+BaseShader::BaseShader() : ShaderProgram(":/base.vert", ":/base.frag")
 {
 
 }
@@ -66,7 +66,7 @@ BaseShader::~BaseShader()
 /******************
  * TERRAIN SHADER *
  ******************/
-TerrainShader::TerrainShader(QObject * parent) : ShaderProgram(":/terrain.vert", ":/terrain.frag", parent)
+TerrainShader::TerrainShader() : ShaderProgram(":/terrain.vert", ":/terrain.frag")
 {
 
 }
@@ -79,7 +79,7 @@ TerrainShader::~TerrainShader()
 /***************************
  * TERRAIN ELEMENTS SHADER *
  ***************************/
-TerrainElementsShader::TerrainElementsShader(QObject * parent) : ShaderProgram(":/terrain_elements.vert", ":/terrain_elements.frag", parent)
+TerrainElementsShader::TerrainElementsShader() : ShaderProgram(":/terrain_elements.vert", ":/terrain_elements.frag")
 {
 
 }
@@ -92,7 +92,7 @@ TerrainElementsShader::~TerrainElementsShader()
 /****************************
  * NORMALS GENERATOR SHADER *
  ****************************/
-NormalsGeneratorShader::NormalsGeneratorShader(QObject * parent) : ShaderProgram(":/normals_generator.vert", ":/normals_generator.frag", parent)
+NormalsGeneratorShader::NormalsGeneratorShader() : ShaderProgram(":/normals_generator.vert", ":/normals_generator.frag")
 {
 
 }
@@ -108,7 +108,7 @@ NormalsGeneratorShader::~NormalsGeneratorShader()
 const int WaterFluxGeneratorShader::_GROUP_SIZE_X = 32;
 const int WaterFluxGeneratorShader::_GROUP_SIZE_Y = 32;
 const int WaterFluxGeneratorShader::_GROUP_SIZE_Z = 1;
-WaterFluxGeneratorShader::WaterFluxGeneratorShader(QObject * parent) : ComputeShaderProgram(":/water_flux.comp")
+WaterFluxGeneratorShader::WaterFluxGeneratorShader() : ComputeShaderProgram(":/water_flux.comp")
 {
 
 }
@@ -117,3 +117,21 @@ WaterFluxGeneratorShader::~WaterFluxGeneratorShader()
 {
 
 }
+
+
+/*******************************
+ * WATER FLUX GENERATOR SHADER *
+ *******************************/
+const int WaterComparatorShader::_GROUP_SIZE_X = 32;
+const int WaterComparatorShader::_GROUP_SIZE_Y = 32;
+const int WaterComparatorShader::_GROUP_SIZE_Z = 1;
+WaterComparatorShader::WaterComparatorShader() : ComputeShaderProgram(":/water_heightmap_comparator.comp")
+{
+
+}
+
+WaterComparatorShader::~WaterComparatorShader()
+{
+
+}
+

@@ -122,6 +122,7 @@ public:
     const static QString _TIME;
     const static QString _LATITUDE;
     const static QString _RAINFALL;
+    const static QString _MONTHLY_RAINFALL;
 
     EditActionFamily();
     ~EditActionFamily();

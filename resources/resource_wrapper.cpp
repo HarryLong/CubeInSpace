@@ -114,8 +114,12 @@ void ResourceWrapper::bindDecWater()
 
 void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp)
 {
-    if(m_terrain_water.isValid())
-        water_height = 1;
+    // Water
+    {
+        GLuint jun, dec;
+        m_terrain_water.getWaterData(pos[0], pos[1], jun, dec);
+        water_height = (int) jun;
+    }
     if(m_terrain_shade.isValid())
         shaded = m_terrain_shade(pos[0], pos[1]);
     if(m_terrain_daily_illumination.isValid())
@@ -389,8 +393,8 @@ void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rai
 
     m_terrain_water.setData(jun_water_data, dec_water_data, terrain_width, terrain_depth);
 
-    if( rainfall_jun == 0 && rainfall_dec == 0 ) // No point trying to balance
-        m_terrain_water.setBalanced(true);
+//    if( rainfall_jun == 0 && rainfall_dec == 0 ) // No point trying to balance
+//        m_terrain_water.setBalanced(true);
 
     m_recalculating_water.store(false);
 }

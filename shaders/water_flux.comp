@@ -4,46 +4,39 @@ layout (local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, r32ui) uniform coherent uimage2D water_heightmap;
 layout(binding = 1, r32f) uniform coherent image2D terrain_heightmap;
-layout(binding = 2, r32ui) uniform coherent uimage2D verticies_emptied_counter;
 
 int meters_to_mm(in float meters)
 {
     return int(meters*1000);
 }
 
-uvec2 to_local(in uvec2 global_coordinate_to_translate, in uvec2 global_reference_cell)
+ivec2 to_local(in ivec2 global_coordinate_to_translate, in ivec2 global_reference_cell)
 {
-    return uvec2(global_coordinate_to_translate.x-global_reference_cell.x+1,
+    return ivec2(global_coordinate_to_translate.x-global_reference_cell.x+1,
                  global_coordinate_to_translate.y-global_reference_cell.y+1);
 }
 
-uvec2 to_global(in uvec2 local_coordinate_to_translate, in uvec2 global_reference_cell)
+ivec2 to_global(in ivec2 local_coordinate_to_translate, in ivec2 global_reference_cell)
 {
-    return uvec2(global_reference_cell.x+(local_coordinate_to_translate.x-1),
+    return ivec2(global_reference_cell.x+(local_coordinate_to_translate.x-1),
                  global_reference_cell.y+(local_coordinate_to_translate.y-1));
 }
 
-shared uint emptied_counter[gl_WorkGroupSize.x][gl_WorkGroupSize.y];
+const int _BORDER_INSERT_ALL_WATER = -1;
 
 void main()
 {
     uvec2 heightmap_size = imageSize(water_heightmap);
     // WATER HEIGHTMAP IMAGE INDICES
-    uvec2 global_idx;
-    global_idx.x = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    global_idx.y = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y;
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
 
-    ivec2 i_global_idx = ivec2(int(global_idx.x), int(global_idx.y));
-
-    bool valid = global_idx.x < heightmap_size.x && global_idx.y < heightmap_size.y && imageLoad(water_heightmap, i_global_idx).x > 0;
-    if(!valid)
-    {
-        emptied_counter[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 0;
-    }
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y) && imageLoad(water_heightmap, global_idx).x > 0;
 
     uint water_to_add[3][3];
-    uint terrain_heights[3][3];
-    uint water_heights[ 3][3];
+    int terrain_heights[3][3];
+    uint water_heights[3][3];
     uint aggregate_heights[3][3];
     for(int i = 0; i < 3; i++)
     {
@@ -56,58 +49,68 @@ void main()
         }
     }
     uint water_to_remove = 0;
-    uvec2 global_min;
-    uvec2 global_max;
-    uvec2 local_min;
-    uvec2 local_max;
+    vec2 global_min;
+    vec2 global_max;
 
+    bool dismiss_all_water = false;
+
+    /*************
+     * LOAD DATA *
+     *************/
     if(valid)
     {
-        /*************
-         * LOAD DATA *
-         *************/
-        // Calculate minimums / maximums in case we are on the border of the texture
-        global_min = uvec2(max(0,i_global_idx.x-1), max(0,i_global_idx.y-1));
-        global_max = uvec2(min(heightmap_size.x-1, global_idx.x+1), min(heightmap_size.y-1, global_idx.y+1));
-        local_min = to_local(global_min, global_idx);
-        local_max = to_local(global_max, global_idx);
-
-        for(uint global_x = global_min.x; global_x <= global_max.x ; global_x++)
+        for(int global_x = global_idx.x-1; global_x <= global_idx.x+1 && !dismiss_all_water; global_x++)
         {
-            for(uint global_y = global_min.y; global_y <= global_max.y ; global_y++)
+            for(int global_y = global_idx.y-1; global_y <= global_idx.y+1 && !dismiss_all_water ; global_y++)
             {
-                uvec2 local_coordinate = to_local(uvec2(global_x, global_y), global_idx);
+                uvec2 local_coordinate = to_local(ivec2(global_x, global_y), global_idx);
 
                 /******************
                  * TERRAIN HEIGHT *
                  ******************/
-                uint terrain_height = meters_to_mm(imageLoad(terrain_heightmap, ivec2(int(global_x), int(global_y))).x); //meters_to_mm(texture(height_map_texture, tmp_terrain_heightmap_idx) * scale);
+                int terrain_height = meters_to_mm(imageLoad(terrain_heightmap, ivec2(global_x+1, global_y+1)).x); //meters_to_mm(texture(height_map_texture, tmp_terrain_heightmap_idx) * scale);
                 terrain_heights[local_coordinate.x][local_coordinate.y] = terrain_height;
 
                 /****************
                  * WATER HEIGHT *
                  ****************/
-                uint water_height = imageLoad(water_heightmap, ivec2(int(global_x), int(global_y))).x;
-                water_heights[local_coordinate.x][local_coordinate.y] = water_height;
-
-                /********************
-                 * AGGREGATE HEIGHT *
-                 ********************/
-                aggregate_heights[local_coordinate.x][local_coordinate.y] = water_height + terrain_height;
+                if(global_x < 0 || global_x >= heightmap_size.x || global_y < 0 || global_y >= heightmap_size.y)
+                {
+                    if(terrain_height < 0)
+                    {
+                        water_to_remove = imageLoad(water_heightmap, global_idx).x;
+                        dismiss_all_water = true;
+                    }
+                    else // _BORDER_INSERT_NO_WATER
+                    {
+                        //TODO: Make this cell unavailable for water
+                        terrain_heights[local_coordinate.x][local_coordinate.y] = int(1e20); // Make it huge: ugly but save some hassle
+                        aggregate_heights[local_coordinate.x][local_coordinate.y] = int(1e20);
+                    }
+                }
+                else
+                {
+                    uint water_height = imageLoad(water_heightmap, ivec2(int(global_x), int(global_y))).x;
+                    water_heights[local_coordinate.x][local_coordinate.y] = water_height;
+                    aggregate_heights[local_coordinate.x][local_coordinate.y] = water_height + terrain_height;
+                }
             }
         }
+    }
 
-        /****************************
-         * CALCULATE WATER MOVEMENT *
-         ****************************/
+    /****************************
+     * CALCULATE WATER MOVEMENT *
+     ****************************/
+    if(valid && !dismiss_all_water)
+    {
         // Now check whether or not the surrounding cells can take all water from current cell
         uint aggregate_height_diff = 0;
         uint height_diffs[3][3]; // Diff between this cells *TERRAIN* height and surrounding cells *AGGREGATE* height
         uvec2 lowest_surrounding_cell = uvec2(1,1);
         uint maximum_height_diff = 0;
-        for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
+        for(uint local_x = 0; local_x < 3; local_x++)
         {
-            for(uint local_y = local_min.y; local_y <= local_max.y; local_y++)
+            for(uint local_y = 0; local_y < 3; local_y++)
             {
                 uint height_diff = 0;
                 if(terrain_heights[1][1] > aggregate_heights[local_x][local_y])
@@ -133,10 +136,9 @@ void main()
         uint aggregate_water_removed = 0;
         if(aggregate_height_diff >= water_heights[1][1]) // Scenario 1
         {
-            emptied_counter[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 1;
-            for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
+            for(uint local_x = 0; local_x < 3; local_x++)
             {
-                for(uint local_y = local_min.y; local_y <= local_max.y; local_y++)
+                for(uint local_y = 0; local_y < 3; local_y++)
                 {
                     float movement_percentage = float(height_diffs[local_x][local_y])/float(aggregate_height_diff);
                     uint water_movement = uint(round(movement_percentage * water_heights[1][1]));
@@ -152,9 +154,9 @@ void main()
             }
             while(aggregate_water_removed > water_heights[1][1]) // Remove water from cells in which water was inserted
             {
-                for(uint local_x = local_min.x; local_x <= local_max.x && aggregate_water_removed > water_heights[1][1]; local_x++)
+                for(uint local_x = 0; local_x < 3 && aggregate_water_removed > water_heights[1][1]; local_x++)
                 {
-                    for(uint local_y = local_min.y; local_y <= local_max.y && aggregate_water_removed > water_heights[1][1]; local_y++)
+                    for(uint local_y = 0; local_y < 3 && aggregate_water_removed > water_heights[1][1]; local_y++)
                     {
                         if(water_to_add[local_x][local_y] > 0)
                         {
@@ -168,13 +170,11 @@ void main()
         }
         else // Scenario 2
         {
-            emptied_counter[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 0;
-
             bool cells_in_which_to_insert_water[3][3];
             // First set all cells with lower height to take water
-            for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
+            for(uint local_x = 0; local_x < 3; local_x++)
             {
-                for(uint local_y = local_min.y; local_y <= local_max.y; local_y++)
+                for(uint local_y = 0; local_y < 3; local_y++)
                 {
                     cells_in_which_to_insert_water[local_x][local_y] = aggregate_heights[local_x][local_y] < aggregate_heights[1][1];
                 }
@@ -187,9 +187,9 @@ void main()
                 uint cell_count = 1;
                 water_to_remove = 0;
                 // First calculate the target balance_height based on cells which are currently deemed available to take water
-                for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
+                for(uint local_x = 0; local_x < 3; local_x++)
                 {
-                    for(uint local_y = local_min.y; local_y <= local_max.y; local_y++)
+                    for(uint local_y = 0; local_y < 3; local_y++)
                     {
                         water_to_add[local_x][local_y] = 0;
                         if(cells_in_which_to_insert_water[local_x][local_y])
@@ -208,9 +208,9 @@ void main()
                 }
                 uint target_balance_height = dividable_total_height/cell_count;
                 balance_found = true; // Start positive
-                for(uint local_x = local_min.x; local_x <= local_max.x && balance_found; local_x++)
+                for(uint local_x = 0; local_x < 3; local_x++)
                 {
-                    for(uint local_y = local_min.y; local_y <= local_max.y && balance_found; local_y++)
+                    for(uint local_y = 0; local_y < 3; local_y++)
                     {
                         if(cells_in_which_to_insert_water[local_x][local_y])
                         {
@@ -238,15 +238,14 @@ void main()
     /***********************
      * WRITE ADDITION DATA *
      ***********************/
-    if(valid)
+    if(valid && !dismiss_all_water)
     {
         // Add the water to surrounding cells
-        for(uint local_x = local_min.x; local_x <= local_max.x; local_x++)
+        for(uint local_x = 0; local_x < 3; local_x++)
         {
-            for(uint local_y = local_min.y; local_y <= local_max.y; local_y++)
+            for(uint local_y = 0; local_y < 3; local_y++)
             {
-                uvec2 u_global_cell = to_global(uvec2(local_x, local_y), global_idx);
-                ivec2 global_cell = ivec2(int(u_global_cell.x), int(u_global_cell.y));
+                ivec2 global_cell = to_global(ivec2(local_x, local_y), global_idx);
                 imageAtomicAdd(water_heightmap, global_cell, water_to_add[local_x][local_y]);
             }
         }
@@ -266,26 +265,13 @@ void main()
 //            new_height -= water_to_remove;
 //        }
 //        imageStore(water_heightmap, i_global_idx, uvec4(new_height,0,0,0));
-        imageAtomicAdd(water_heightmap, i_global_idx, -1 * water_to_remove);
+//        if(dismiss_all_water)
+//            imageAtomicAdd(water_heightmap, global_idx, 100);
+//        else
+            imageAtomicAdd(water_heightmap, global_idx, -1 * water_to_remove);
     }
     // Sync threads to ensure all writes have been performed
     barrier();
     memoryBarrierShared();
     memoryBarrier();
-
-    if(gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0) // Reduce counter
-    {
-        uint aggregate = 0;
-        for(uint x = 0; x < gl_WorkGroupSize.x; x++)
-        {
-            for(uint y = 0; y < gl_WorkGroupSize.y; y++)
-            {
-                aggregate += emptied_counter[x][y];
-            }
-        }
-
-        // Write to the image texture
-        imageStore(verticies_emptied_counter, ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y), uvec4(aggregate,0,0,0));
-    }
-    memoryBarrierImage();
 }

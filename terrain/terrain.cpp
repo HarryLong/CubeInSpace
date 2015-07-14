@@ -74,6 +74,7 @@ void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 
     m_drawable_terrain.prepareTerrainGeometry(parsed_terrangen_file);
 
+    emit normalsInvalid();
     emit terrainDimensionsChanged(getWidth(), getDepth(), getBaseHeight(), getMaxHeight());
 }
 
@@ -118,10 +119,10 @@ void Terrain::render()
     m_drawable_terrain.render();
 }
 
-bool Terrain::normalsValid()
-{
-    return m_terrain_normals.valid();
-}
+//bool Terrain::normalsValid()
+//{
+//    return m_terrain_normals.valid();
+//}
 
 void Terrain::getTerrainDimensions(int & width, int & depth, int & base_height, int & max_height )
 {

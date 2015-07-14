@@ -10,7 +10,7 @@ class ShaderProgram : public QOpenGLShaderProgram
 {
     Q_OBJECT
 public:
-    ShaderProgram(const QString vertex_shader_filename, const QString fragment_shader_filename, QObject * parent = 0);
+    ShaderProgram(const QString vertex_shader_filename, const QString fragment_shader_filename);
     ~ShaderProgram();
     void compileAndLink();
 
@@ -25,7 +25,7 @@ class ComputeShaderProgram : public QOpenGLShaderProgram
 {
     Q_OBJECT
 public:
-    ComputeShaderProgram(const QString compute_shader_filename, QObject * parent = 0);
+    ComputeShaderProgram(const QString compute_shader_filename);
     ~ComputeShaderProgram();
     void compileAndLink();
 
@@ -33,13 +33,14 @@ private:
     const QString m_compute_shader_filename;
 };
 
+
 /***************
  * BASE SHADER *
  ***************/
 class BaseShader : public ShaderProgram
 {
 public:
-    BaseShader(QObject * parent = 0);
+    BaseShader();
     ~BaseShader();
 };
 
@@ -49,7 +50,7 @@ public:
 class TerrainShader : public ShaderProgram
 {
 public:
-    TerrainShader(QObject * parent = 0);
+    TerrainShader();
     ~TerrainShader();
 };
 
@@ -59,7 +60,7 @@ public:
 class TerrainElementsShader : public ShaderProgram
 {
 public:
-    TerrainElementsShader(QObject * parent = 0);
+    TerrainElementsShader();
     ~TerrainElementsShader();
 };
 
@@ -69,7 +70,7 @@ public:
 class NormalsGeneratorShader : public ShaderProgram
 {
 public:
-    NormalsGeneratorShader(QObject * parent = 0);
+    NormalsGeneratorShader();
     ~NormalsGeneratorShader();
 
     struct Uniforms{
@@ -83,12 +84,27 @@ public:
 class WaterFluxGeneratorShader : public ComputeShaderProgram
 {
 public:
-    WaterFluxGeneratorShader(QObject * parent = 0);
+    WaterFluxGeneratorShader();
     ~WaterFluxGeneratorShader();
 
     static const int _GROUP_SIZE_X;
     static const int _GROUP_SIZE_Y;
     static const int _GROUP_SIZE_Z;
 };
+
+/*******************************
+ * WATER FLUX GENERATOR SHADER *
+ *******************************/
+class WaterComparatorShader : public ComputeShaderProgram
+{
+public:
+    WaterComparatorShader();
+    ~WaterComparatorShader();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
 
 #endif //SHADER_PROGRAMS

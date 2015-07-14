@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QMatrix>
 #include "terrain/terrain.h"
+#include "terrain/padded_terrain.h"
 #include "lighting/light_properties.h"
 #include "../gl_assets/grid.h"
 #include "transform.h"
@@ -19,23 +20,25 @@ class Renderer {
 public:
     Renderer();
     ~Renderer();
-    void init();
+    void compileAndLinkShaders();
 
-    void calculateNormals(NormalsGeneratorShader & shader, Terrain & terrain);
+    void calculateNormals(Terrain & terrain);
 
-    void renderTerrain(TerrainShader & shader, Terrain & terrain, ResourceWrapper & resources, const Transform & transforms,
+    void renderTerrain(Terrain & terrain, ResourceWrapper & resources, const Transform & transforms,
                        const LightProperties & sunlight_properties, const char * overlay, int month);
 
-    void renderTerrainElements(TerrainElementsShader & shader, Terrain & terrain, Transform & transforms, const std::vector<Asset*> & p_assets);
+    void renderTerrainElements(Terrain & padded_terrain, Transform & transforms, const std::vector<Asset*> & p_assets);
 
-    void renderAssets(BaseShader & shader, const Transform & transforms, const std::vector<Asset*> & p_assets);
+    void renderAssets(const Transform & transforms, const std::vector<Asset*> & p_assets);
 
-    void balanceWater(WaterFluxGeneratorShader & shader, Terrain & terrain, GLuint terrain_water_heightmap_texture_id);
+    void balanceWater(PaddedTerrain & terrain, TerrainWater & terrain_water, bool one_step = false);
 
 private:
     void reset_overlays(TerrainShader & shader);
 
-    CounterTexture m_counter_texture;
+    CounterTexture m_water_comparator_counter;
+    TerrainWaterHeightmap m_terrain_water_cache;
+    Shaders m_shaders;
 };
 
 #endif // RENDERER_H

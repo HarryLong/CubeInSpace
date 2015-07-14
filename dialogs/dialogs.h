@@ -5,6 +5,7 @@
 #include "rainfall_edit_dlg.h"
 #include "pointer_info_dlg.h"
 #include "temp_edit_dlg.h"
+#include "monthly_rainfall_edit_dlg.h"
 #include <QObject>
 
 class Dialogs : public QObject{
@@ -17,11 +18,13 @@ public:
     TemperatureEditDialog m_temp_editor_dlg;
     RainfallEditDialog m_rainfall_editor_dlg;
     PointerInformationDialog m_pointer_info_dlg;
+    MonthlyRainfallEditDialog m_monthly_rainfall_edit_dlg;
 
 public slots:
     void showSettingsDialog();
     void showTempDialog();
     void showRainfallDialog();
+    void showMonthlyRainfallDialog();
     void triggerPointerInfoDialog(bool show);
 
 };

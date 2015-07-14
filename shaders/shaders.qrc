@@ -9,5 +9,6 @@
         <file>terrain_elements.frag</file>
         <file>terrain_elements.vert</file>
         <file>water_flux.comp</file>
+        <file>water_heightmap_comparator.comp</file>
     </qresource>
 </RCC>

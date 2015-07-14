@@ -6,7 +6,7 @@
 class QObject;
 class Shaders {
 public:
-    Shaders(QObject * parent);
+    Shaders();
     ~Shaders();
     void compileAndLink();
 
@@ -15,6 +15,7 @@ public:
     TerrainElementsShader m_terrain_elements;
     NormalsGeneratorShader m_normals_generator;
     WaterFluxGeneratorShader m_water_flux_generator;
+    WaterComparatorShader m_water_comparator;
 };
 
 #endif // SHADERS_H

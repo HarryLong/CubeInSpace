@@ -180,6 +180,7 @@ const QString EditActionFamily::_HUMIDITY = "Humidity";
 const QString EditActionFamily::_TIME = "Time";
 const QString EditActionFamily::_LATITUDE = "Latitude";
 const QString EditActionFamily::_RAINFALL = "Rainfall";
+const QString EditActionFamily::_MONTHLY_RAINFALL = "Monthly Rainfall";
 EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 {
     init_actions();
@@ -187,6 +188,7 @@ EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 
     m_actions[EditActionFamily::_TEMPERATURE]->setCheckable(false);
     m_actions[EditActionFamily::_RAINFALL]->setCheckable(false);
+    m_actions[EditActionFamily::_MONTHLY_RAINFALL]->setCheckable(false);
 }
 
 EditActionFamily::~EditActionFamily()
@@ -202,4 +204,5 @@ void EditActionFamily::init_actions()
     m_actions[EditActionFamily::_TIME] = new QAction(EditActionFamily::_TIME, NULL);
     m_actions[EditActionFamily::_LATITUDE] = new QAction(EditActionFamily::_LATITUDE, NULL);
     m_actions[EditActionFamily::_RAINFALL] = new QAction(EditActionFamily::_RAINFALL, NULL);
+    m_actions[EditActionFamily::_MONTHLY_RAINFALL] = new QAction(EditActionFamily::_MONTHLY_RAINFALL, NULL);
 }

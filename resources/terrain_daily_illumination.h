@@ -30,8 +30,8 @@ public:
     void getIlluminationData(int x, int z, GLubyte & min, GLubyte & max);
 
 private:
-    TerrainDailyIlluminationTexture * m_min_illumination;
-    TerrainDailyIlluminationTexture * m_max_illumination;
+    TerrainDailyIlluminationTexture m_min_illumination;
+    TerrainDailyIlluminationTexture m_max_illumination;
 };
 
 

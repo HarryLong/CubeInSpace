@@ -48,7 +48,7 @@ public:
     void render();
     // Terrain normals functions
     void calculateNormals();
-    bool normalsValid();
+//    bool normalsValid();
     float getHeight(const glm::vec2 & point) const;
     float getAltitude(const glm::vec2 & point) const;
     float getSlope(const glm::vec2 & point) const;
@@ -66,6 +66,7 @@ public:
 
 signals:
     void terrainDimensionsChanged(int width, int depth, int base_height, int max_height);
+    void normalsInvalid();
 
 private:
     void establish_connections();

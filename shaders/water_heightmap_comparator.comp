@@ -1,0 +1,55 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, r32ui) uniform coherent uimage2D water_heightmap_one;
+layout(binding = 1, r32ui) uniform coherent uimage2D water_heightmap_two;
+layout(binding = 2, r32ui) uniform coherent uimage2D result;
+
+shared uint shared_results[gl_WorkGroupSize.x][gl_WorkGroupSize.y];
+
+void main()
+{
+    shared_results[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 0; // First set to zero
+
+    uvec2 heightmap_size = imageSize(water_heightmap_one);
+    // WATER HEIGHTMAP IMAGE INDICES
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
+
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+
+    if(valid)
+    {
+        uint water_one = imageLoad(water_heightmap_one, global_idx).x;
+        uint water_two = imageLoad(water_heightmap_two, global_idx).x;
+
+        if(water_one > 0 && water_two == 0 ||
+            water_two > 0 && water_one == 0)
+        {
+            shared_results[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = 1;
+        }
+    }
+
+    barrier();
+    memoryBarrierShared();
+
+    // reduce
+    ivec2 result_idx = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);
+    if(gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0)
+    {
+        uint aggregate = 0;
+        for(int x = 0; x < gl_WorkGroupSize.x; x++)
+        {
+            for(int y = 0; y < gl_WorkGroupSize.y; y++)
+            {
+                aggregate += shared_results[x][y];
+            }
+        }
+        imageStore(result, result_idx, uvec4(aggregate,0,0,0));
+    }
+
+    barrier();
+    memoryBarrierImage();
+}
