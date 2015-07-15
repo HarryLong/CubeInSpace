@@ -19,8 +19,7 @@ const char * Uniforms::Water::_IGNORE_WATER = "ignore_water";
 
 // TEXTURE
 const char * Uniforms::Texture::_TERRAIN_HEIGHTMAP = "terrain_height_map_texture";
-const char * Uniforms::Texture::_WATER_HEIGHTMAP_JUN = "water_height_map_jun_texture";
-const char * Uniforms::Texture::_WATER_HEIGHTMAP_DEC = "water_height_map_dec_texture";
+const char * Uniforms::Texture::_WATER_HEIGHTMAP = "water_heightmap";
 const char * Uniforms::Texture::_NORMALS = "normals_texture";
 const char * Uniforms::Texture::_SHADE = "shade_texture";
 const char * Uniforms::Texture::_TEMPERATURE_JUN = "jun_temperature_texture";

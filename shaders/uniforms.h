@@ -25,8 +25,7 @@ public:
 
     struct Texture{
         static const char * _TERRAIN_HEIGHTMAP;
-        static const char * _WATER_HEIGHTMAP_JUN;
-        static const char * _WATER_HEIGHTMAP_DEC;
+        static const char * _WATER_HEIGHTMAP;
         static const char * _NORMALS;
         static const char * _SHADE;
         static const char * _TEMPERATURE_JUN;

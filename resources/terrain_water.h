@@ -6,13 +6,35 @@
 #include <atomic>
 #include <mutex>
 
+/***************************
+ * TERRAIN WATER HEIGHTMAP *
+ ***************************/
 class TerrainWaterHeightmap : public TextureElement<GLuint> // TODO: And GL Drawable to actually draw the water bruuuu
 {
 public:
     TerrainWaterHeightmap();
     ~TerrainWaterHeightmap();
+
+    void incrementBalancingIteration(int changes);
+    bool balanced();
+    bool isBalancing();
+    void setBalancing(bool balancing);
+    void setData(GLuint * data, int width, int depth) override;
+
+private:
+    void perform_balancing_check();
+    void set_balanced(bool balanced);
+
+    std::atomic<bool> m_balanced;
+    std::atomic<bool> m_balancing;
+    int m_balancing_iterations;
+    std::vector<int> m_balance_iterations_changes;
+    int m_balance_iterations_changes_total;
 };
 
+/*****************
+ * TERRAIN WATER *
+ *****************/
 class TerrainWater{
 public:
     struct MaterialProperties{
@@ -22,34 +44,24 @@ public:
     };
     TerrainWater();
     ~TerrainWater();
-    void bindDec();
-    void bindJun();
-    GLuint getDecTextureId();
-    GLuint getJunTextureId();
-    void pushToGPU();
-    void setData(GLuint * jun_data, GLuint * dec_data, int width, int height);
-    void syncFromGPU();
-    void getWaterData(int x, int z, GLuint & jun, GLuint & dec);
-    const GLuint * getJunRawData();
-    const GLuint * getDecRawData();
-
     bool balanced();
-    bool isBalancing();
-    void setBalancing(bool balancing);
-    void incrementBalancingIteration(int changes);
+    void bind(int);
+    TerrainWaterHeightmap& operator[](int);
+    void setData(GLuint * data[12], int width, int height);
+    std::vector<TerrainWaterHeightmap*> getUnbalanced();
+    void pushToGPU();
+//    void bindJun();
+//    GLuint getDecTextureId();
+//    GLuint getJunTextureId();
+//    void pushToGPU();
+//    void setData(GLuint * jun_data, GLuint * dec_data, int width, int height);
+//    void syncFromGPU();
+//    void getWaterData(int x, int z, GLuint & jun, GLuint & dec);
+//    const GLuint * getJunRawData();
+//    const GLuint * getDecRawData();
 
 private:
-    TerrainWaterHeightmap m_terrain_water_jun;
-    TerrainWaterHeightmap m_terrain_water_dec;
-
-    void perform_balancing_check();
-    void set_balanced(bool balanced);
-    std::atomic<bool> m_balanced;
-    std::mutex m_balancing_mutex;
-    std::atomic<bool> m_balancing;
-    int m_balancing_iterations;
-    std::vector<int> m_balance_iterations_changes;
-    int m_balance_iterations_changes_total;
+    TerrainWaterHeightmap m_terrain_water[12];
 };
 
 #endif // TERRAIN_WATER_H

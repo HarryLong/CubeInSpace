@@ -20,12 +20,12 @@ const QString RainfallSlider::_STYLESHEET =
         }";
 #define MIN_RAINFALL 0
 #define MAX_RAINFALL 1000
-#define RAINFALL_DEFAULT 500
+#define RAINFALL_DEFAULT 0
 RainfallSlider::RainfallSlider(QWidget * parent) : QSlider(Qt::Orientation::Vertical, parent)
 {
     setStyleSheet(RainfallSlider::_STYLESHEET);
     setRange(MIN_RAINFALL, MAX_RAINFALL);
-    setValue(RAINFALL_DEFAULT);
+    reset();
 }
 
 RainfallSlider::~RainfallSlider()
@@ -38,13 +38,18 @@ QPoint RainfallSlider::getHandlePosition()
     return mapToParent(QPoint(width()/2.0f, height() - ((((float)value())/maximum()) * height())));
 }
 
+void RainfallSlider::reset()
+{
+    setValue(RAINFALL_DEFAULT);
+}
+
 //-------------------------------------------------------------------------------------
 RainfallLineEdit::RainfallLineEdit(QWidget * parent) :
     QLineEdit(parent),
     m_validator(new QIntValidator(MIN_RAINFALL, MAX_RAINFALL, parent))
 {
-    setText(QString::number(RAINFALL_DEFAULT));
     setValidator(m_validator);
+    reset();
 }
 
 RainfallLineEdit::~RainfallLineEdit()
@@ -66,6 +71,11 @@ void RainfallLineEdit::setValue(int value)
     setText(QString::number(value));
 }
 
+void RainfallLineEdit::reset()
+{
+    setText(QString::number(RAINFALL_DEFAULT));
+}
+
 //--------------------------------------------------------------------------------------
 #define MIN_RAINFALL_INTENSITY 0
 #define MAX_RAINFALL_INTENSITY 50
@@ -74,8 +84,8 @@ IntensityLineEdit::IntensityLineEdit(QWidget * parent) :
     QLineEdit(parent),
     m_validator(new QIntValidator(MIN_RAINFALL_INTENSITY, MAX_RAINFALL_INTENSITY, parent))
 {
-    setText(QString::number(DEFAULT_RAINFALL_INTENSITY));
     setValidator(m_validator);
+    reset();
 }
 
 IntensityLineEdit::~IntensityLineEdit()
@@ -88,6 +98,11 @@ void IntensityLineEdit::focusOutEvent( QFocusEvent * event )
     QLineEdit::focusOutEvent(event);
     if(text().isEmpty())
         setText(QString::number(0));
+}
+
+void IntensityLineEdit::reset()
+{
+    setText(QString::number(DEFAULT_RAINFALL_INTENSITY));
 }
 
 //--------------------------------------------------------------------------------------
@@ -111,6 +126,13 @@ SingleMonthRainfallWidget::SingleMonthRainfallWidget(QString label_txt, QWidget 
 SingleMonthRainfallWidget::~SingleMonthRainfallWidget()
 {
 
+}
+
+void SingleMonthRainfallWidget::reset()
+{
+    m_rainfall_slider->reset();
+    m_rainfall_le->reset();
+    m_rainfall_intensity_le->reset();
 }
 
 QPoint SingleMonthRainfallWidget::getHandlePosition()
@@ -248,6 +270,14 @@ MonthlyRainfallEditDialog::~MonthlyRainfallEditDialog()
 
 }
 
+void MonthlyRainfallEditDialog::reset()
+{
+    for(SingleMonthRainfallWidget * w : m_monthly_rainfall_widgets)
+        w->reset();
+
+    update();
+}
+
 QSize MonthlyRainfallEditDialog::minimumSizeHint() const
 {
     return QSize(1400,800);
@@ -256,6 +286,16 @@ QSize MonthlyRainfallEditDialog::minimumSizeHint() const
 QSize MonthlyRainfallEditDialog::sizeHint() const
 {
     return minimumSizeHint();
+}
+
+int MonthlyRainfallEditDialog::getRainfall(int month)
+{
+    return m_monthly_rainfall_widgets[month-1]->getRainfall();
+}
+
+int MonthlyRainfallEditDialog::getRainfallIntensity(int month)
+{
+    return m_monthly_rainfall_widgets[month-1]->getRainfallIntensity();
 }
 
 void MonthlyRainfallEditDialog::showEvent(QShowEvent * event )

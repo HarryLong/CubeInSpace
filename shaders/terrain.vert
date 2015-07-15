@@ -30,8 +30,7 @@ uniform int month;
 uniform bool ignore_water;
 
 uniform sampler2D terrain_height_map_texture;
-uniform usampler2D water_height_map_jun_texture;
-uniform usampler2D water_height_map_dec_texture;
+uniform usampler2D water_heightmap;
 uniform sampler2D normals_texture;
 uniform sampler2D shade_texture;
 uniform sampler2D jun_temperature_texture;
@@ -77,7 +76,7 @@ void main()
     uint water_height = 0;
     if(!ignore_water)
     {
-        water_height = texture(water_height_map_jun_texture, textureCoord).r;
+        water_height = texture(water_heightmap, textureCoord).r;
     }
     if(water_height > 0)
     {

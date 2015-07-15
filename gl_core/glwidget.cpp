@@ -16,6 +16,7 @@
 #include <QOpenGLFunctions_4_3_Core>
 #include <QFileDialog>
 #include "../actions.h"
+#include <cstring>
 
 /*****************
  * MOUSE TRACKER *
@@ -131,7 +132,6 @@ void GLWidget::establish_connections()
     connect(m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(triggerPointerInfoDialog(bool)));
     connect(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showSettingsDialog()));
     connect(m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showTempDialog()));
-    connect(m_actions->m_edit_actions[EditActionFamily::_RAINFALL], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showRainfallDialog()));
     connect(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showMonthlyRainfallDialog()));
 
     // UPDATE PROGRESS BAR
@@ -179,7 +179,7 @@ void GLWidget::establish_connections()
     connect(&m_dialogs.m_temp_editor_dlg, SIGNAL(accepted()), this, SLOT(refresh_temperature()));
 
     // WATER
-    connect(&m_dialogs.m_rainfall_editor_dlg, SIGNAL(accepted()), this, SLOT(refresh_water()));
+    connect(&m_dialogs.m_monthly_rainfall_edit_dlg, SIGNAL(accepted()), this, SLOT(refresh_water()));
 
     // FPS CALLBACK
     connect(m_fps_callback_timer, SIGNAL(timeout()), this, SLOT(update()));
@@ -246,6 +246,7 @@ void GLWidget::paintGL() // Override
     // Check if we need calculate water balance
     if(!m_resources.getTerrainWater().balanced())
     {
+        qCritical() << "UNBALANCED WATER";
         balance_water();
     }
 
@@ -587,7 +588,7 @@ void GLWidget::load_terrain_file()
 
     if (!fileName.isEmpty())
     {
-        m_dialogs.m_rainfall_editor_dlg.reset();
+        m_dialogs.m_monthly_rainfall_edit_dlg.reset();
         TerragenFile parsed_terragen_file(fileName.toStdString());
         reset_overlay();
         makeCurrent();
@@ -696,19 +697,42 @@ void GLWidget::refresh_water()
 {
     m_fps_callback_timer->stop();
 
+    makeCurrent();
     if(!m_padded_terrain.isValid())
     {
-        makeCurrent();
         m_padded_terrain.refresh(m_terrain);
     }
 
-    // Disable fps callback temporarily
+    int terrain_depth (m_terrain.getDepth());
+    int terrain_width (m_terrain.getWidth());
+    int sz(sizeof(GLuint) * terrain_width * terrain_depth);
+    GLuint * monthly_water_data[12];
+    for(int i = 0; i < 12; i++)
+    {
+        GLuint rainfall (m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(i+1));
 
-    RainfallEditDialog::RainfallAttributes jun_attributes ( m_dialogs.m_rainfall_editor_dlg.getJunRainfallAttributes() );
-    RainfallEditDialog::RainfallAttributes dec_attributes ( m_dialogs.m_rainfall_editor_dlg.getDecRainfallAttributes() );
+        GLuint * water_data = (GLuint *) std::malloc(sz);
 
-    m_resources.refreshWater(m_terrain.getWidth(), m_terrain.getDepth(), jun_attributes.monthly_rainfall, jun_attributes.rainfall_intensity,
-                                                                         dec_attributes.monthly_rainfall, dec_attributes.rainfall_intensity);
+        if( rainfall == 0 ) // Optimization
+        {
+            std::memset(water_data, 0, sz);
+        }
+        else
+        {
+    #pragma omp parallel for
+            for(int z = 0; z < terrain_depth; z++)
+            {
+    #pragma omp parallel for
+                for(int x = 0; x < terrain_width; x++)
+                {
+                    water_data[z*x+x] = rainfall;
+                }
+            }
+        }
+        monthly_water_data[i] = water_data;
+    }
+
+    m_resources.getTerrainWater().setData(monthly_water_data, terrain_width, terrain_depth);
 
     // Disable fps callback temporarily
     m_fps_callback_timer->start();
@@ -788,11 +812,24 @@ void GLWidget::enablePositionDependentOverlays(bool enable)
 void GLWidget::balance_water(bool one_step)
 {
     makeCurrent();
-    m_renderer.balanceWater(m_padded_terrain, m_resources.getTerrainWater(), one_step);
 
-    if(one_step) //  Sync from GPU if a one off
-        m_resources.getTerrainWater().syncFromGPU();
+    if(one_step)
+    {
+        TerrainWaterHeightmap * to_balance = &(m_resources.getTerrainWater()[month()]);
+        m_renderer.balanceWater(m_padded_terrain, to_balance, one_step);
+
+        to_balance->syncFromGPU();
+    }
+    else
+    {
+        std::vector<TerrainWaterHeightmap *> to_balance(m_resources.getTerrainWater().getUnbalanced());
+
+        for(TerrainWaterHeightmap * twh : to_balance)
+            m_renderer.balanceWater(m_padded_terrain, twh, one_step);
+    }
+
 }
+
 
 void GLWidget::clear_rays()
 {

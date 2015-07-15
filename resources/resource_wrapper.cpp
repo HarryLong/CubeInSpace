@@ -49,7 +49,7 @@ void ResourceWrapper::syncTextures()
     m_terrain_shade.pushToGPU();
     m_terrain_daily_illumination.pushToGPU();
     m_terrain_temp.pushToGPU();
-    m_terrain_water.pushToGPU();
+//    m_terrain_water.pushToGPU();
 }
 
 void ResourceWrapper::terrainChanged()
@@ -102,23 +102,11 @@ void ResourceWrapper::bindDecTemperature()
     m_terrain_temp.bindDec();
 }
 
-void ResourceWrapper::bindJunWater()
-{
-    m_terrain_water.bindJun();
-}
-
-void ResourceWrapper::bindDecWater()
-{
-    m_terrain_water.bindDec();
-}
-
 void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp)
 {
     // Water
     {
-        GLuint jun, dec;
-        m_terrain_water.getWaterData(pos[0], pos[1], jun, dec);
-        water_height = (int) jun;
+        water_height = (int) m_terrain_water[month](pos[0], pos[1]);
     }
     if(m_terrain_shade.isValid())
         shaded = m_terrain_shade(pos[0], pos[1]);
@@ -362,40 +350,40 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     m_recalculating_temperature.store(false);
 }
 
-void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec)
-{
-    m_recalculating_water.store(true);
+//void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec)
+//{
+//    m_recalculating_water.store(true);
 
-    int sz(sizeof(GLuint) * terrain_width * terrain_depth);
+//    int sz(sizeof(GLuint) * terrain_width * terrain_depth);
 
-    GLuint * jun_water_data = (GLuint*) malloc(sz);
-    GLuint * dec_water_data = (GLuint*) malloc(sz);
+//    GLuint * jun_water_data = (GLuint*) malloc(sz);
+//    GLuint * dec_water_data = (GLuint*) malloc(sz);
 
-    if( rainfall_jun == 0 && rainfall_dec == 0 ) // Optimization
-    {
-        std::memset(jun_water_data, 0, sz);
-        std::memset(dec_water_data, 0, sz);
-    }
-    else
-    {
-#pragma omp parallel for
-        for(int z = 0; z < terrain_depth; z++)
-        {
-#pragma omp parallel for
-            for(int x = 0; x < terrain_width; x++)
-            {
-                int index(z*terrain_depth+x);
-                jun_water_data[index] = rainfall_jun;
-                dec_water_data[index] = rainfall_dec;
-            }
-        }
-    }
+//    if( rainfall_jun == 0 && rainfall_dec == 0 ) // Optimization
+//    {
+//        std::memset(jun_water_data, 0, sz);
+//        std::memset(dec_water_data, 0, sz);
+//    }
+//    else
+//    {
+//#pragma omp parallel for
+//        for(int z = 0; z < terrain_depth; z++)
+//        {
+//#pragma omp parallel for
+//            for(int x = 0; x < terrain_width; x++)
+//            {
+//                int index(z*terrain_depth+x);
+//                jun_water_data[index] = rainfall_jun;
+//                dec_water_data[index] = rainfall_dec;
+//            }
+//        }
+//    }
 
-    m_terrain_water.setData(jun_water_data, dec_water_data, terrain_width, terrain_depth);
+//    m_terrain_water.setData(jun_water_data, dec_water_data, terrain_width, terrain_depth);
 
-//    if( rainfall_jun == 0 && rainfall_dec == 0 ) // No point trying to balance
-//        m_terrain_water.setBalanced(true);
+////    if( rainfall_jun == 0 && rainfall_dec == 0 ) // No point trying to balance
+////        m_terrain_water.setBalanced(true);
 
-    m_recalculating_water.store(false);
-}
+//    m_recalculating_water.store(false);
+//}
 

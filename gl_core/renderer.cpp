@@ -81,20 +81,11 @@ void Renderer::renderTerrain(Terrain & terrain,
     }
     // Water heightmap texture
     {
-        // June water heightmap
-        {
-            f->glActiveTexture(texture_unit); CE();
-            m_shaders.m_terrain.setUniformValue(Uniforms::Texture::_WATER_HEIGHTMAP_JUN, texture_unit-GL_TEXTURE0); CE();
-            resources.bindJunWater(); CE();
-            texture_unit++;
-        }
-        // Dec water heightmap
-        {
-            f->glActiveTexture(texture_unit); CE();
-            m_shaders.m_terrain.setUniformValue(Uniforms::Texture::_WATER_HEIGHTMAP_DEC, texture_unit-GL_TEXTURE0); CE();
-            resources.bindDecWater(); CE();
-            texture_unit++;
-        }
+        // Water heightmap
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_terrain.setUniformValue(Uniforms::Texture::_WATER_HEIGHTMAP, texture_unit-GL_TEXTURE0); CE();
+        resources.getTerrainWater()[month].bind();CE();
+        texture_unit++;
     }
 
     // Normals texture
@@ -249,12 +240,12 @@ void Renderer::renderAssets(const Transform & transforms,
 }
 
 void Renderer::balanceWater(PaddedTerrain & padded_terrain,
-                            TerrainWater & terrain_water,
+                            TerrainWaterHeightmap * terrain_water,
                             bool one_step)
 {
-    if(!terrain_water.isBalancing()) // Already balancing
+    if(!terrain_water->isBalancing()) // Already balancing
     {
-        terrain_water.setBalancing(true);
+        terrain_water->setBalancing(true);
 
         int terrain_width (padded_terrain.width()-2);
         int terrain_depth (padded_terrain.height()-2);
@@ -273,7 +264,7 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         {
             int sz(sizeof(GLuint) * terrain_width * terrain_depth);
             GLuint * cached_terrain_water = (GLuint*) std::malloc(sz);
-            std::memcpy(cached_terrain_water, terrain_water.getJunRawData(), sz);
+            std::memcpy(cached_terrain_water, terrain_water->getRawData(), sz);
 
             m_terrain_water_cache.setData(cached_terrain_water, terrain_width, terrain_depth);
             m_terrain_water_cache.pushToGPU();
@@ -294,7 +285,7 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         /*******************
          * WATER HEIGHTMAP *
          *******************/
-        f->glBindImageTexture(0, terrain_water.getJunTextureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);  CE();
+        f->glBindImageTexture(0, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);  CE();
     //    m_shaders.m_water_flux_generator.setUniformValue(Uniforms::Texture::_WATER_HEIGHTMAP_JUN, 0);CE();
 
         /*********************
@@ -311,7 +302,7 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         // Check for balance
         m_shaders.m_water_comparator.bind();
         f->glBindImageTexture(0, m_terrain_water_cache.textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
-        f->glBindImageTexture(1, terrain_water.getJunTextureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
+        f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
         f->glBindImageTexture(2, m_water_comparator_counter.textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
 
         f->glDispatchCompute(n_groups_x, n_groups_y, n_groups_z);  CE();
@@ -330,9 +321,9 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         }
 
         if(!one_step)
-            terrain_water.incrementBalancingIteration(agregated_changed_verticies);
+            terrain_water->incrementBalancingIteration(agregated_changed_verticies);
 
-        terrain_water.setBalancing(false);
+        terrain_water->setBalancing(false);
     }
 }
 

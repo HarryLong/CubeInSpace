@@ -16,14 +16,12 @@ public:
 
     SettingsDialog m_settings_dlg;
     TemperatureEditDialog m_temp_editor_dlg;
-    RainfallEditDialog m_rainfall_editor_dlg;
     PointerInformationDialog m_pointer_info_dlg;
     MonthlyRainfallEditDialog m_monthly_rainfall_edit_dlg;
 
 public slots:
     void showSettingsDialog();
     void showTempDialog();
-    void showRainfallDialog();
     void showMonthlyRainfallDialog();
     void triggerPointerInfoDialog(bool show);
 

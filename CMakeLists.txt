@@ -36,7 +36,7 @@ SET(CMAKE_BUILD_TYPE RELWITHDEBINFO)
 SET(RESOURCES_SOURCE_FILES resources/terrain_shade resources/terrain_daily_illumination resources/terrain_temperature
 resources/terrain_water resources/resource_wrapper)
 SET(LIGHTING_SOURCE_FILES lighting/lighting_manager lighting/light_properties)
-SET(DIALOGS_SOURCE_FILES dialogs/rainfall_edit_dlg dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs
+SET(DIALOGS_SOURCE_FILES dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs
     dialogs/monthly_rainfall_edit_dlg)
 SET(SHADER_SOURCE_FILES shaders/shader_programs shaders/shaders shaders/uniforms)
 SET(TERRAIN_SOURCE_FILES terrain/drawable_terrain terrain/terrain terrain/terrain_normals terrain/acceleration_structure terrain/padded_terrain)

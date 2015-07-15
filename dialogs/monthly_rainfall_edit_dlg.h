@@ -16,6 +16,9 @@ public:
     ~RainfallSlider();
     QPoint getHandlePosition();
     static const QString _STYLESHEET;
+
+public slots:
+    void reset();
 };
 
 //-------------------------------------------------------------------------------------
@@ -33,6 +36,7 @@ signals:
 
 public slots:
     void setValue(int);
+    void reset();
 
 protected:
     void focusOutEvent ( QFocusEvent * event ) override;
@@ -48,6 +52,9 @@ Q_OBJECT
 public:
     IntensityLineEdit(QWidget * parent = 0);
     ~IntensityLineEdit();
+
+public slots:
+    void reset();
 
 protected:
     void focusOutEvent ( QFocusEvent * event ) override;
@@ -74,6 +81,7 @@ public:
 
 public slots:
     void emit_value_changed(int);
+    void reset();
 
 signals:
     void valueChanged(int);
@@ -125,10 +133,14 @@ public:
     virtual QSize minimumSizeHint() const override;
     virtual QSize sizeHint() const override;
 
+    int getRainfall(int month);
+    int getRainfallIntensity(int month);
+
     static std::map<int, QString> create_month_map();
 
 public slots:
     void reject() override;
+    void reset();
 
 protected:
     virtual void paintEvent(QPaintEvent * event) override;

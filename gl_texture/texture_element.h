@@ -9,7 +9,7 @@ public:
     TextureElement(QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format, QOpenGLTexture::PixelType pixel_type);
     virtual ~TextureElement();
     // Terrain shade functions
-    void setData(T * data, int width, int depth);
+    virtual void setData(T * data, int width, int depth);
     virtual void syncFromGPU();
     virtual void pushToGPU();
     virtual T operator()(int x, int z) const;

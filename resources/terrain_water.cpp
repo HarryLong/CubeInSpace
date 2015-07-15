@@ -1,83 +1,44 @@
 #include "terrain_water.h"
+#include <cstring>
 
-const glm::vec4 TerrainWater::MaterialProperties::_DIFFUSE = glm::vec4(0.f, 0.f, 1.f, 1.0f);
-const glm::vec4 TerrainWater::MaterialProperties::_SPECULAR = glm::vec4(0.f, 0.f, 1.f, 1.0f);
-const glm::vec4 TerrainWater::MaterialProperties::_AMBIENT = glm::vec4(0.f, 0.f, 1.f, 1.0f);
-TerrainWater::TerrainWater() :
+/***************************
+ * TERRAIN WATER HEIGHTMAP *
+ ***************************/
+TerrainWaterHeightmap::TerrainWaterHeightmap() :
+    TextureElement<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32),
     m_balanced(true), m_balancing(false), m_balancing_iterations(0)
 {
 
 }
 
-TerrainWater::~TerrainWater()
+TerrainWaterHeightmap::~TerrainWaterHeightmap()
 {
 
 }
 
-bool TerrainWater::isBalancing()
+void TerrainWaterHeightmap::setData(GLuint * data, int width, int depth)
 {
-    return m_balancing.load();
-}
-
-void TerrainWater::setBalancing(bool balancing)
-{
-    if(balancing)
-    {
-        m_balancing_mutex.lock();
-    }
-    else
-    {
-        m_balancing_mutex.unlock();
-    }
-
-    m_balancing.store(balancing);
-}
-
-void TerrainWater::pushToGPU()
-{
-    m_terrain_water_jun.pushToGPU();
-    m_terrain_water_dec.pushToGPU();
-}
-
-void TerrainWater::setData(GLuint * jun_data, GLuint * dec_data, int width, int height)
-{
-    m_terrain_water_jun.setData(jun_data, width, height);
-    m_terrain_water_dec.setData(dec_data, width, height);
     set_balanced(false);
+    TextureElement<GLuint>::setData(data, width, depth);
+    pushToGPU();
 }
 
-void TerrainWater::bindDec()
-{
-    m_terrain_water_dec.bind();
-}
-
-void TerrainWater::bindJun()
-{
-    m_terrain_water_jun.bind();
-}
-
-GLuint TerrainWater::getDecTextureId()
-{
-    return m_terrain_water_dec.textureId();
-}
-
-GLuint TerrainWater::getJunTextureId()
-{
-    return m_terrain_water_jun.textureId();
-}
-
-void TerrainWater::syncFromGPU()
-{
-    m_terrain_water_jun.syncFromGPU();
-    m_terrain_water_dec.syncFromGPU();
-}
-
-bool TerrainWater::balanced()
+bool TerrainWaterHeightmap::balanced()
 {
     return m_balanced.load();
 }
 
-void TerrainWater::set_balanced(bool balanced)
+bool TerrainWaterHeightmap::isBalancing()
+{
+    return m_balancing.load();
+}
+
+void TerrainWaterHeightmap::setBalancing(bool balancing)
+{
+    m_balancing.store(balancing);
+}
+
+void TerrainWaterHeightmap::set_balanced(bool balanced)
 {
     if(!balanced)
     {
@@ -92,13 +53,7 @@ void TerrainWater::set_balanced(bool balanced)
     m_balanced = balanced;
 }
 
-void TerrainWater::getWaterData(int x, int z, GLuint & jun, GLuint & dec)
-{
-    jun = m_terrain_water_jun(x,z);
-    dec = m_terrain_water_dec(x,z);
-}
-
-void TerrainWater::incrementBalancingIteration(int changes)
+void TerrainWaterHeightmap::incrementBalancingIteration(int changes)
 {
     m_balancing_iterations++;
     m_balance_iterations_changes.push_back(changes);
@@ -106,17 +61,7 @@ void TerrainWater::incrementBalancingIteration(int changes)
     perform_balancing_check();
 }
 
-const GLuint * TerrainWater::getJunRawData()
-{
-    return m_terrain_water_jun.getRawData();
-}
-
-const GLuint * TerrainWater::getDecRawData()
-{
-    return m_terrain_water_dec.getRawData();
-}
-
-void TerrainWater::perform_balancing_check()
+void TerrainWaterHeightmap::perform_balancing_check()
 {
     int iteration_idx(m_balance_iterations_changes.size()-1);
 
@@ -126,13 +71,61 @@ void TerrainWater::perform_balancing_check()
     }
 }
 
-TerrainWaterHeightmap::TerrainWaterHeightmap() :
-    TextureElement<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32)
+/*****************
+ * TERRAIN WATER *
+ *****************/
+const glm::vec4 TerrainWater::MaterialProperties::_DIFFUSE = glm::vec4(0.f, 0.f, 1.f, 1.0f);
+const glm::vec4 TerrainWater::MaterialProperties::_SPECULAR = glm::vec4(0.f, 0.f, 1.f, 1.0f);
+const glm::vec4 TerrainWater::MaterialProperties::_AMBIENT = glm::vec4(0.f, 0.f, 1.f, 1.0f);
+TerrainWater::TerrainWater()
 {
 
 }
 
-TerrainWaterHeightmap::~TerrainWaterHeightmap()
+TerrainWater::~TerrainWater()
 {
 
+}
+TerrainWaterHeightmap& TerrainWater::operator[](int month)
+{
+    return m_terrain_water[month-1];
+}
+
+void TerrainWater::setData(GLuint * data[12], int width, int height)
+{
+    for(int i = 0; i < 12; i++)
+    {
+        m_terrain_water[i].setData(data[i], width, height);
+    }
+}
+
+bool TerrainWater::balanced()
+{
+    for(TerrainWaterHeightmap& water_heightmap : m_terrain_water)
+    {
+        if(!water_heightmap.balanced())
+            return false;
+    }
+
+    return true;
+}
+
+std::vector<TerrainWaterHeightmap*> TerrainWater::getUnbalanced()
+{
+    std::vector<TerrainWaterHeightmap*> unbalanced;
+    for(TerrainWaterHeightmap& water_heightmap : m_terrain_water)
+    {
+        if(!water_heightmap.balanced())
+            unbalanced.push_back(&water_heightmap);
+    }
+
+    return unbalanced;
+}
+
+void TerrainWater::pushToGPU()
+{
+    for(TerrainWaterHeightmap& water_heightmap : m_terrain_water)
+    {
+        water_heightmap.pushToGPU();
+    }
 }

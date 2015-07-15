@@ -1,7 +1,7 @@
 #include "dialogs.h"
 
 Dialogs::Dialogs(QWidget * parent) :
-    m_settings_dlg(parent), m_temp_editor_dlg(parent), m_rainfall_editor_dlg(parent), m_pointer_info_dlg(parent), m_monthly_rainfall_edit_dlg(parent)
+    m_settings_dlg(parent), m_temp_editor_dlg(parent), m_pointer_info_dlg(parent), m_monthly_rainfall_edit_dlg(parent)
 {
 
 }
@@ -21,12 +21,6 @@ void Dialogs::showTempDialog()
 {
     if(!m_temp_editor_dlg.isVisible())
         m_temp_editor_dlg.exec();
-}
-
-void Dialogs::showRainfallDialog()
-{
-    if(!m_rainfall_editor_dlg.isVisible())
-        m_rainfall_editor_dlg.exec();
 }
 
 void Dialogs::showMonthlyRainfallDialog()

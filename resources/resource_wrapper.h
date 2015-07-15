@@ -22,7 +22,7 @@ public:
     void refreshShade(Terrain & terrain, const glm::vec3 & sun_position);
     void refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain);
     void refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec);
-    void refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec);
+//    void refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec);
 
     TerrainWater & getTerrainWater();
 
@@ -47,8 +47,8 @@ public slots:
     void bindMaxIllumination();
     void bindJunTemperature();
     void bindDecTemperature();
-    void bindJunWater();
-    void bindDecWater();
+//    void bindJunWater();
+//    void bindDecWater();
 
 //    bool isShaded(const glm::vec3 & point, bool & shaded);
 //    bool getTemperature(const glm::vec3 & point, int month, float & temperature);

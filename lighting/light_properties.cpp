@@ -110,7 +110,7 @@ void SunLightProperties::refresh_position()
     glm::vec3 east_orientation = glm::rotateY(m_north_orientation, (float)M_PI_2);
     glm::vec3 true_north_orientation = glm::rotate(m_north_orientation, SunLightProperties::latitude_to_angle(m_latitude), east_orientation);
 
-    int sun_trajectory_radius(500);
+    int sun_trajectory_radius(500000);
     float max_axis_tilt(SunLightProperties::get_axis_tilt_angle(m_month));
     float day_angle(SunLightProperties::minutes_to_angle(m_time_of_day));
     glm::vec3 cp_tn_and_east (glm::normalize(glm::cross(true_north_orientation, east_orientation)));

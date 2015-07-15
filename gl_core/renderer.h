@@ -31,7 +31,7 @@ public:
 
     void renderAssets(const Transform & transforms, const std::vector<Asset*> & p_assets);
 
-    void balanceWater(PaddedTerrain & terrain, TerrainWater & terrain_water, bool one_step = false);
+    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, bool one_step = false);
 
 private:
     void reset_overlays(TerrainShader & shader);

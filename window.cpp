@@ -87,7 +87,6 @@ void MainWindow::init_menu()
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_HUMIDITY]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TIME]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_LATITUDE]);
-        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_RAINFALL]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]);
     }
 }
