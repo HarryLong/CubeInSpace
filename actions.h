@@ -90,6 +90,7 @@ public:
     const static QString _TEMPERATURE;
     const static QString _MIN_DAILY_ILLUMINATION;
     const static QString _MAX_DAILY_ILLUMINATION;
+    const static QString _SOIL_INFILTRATION_RATE;
     OverlayActionFamily();
     ~OverlayActionFamily();
 
@@ -122,6 +123,7 @@ public:
     const static QString _TIME;
     const static QString _LATITUDE;
     const static QString _MONTHLY_RAINFALL;
+    const static QString _SOIL_INFILTRATION_RATE;
 
     EditActionFamily();
     ~EditActionFamily();

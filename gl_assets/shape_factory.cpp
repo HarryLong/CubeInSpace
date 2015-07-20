@@ -15,9 +15,9 @@ GlArrow * ShapeFactory::getArrow(float length, glm::vec4 color)
     return new GlArrow(length, color);
 }
 
-GLSelectionRect * ShapeFactory::getSelectionRectangle()
+GLTerrainRect * ShapeFactory::getTerrainRectangle()
 {
-    return new GLSelectionRect;
+    return new GLTerrainRect;
 }
 
 GlSphere * ShapeFactory::getSphere(float radius, int slices, int stacks, glm::vec4 color)
@@ -200,63 +200,17 @@ void GlArrow::render()
 /*********************
  * TERRAIN RECTANGLE *
  *********************/
-GLSelectionRect::GLSelectionRect() : Asset(true, glm::vec4(0.3, 0.3, 0.3, 0.5))
+GLTerrainRect::GLTerrainRect() : Asset(true, glm::vec4(0.3, 0.3, 0.3, 0.5))
 {
 
 }
 
-GLSelectionRect::~GLSelectionRect()
+GLTerrainRect::~GLTerrainRect()
 {
 
 }
 
-void GLSelectionRect::resize(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth)
-{
-    m_verticies.clear();
-    m_indicies.clear();
-
-    // Ensure integers
-    min = glm::vec3((int) (min[0]+0.5), (int) (min[1]+0.5), (int) (min[2]+0.5));
-    max = glm::vec3((int) (max[0]+0.5), (int) (max[1]+0.5), (int) (max[2]+0.5));
-
-    float rect_width(max[0] - min[0] +1);
-    float rect_depth(max[2] - min[2] +1);
-
-    // Vertices
-    for (int z (min[2]); z <= max[2]; z++)
-    {
-        for (int x (min[0]); x <= max[0]; x++)
-        {
-            // 3D Vertex coordinate
-            m_verticies.push_back((float) x);
-            m_verticies.push_back(.0f); // Y (stored in heightmap texture)
-            m_verticies.push_back((float) z);
-
-            // 2D texture coordinate (for the heightmap)
-            m_verticies.push_back((float) x / (float) (terrain_width - 1)); // X
-            m_verticies.push_back((float) z / (float) (terrain_depth - 1)); // Y
-        }
-    }
-
-    // Indices
-    for (int z(0); z < rect_depth - 1; z++)
-    {
-        if (z > 0) // Degenerate begin: repeat first vertex
-            m_indicies.push_back((GLuint) (z * rect_width));
-
-        for (int x = 0; x < rect_width; x++)
-        {
-            // One part of the strip
-            m_indicies.push_back((GLuint) ((z * rect_width) + x));
-            m_indicies.push_back((GLuint) (((z + 1) * rect_width) + x));
-        }
-        if (z <  rect_depth - 1)   // Degenerate end: repeat last vertex
-            m_indicies.push_back((GLuint) (((z + 1) * rect_width) + (rect_width - 1)));
-    }
-    fillBuffers();
-}
-
-void GLSelectionRect::initGL()
+void GLTerrainRect::initGL()
 {
     m_vao_constraints.create();
     m_vbo_constraints.create();
@@ -272,11 +226,7 @@ void GLSelectionRect::initGL()
 
     QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
     f->glEnableVertexAttribArray(0); CE();
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
-    // Texture coordinate
-    f->glEnableVertexAttribArray(1); CE();
-    const int sz = 3*sizeof(GLfloat);
-    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0)); CE();
 
     m_vao_constraints.release(); CE();
     m_vbo_constraints.release(); CE();
@@ -285,7 +235,7 @@ void GLSelectionRect::initGL()
     fillBuffers();
 }
 
-void GLSelectionRect::render()
+void GLTerrainRect::render()
 {
     if(!initalised())
         initGL();
@@ -300,6 +250,70 @@ void GLSelectionRect::render()
     m_vao_constraints.release();CE();
 
     f->glDisable(GL_BLEND);CE();
+}
+
+
+void GLTerrainRect::resize(float w_radius, float d_radius)
+{
+    m_w_radius = w_radius;
+    m_d_radius = d_radius;
+
+    m_verticies.clear();
+    m_indicies.clear();
+
+    float rect_w(w_radius*2);
+    float rect_d(d_radius*2);
+
+    // Vertices
+    for (float z (-d_radius); z <= d_radius; z++)
+    {
+        for (float x (-w_radius); x <= w_radius; x++)
+        {
+            // 3D Vertex coordinate
+            m_verticies.push_back(x);
+            m_verticies.push_back(.0f); // Y (stored in heightmap texture)
+            m_verticies.push_back(z);
+
+//            // 2D texture coordinate (for the heightmap)
+//            m_verticies.push_back((float) x / (float) (terrain_width - 1)); // X
+//            m_verticies.push_back((float) z / (float) (terrain_depth - 1)); // Y
+        }
+    }
+
+    // Indices
+    int n_elements_w(rect_w  +1);
+    int n_elements_d(rect_d+1);
+
+    for (int z(0); z < n_elements_d-1; z++)
+    {
+        if (z > 0) // Degenerate begin: repeat first vertex
+            m_indicies.push_back((GLuint) (z * n_elements_w));
+
+        for (int x = 0; x < n_elements_w; x++)
+        {
+            // One part of the strip
+            m_indicies.push_back((GLuint) ((z * n_elements_w) + x));
+            m_indicies.push_back((GLuint) (((z + 1) * n_elements_w) + x));
+        }
+        if (z <  n_elements_d -1)   // Degenerate end: repeat last vertex
+            m_indicies.push_back((GLuint) (((z + 1) * n_elements_w) + (n_elements_w - 1)));
+    }
+    fillBuffers();
+}
+
+int GLTerrainRect::w_radius()
+{
+    return m_w_radius;
+}
+
+int GLTerrainRect::d_radius()
+{
+    return m_d_radius;
+}
+
+void GLTerrainRect::increment_size(int w_increment, int d_increment)
+{
+    resize(std::max(1,m_w_radius+w_increment), std::max(1, m_d_radius+d_increment));
 }
 
 /**********

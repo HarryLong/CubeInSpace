@@ -8,7 +8,6 @@ ResourceWrapper::ResourceWrapper() :
     m_recalculating_daily_illumination(false),
     m_recalculating_temperature(false),
     m_recalculating_water(false)
-
 {
 }
 
@@ -102,14 +101,17 @@ void ResourceWrapper::bindDecTemperature()
     m_terrain_temp.bindDec();
 }
 
-void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp)
+void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
+                                      int & soil_infiltration_rate, int & soil_humidity)
 {
     // Water
     {
         water_height = (int) m_terrain_water[month](pos[0], pos[1]);
     }
+    // Shade
     if(m_terrain_shade.isValid())
         shaded = m_terrain_shade(pos[0], pos[1]);
+    // Daily illumination
     if(m_terrain_daily_illumination.isValid())
     {
         GLubyte min, max;
@@ -117,6 +119,7 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & wa
         min_illumination = (int) min;
         max_illumination = (int) max;
     }
+    // Temperature
     if(m_terrain_temp.isValid())
     {
         GLbyte jun, dec;
@@ -125,6 +128,14 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & wa
 
         float jun_percentage = (6.f-(abs(6.f-month)))/6.f;
         temp = dec + (jun_percentage * temp_diff);
+    }
+    // Soil infiltration rate
+    {
+        soil_infiltration_rate = m_soil_infiltration(pos[0],pos[1]);
+    }
+    // Soil Humidity
+    {
+        soil_humidity = m_soil_humidity[month](pos[0], pos[1]);
     }
 }
 
@@ -140,6 +151,11 @@ void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_posi
 TerrainWater & ResourceWrapper::getTerrainWater()
 {
     return m_terrain_water;
+}
+
+SoilInfiltration & ResourceWrapper::getSoilInfiltration()
+{
+    return m_soil_infiltration;
 }
 
 GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates)
@@ -348,6 +364,11 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     emit processingComplete();
 
     m_recalculating_temperature.store(false);
+}
+
+SoilHumidity & ResourceWrapper::getSoilHumidity()
+{
+    return m_soil_humidity;
 }
 
 //void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec)

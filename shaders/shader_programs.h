@@ -54,6 +54,16 @@ public:
     ~TerrainShader();
 };
 
+/******************
+ * OVERLAY SHADER *
+ ******************/
+class OverlayShader : public ShaderProgram
+{
+public:
+    OverlayShader();
+    ~OverlayShader();
+};
+
 /***************************
  * TERRAIN ELEMENTS SHADER *
  ***************************/
@@ -105,6 +115,35 @@ public:
     static const int _GROUP_SIZE_Y;
     static const int _GROUP_SIZE_Z;
 };
+
+/***********************************
+ * SOIL HUMIDITY CALCULATOR SHADER *
+ ***********************************/
+class SoilHumidityCalculatorShader : public ComputeShaderProgram
+{
+public:
+    SoilHumidityCalculatorShader();
+    ~SoilHumidityCalculatorShader();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
+/****************************************
+ * SLOPE BASED SOIL INFILTRATION SHADER *
+ ****************************************/
+class SlopeBasedSoilInfiltrationShader : public ComputeShaderProgram
+{
+public:
+    SlopeBasedSoilInfiltrationShader();
+    ~SlopeBasedSoilInfiltrationShader();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
 
 
 #endif //SHADER_PROGRAMS

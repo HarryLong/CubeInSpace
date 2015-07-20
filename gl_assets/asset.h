@@ -23,9 +23,10 @@ public:
     void addTransformation(glm::mat4x4 mtw, float scale = 1.0f);
     void setTranformation(glm::mat4x4 mtw, float scale = 1.0f);
     const std::vector<Asset::AssetTransformations> & getTransformations();
+    void setColor(glm::vec4 color);
     void clearTransformations();
 
-    const glm::vec4 m_color;
+    glm::vec4 m_color;
     const bool m_uniform_color;
 
 private:

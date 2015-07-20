@@ -6,9 +6,13 @@
         <file>normals_generator.vert</file>
         <file>terrain.frag</file>
         <file>terrain.vert</file>
+        <file>overlay.vert</file>
+        <file>overlay.frag</file>
         <file>terrain_elements.frag</file>
         <file>terrain_elements.vert</file>
         <file>water_flux.comp</file>
         <file>water_heightmap_comparator.comp</file>
+        <file>soil_humidity_calculator.comp</file>
+        <file>slope_based_soil_infiltration.comp</file>
     </qresource>
 </RCC>

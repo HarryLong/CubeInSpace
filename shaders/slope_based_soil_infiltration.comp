@@ -1,0 +1,35 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+uniform sampler2D normals_texture;
+
+layout(binding = 1, r32ui) uniform coherent uimage2D soil_infiltrations;
+
+uniform int min_slope;
+
+void main()
+{
+    // Calculate the index
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
+
+    uvec2 heightmap_size = imageSize(soil_infiltrations);
+    // WATER HEIGHTMAP IMAGE INDICES
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+    if(valid)
+    {
+        uvec2 texture_coord = global_idx.x/heightmap_size.x, global_idx.y/heightmap_size.y;
+        vec3 normal = texture(normals_texture, texture_coord).rgb;
+        vec3 vertical_vector = vec3(0,1,0);
+
+        if(degrees(abs(acos(dot(normal, vertical_vector)))) >= min_slope)
+        {
+            imageStore(soil_infiltrations, global_idx, uvec4(0,0,0,0));
+        }
+    }
+
+    memoryBarrierImage();
+    barrier();
+}

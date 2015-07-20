@@ -19,11 +19,10 @@ public:
     bool balanced();
     bool isBalancing();
     void setBalancing(bool balancing);
-    void setData(GLuint * data, int width, int depth) override;
+    void setBalanced(bool balanced);
 
 private:
     void perform_balancing_check();
-    void set_balanced(bool balanced);
 
     std::atomic<bool> m_balanced;
     std::atomic<bool> m_balancing;
@@ -50,6 +49,8 @@ public:
     void setData(GLuint * data[12], int width, int height);
     std::vector<TerrainWaterHeightmap*> getUnbalanced();
     void pushToGPU();
+    void reset(int width, int height);
+
 //    void bindJun();
 //    GLuint getDecTextureId();
 //    GLuint getJunTextureId();

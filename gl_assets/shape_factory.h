@@ -43,18 +43,23 @@ private:
 /***********************
  * SELECTION RECTANGLE *
  ***********************/
-class GLSelectionRect : public Asset
+class GLTerrainRect : public Asset
 {
 public:
-    GLSelectionRect();
-    ~GLSelectionRect();
-    void resize(glm::vec3 min, glm::vec3 max, int terrain_width, int terrain_depth);
+    GLTerrainRect();
+    ~GLTerrainRect();
+    void resize(float w_radius, float d_radius);
+    void increment_size(int,int);
     virtual void render();
+    int w_radius();
+    int d_radius();
 
 protected:
     virtual void initGL();
 
 private:
+    int m_w_radius;
+    int m_d_radius;
 };
 
 /**********
@@ -102,7 +107,6 @@ private:
 
 };
 
-
 /*****************
  * SHAPE FACTORY *
  *****************/
@@ -110,7 +114,7 @@ class ShapeFactory {
 public:
     static GlCircle * getCircle(float radius, glm::vec4 color);
     static GlArrow * getArrow(float length, glm::vec4 color );
-    static GLSelectionRect * getSelectionRectangle();
+    static GLTerrainRect * getTerrainRectangle();
     static GlSphere * getSphere(float radius, int slices, int stacks, glm::vec4 color);
     static GlCube * getCube(float size);
 };

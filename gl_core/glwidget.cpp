@@ -17,6 +17,7 @@
 #include <QFileDialog>
 #include "../actions.h"
 #include <cstring>
+#include "../widgets/soil_infiltration_controller.h"
 
 /*****************
  * MOUSE TRACKER *
@@ -76,8 +77,12 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
   m_fps_callback_timer(new QTimer),
   m_dialogs(parent),
   m_active_overlay(Uniforms::Overlay::_NONE),
-  m_orientation_widget(this)
+  m_orientation_widget(this),
+  m_selection_rect(ShapeFactory::getTerrainRectangle()),
+  m_humidity_rect(ShapeFactory::getTerrainRectangle())
 {
+    m_humidity_rect->resize(5,5); // Temporary
+
     // Set up camera properties
     m_camera.setTranslationSensitivity(m_dialogs.m_settings_dlg.getTranslationSensitivity());
     m_camera.setRotationSensitivity(m_dialogs.m_settings_dlg.getRotationSensitivity());
@@ -103,6 +108,8 @@ GLWidget::~GLWidget()
     m_fps_callback_timer->stop();
     enable_continuous_mouse_tracking(false);
     delete m_mouse_tracking_thread;
+    delete m_selection_rect;
+    delete m_humidity_rect;
 }
 
 void GLWidget::establish_connections()
@@ -113,6 +120,8 @@ void GLWidget::establish_connections()
     // OVERLAY WIDGETS
     connect(m_actions->m_edit_actions[EditActionFamily::_TIME], SIGNAL(triggered(bool)), &m_overlay_widgets, SLOT(trigger_time_controllers(bool)));
     connect(m_actions->m_edit_actions[EditActionFamily::_LATITUDE], SIGNAL(triggered(bool)), &m_overlay_widgets, SLOT(trigger_latitude_controllers(bool)));
+    connect(m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE], SIGNAL(triggered(bool)), &m_overlay_widgets,
+            SLOT(trigger_soil_infiltration_controllers(bool)));
 
     // NORMALS NEED RECALCULATING
     connect(&m_terrain, SIGNAL(normalsInvalid()), this, SLOT(refresh_normals()));
@@ -120,6 +129,7 @@ void GLWidget::establish_connections()
     // TERRAIN DIMENSTIONS CHANGED
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int,int,int)));
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refresh_water()));
+    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(reset_soil_infiltration_rate()));
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_resources, SLOT(terrainChanged()));
 
     // CAMERA ORIENTATION CHANGE
@@ -149,6 +159,8 @@ void GLWidget::establish_connections()
     // When controller widgets are activated
     connect(&m_overlay_widgets, SIGNAL(latitudeControllersStateChanged(bool)), this, SLOT(latitude_controllers_state_changed(bool)));
     connect(&m_overlay_widgets, SIGNAL(timeControllersStateChanged(bool)), this, SLOT(time_controllers_state_changed(bool)));
+    connect(&m_overlay_widgets, SIGNAL(soilInfiltrationControllersStateChanged(bool)), this, SLOT(soil_infiltration_controllers_state_changed(bool)));
+    connect(&m_overlay_widgets, SIGNAL(soilInfiltrationRateChanged(int)), this, SLOT(soil_infiltration_rate_changed(int)));
 
     // When sun position changed
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
@@ -163,6 +175,9 @@ void GLWidget::establish_connections()
 
     // TIME CHANGE
     connect(&m_overlay_widgets, SIGNAL(timeChanged(int)), &m_lighting_manager, SLOT(setTime(int)));
+
+    // SOIL INFILTRATION SHORTCUT
+    connect(&m_overlay_widgets, SIGNAL(soilInfiltrationZeroOverSlope(int)), this, SLOT(zeroify_soil_infiltration_above_slope(int)));
 
     // ORIENTATION CHANGE
     connect(&m_orientation_widget, SIGNAL(northOrientationChanged(float,float,float)), &m_lighting_manager, SLOT(setNorthOrientation(float,float,float)));
@@ -179,7 +194,7 @@ void GLWidget::establish_connections()
     connect(&m_dialogs.m_temp_editor_dlg, SIGNAL(accepted()), this, SLOT(refresh_temperature()));
 
     // WATER
-    connect(&m_dialogs.m_monthly_rainfall_edit_dlg, SIGNAL(accepted()), this, SLOT(refresh_water()));
+    connect(&m_dialogs.m_monthly_rainfall_edit_dlg, SIGNAL(accepted()), this, SLOT(refresh_water()));  
 
     // FPS CALLBACK
     connect(m_fps_callback_timer, SIGNAL(timeout()), this, SLOT(update()));
@@ -239,7 +254,7 @@ void GLWidget::paintGL() // Override
     glm::mat4x4 view_mat;
 
     m_camera.getTransforms(proj_mat, view_mat);
-    Transform tranform(view_mat, proj_mat);
+    Transform transform(view_mat, proj_mat);
 
     std::vector<Asset*> assets_to_render;
 
@@ -260,13 +275,22 @@ void GLWidget::paintGL() // Override
     // Draw the terrain
     if(render_terrain())
     {
-        // RENDER TERRAIN
-        m_renderer.renderTerrain(m_terrain, m_resources, tranform, m_lighting_manager.getSunlightProperties(), m_active_overlay, month());
+        // TERRAIN
+        m_renderer.renderTerrain(m_terrain, m_resources.getTerrainWater()[month()], transform, m_lighting_manager.getSunlightProperties());
 
-        // Terrain elements
+        // OVERLAY
+        if(!overlay_none())
+        {
+            m_renderer.renderOverlay(m_terrain, m_resources, transform, m_active_overlay, month());
+        }
+
+        // TERRAIN ELEMENTS
         std::vector<Asset*> terrain_elements_to_render;
-        terrain_elements_to_render.push_back(m_terrain.getSelectionRect());
-        m_renderer.renderTerrainElements(m_terrain, tranform, terrain_elements_to_render) ;
+        if(edit_infiltration_rate())
+            terrain_elements_to_render.push_back(m_humidity_rect);
+        else
+            terrain_elements_to_render.push_back(m_selection_rect);
+        m_renderer.renderTerrainElements(m_terrain, transform, terrain_elements_to_render) ;
     }
 
     // Draw the rays
@@ -277,7 +301,7 @@ void GLWidget::paintGL() // Override
     if(render_sun())
         assets_to_render.push_back(&m_sun);
 
-    m_renderer.renderAssets(tranform, assets_to_render);
+    m_renderer.renderAssets(transform, assets_to_render);
 }
 
 void GLWidget::resizeGL(int w, int h) // Override
@@ -358,6 +382,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         glm::vec3 intersection_point;
         bool intersection(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point));
 
+
         if(render_rays()) // Add the ray
         {
             GLint viewport[4];
@@ -369,7 +394,14 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
         if(intersection)
         {
-            m_terrain_position_tracker.setStartPosition(intersection_point[0],0,intersection_point[2]);
+            if(edit_infiltration_rate())
+            {
+                update_soil_infiltration_rate(intersection_point);
+            }
+            else
+            {
+                m_terrain_position_tracker.setStartPosition(intersection_point[0],0,intersection_point[2]);
+            }
         }
     }
 }
@@ -419,7 +451,17 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     }
     else // navigation disabled
     {
-        if(event->buttons() == Qt::LeftButton)
+        if(edit_infiltration_rate())
+        {
+            glm::vec3 intersection_point;
+            if(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point))
+            {
+                if(event->buttons() == Qt::LeftButton)
+                    update_soil_infiltration_rate(intersection_point);
+                m_humidity_rect->setTranformation(glm::translate(glm::mat4x4(), glm::vec3(intersection_point.x, 0, intersection_point.z)));
+            }
+        }
+        else if(event->buttons() == Qt::LeftButton) // Selection rectangle
         {
             glm::vec3 intersection_point;
             if(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point) ||
@@ -436,7 +478,17 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                         0,
                         std::min((float)m_terrain.getDepth()-1, std::max(start_point_z, intersection_point[2])));
 
-                m_terrain.setSelectionRectangle(rect_min, rect_max);
+
+                float rec_width(rect_max.x-rect_min.x);
+                float rec_depth(rect_max.z-rect_min.z);
+
+                m_selection_rect->resize(rec_width/2.0f, rec_depth/2.0f);
+
+                glm::vec3 rect_center(rect_min.x + (rec_width/2.0f), 0, rect_min.z + (rec_depth/2.0f));
+
+                // Build mtw matrix
+                glm::mat4x4 mtw_mat = glm::translate(glm::mat4x4(), rect_center);
+                m_selection_rect->setTranformation(mtw_mat);
             }
         }
 
@@ -464,6 +516,27 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     {
         m_camera.move(delta > 0 ? Camera::Direction::FORWARD : Camera::Direction::BACK);
     }
+    else
+    {
+        if(edit_infiltration_rate())
+        {
+            bool ctrl_pressed(m_ctrl_pressed.load());
+            int increment ( ctrl_pressed ? 10 : 1 );
+            if(delta < 0)
+                increment *= -1;
+            m_humidity_rect->increment_size(increment, increment);
+        }
+    }
+}
+
+void GLWidget::update_soil_infiltration_rate(const glm::vec3 & intersection_point)
+{
+    makeCurrent();
+    glm::vec2 intersection_point_2d(intersection_point.x, intersection_point.z);
+    m_resources.getSoilInfiltration().update(intersection_point_2d, m_humidity_rect->w_radius(),
+                                             m_terrain.getWidth(), m_terrain.getDepth(), m_overlay_widgets.getSoilInfiltrationRate());
+
+    m_resources.getSoilInfiltration().syncFromGPU();
 }
 
 void GLWidget::reset_fps_cursor()
@@ -588,9 +661,12 @@ void GLWidget::load_terrain_file()
 
     if (!fileName.isEmpty())
     {
+        m_selection_rect->clear();
         m_dialogs.m_monthly_rainfall_edit_dlg.reset();
+        m_overlay_widgets.hideAll();
         TerragenFile parsed_terragen_file(fileName.toStdString());
         reset_overlay();
+        reset_edit_actions();
         makeCurrent();
         m_padded_terrain.invalidate();
         m_terrain.setTerrain(parsed_terragen_file);
@@ -628,13 +704,14 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
         float slope(m_terrain.getSlope(intersecion_point_2d));
 
         bool shaded;
-        int water_height, min_daily_illumination, max_daily_illumination;
+        int water_height, min_daily_illumination, max_daily_illumination, soil_infiltration_rate, soil_humidity;
         float temperature;
-        m_resources.getResourceInfo(intersecion_point_2d, month(), water_height, shaded, min_daily_illumination, max_daily_illumination, temperature);
+        m_resources.getResourceInfo(intersecion_point_2d, month(), water_height, shaded, min_daily_illumination, max_daily_illumination,
+                                    temperature, soil_infiltration_rate, soil_humidity);
         bool shade_valid, temp_valid, illumination_valid;
         m_resources.valid(shade_valid,illumination_valid,temp_valid);
 
-        m_dialogs.m_pointer_info_dlg.update(altitude, slope, water_height,
+        m_dialogs.m_pointer_info_dlg.update(altitude, slope, water_height, soil_infiltration_rate, soil_humidity,
                                    shade_valid, shaded,
                                    temp_valid, temperature,
                                    illumination_valid, min_daily_illumination, max_daily_illumination);
@@ -653,6 +730,8 @@ void GLWidget::overlay_changed()
         m_active_overlay = Uniforms::Overlay::_SLOPE;
     else if(overlay_altitude())
         m_active_overlay = Uniforms::Overlay::_ALTITUDE;
+    else if(overlay_soil_infiltration())
+        m_active_overlay = Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
     else if(overlay_shade())
     {
         if(!shade_valid)
@@ -693,46 +772,61 @@ void GLWidget::refresh_temperature()
     m_fps_callback_timer->start();
 }
 
+void GLWidget::reset_soil_infiltration_rate()
+{
+    m_fps_callback_timer->stop();
+    makeCurrent();
+
+    int terrain_depth (m_terrain.getDepth());
+    int terrain_width (m_terrain.getWidth());
+    int sz(sizeof(GLuint) * terrain_width * terrain_depth);
+    GLuint * data = (GLuint *) std::malloc(sz);
+
+//#pragma omp parallel for
+//        for(int z = 0; z < terrain_depth; z++)
+//        {
+//#pragma omp parallel for
+//            for(int x = 0; x < terrain_width; x++)
+//            {
+//                data[z*terrain_width+x] = (GLuint) 250;
+//            }
+//        }
+    std::memset(data, 0, sz);
+
+    m_resources.getSoilInfiltration().setData(data, terrain_width, terrain_depth);
+    m_resources.getSoilInfiltration().pushToGPU();
+
+    m_fps_callback_timer->start();
+}
+
 void GLWidget::refresh_water()
 {
     m_fps_callback_timer->stop();
 
     makeCurrent();
+
+    // REFRESH PADDED TERRAIN IF INVALID (NEEDED FOR WATER FLOW
     if(!m_padded_terrain.isValid())
     {
         m_padded_terrain.refresh(m_terrain);
     }
 
-    int terrain_depth (m_terrain.getDepth());
-    int terrain_width (m_terrain.getWidth());
-    int sz(sizeof(GLuint) * terrain_width * terrain_depth);
-    GLuint * monthly_water_data[12];
+    reset_water();
+
+    GLuint m_soil_infiltration_texture_id(m_resources.getSoilInfiltration().textureId());
+    // CALCULATE SOILD HUMIDITY AND STANDING WATER
     for(int i = 0; i < 12; i++)
     {
-        GLuint rainfall (m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(i+1));
-
-        GLuint * water_data = (GLuint *) std::malloc(sz);
-
-        if( rainfall == 0 ) // Optimization
-        {
-            std::memset(water_data, 0, sz);
-        }
-        else
-        {
-    #pragma omp parallel for
-            for(int z = 0; z < terrain_depth; z++)
-            {
-    #pragma omp parallel for
-                for(int x = 0; x < terrain_width; x++)
-                {
-                    water_data[z*x+x] = rainfall;
-                }
-            }
-        }
-        monthly_water_data[i] = water_data;
+        m_renderer.calculateSoilHumidityAndStandingWater(m_soil_infiltration_texture_id,
+                                                         m_resources.getSoilHumidity()[i+1].textureId(),
+                                                         m_resources.getTerrainWater()[i+1].textureId(),
+                                                         m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(i+1),
+                                                         m_dialogs.m_monthly_rainfall_edit_dlg.getRainfallIntensity(i+1),
+                                                         m_terrain.getWidth(),
+                                                         m_terrain.getDepth());
     }
 
-    m_resources.getTerrainWater().setData(monthly_water_data, terrain_width, terrain_depth);
+    m_resources.getSoilHumidity().syncFromGPU();
 
     // Disable fps callback temporarily
     m_fps_callback_timer->start();
@@ -749,6 +843,15 @@ void GLWidget::refresh_illumination()
     m_lighting_manager.signal_sun_position_change(true); // re-enable signaling
 
     m_fps_callback_timer->start();
+}
+
+void GLWidget::reset_water()
+{
+    makeCurrent();
+    // RESET SOIL HUMIDITY
+    m_resources.getTerrainWater().reset(m_terrain.getWidth(), m_terrain.getDepth());
+    // RESET TERRAIN WATER
+    m_resources.getSoilHumidity().reset(m_terrain.getWidth(), m_terrain.getDepth());
 }
 
 void GLWidget::refresh_shade()
@@ -775,18 +878,42 @@ void GLWidget::sunPositionChanged(float pos_x, float pos_y, float pos_z)
 
 void GLWidget::time_controllers_state_changed(bool active)
 {
+    disable_all_overlay_widget_actions();
+    enableAllOverlays(true);
     enablePositionDependentOverlays(!active);
-
-    if(active)
-        m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(active);
 }
 
 void GLWidget::latitude_controllers_state_changed(bool active)
 {
+    disable_all_overlay_widget_actions();
+    enableAllOverlays(true);
     enablePositionDependentOverlays(!active);
+    m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(active);
+}
 
-    if(active)
-        m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
+void GLWidget::soil_infiltration_controllers_state_changed(bool active)
+{
+    disable_all_overlay_widget_actions();
+    m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(active);
+
+    soil_infiltration_rate_changed(m_overlay_widgets.getSoilInfiltrationRate());
+    m_active_overlay = Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
+    m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(true);
+
+    enableAllOverlays(!active);
+
+    if(!active) // Water refresh required
+        refresh_water();
+    else
+        reset_water();
+}
+
+void GLWidget::disable_all_overlay_widget_actions()
+{
+    m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
 }
 
 void GLWidget::orientation_controllers_state_changed(bool active)
@@ -809,6 +936,18 @@ void GLWidget::enablePositionDependentOverlays(bool enable)
     m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->setEnabled(enable);
 }
 
+void GLWidget::enableAllOverlays(bool enable)
+{
+    m_actions->m_overlay_actions[OverlayActionFamily::_NONE]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_SLOPE]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_ALTITUDE]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->setEnabled(enable);
+    m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]->setEnabled(enable);
+}
+
 void GLWidget::balance_water(bool one_step)
 {
     makeCurrent();
@@ -827,9 +966,19 @@ void GLWidget::balance_water(bool one_step)
         for(TerrainWaterHeightmap * twh : to_balance)
             m_renderer.balanceWater(m_padded_terrain, twh, one_step);
     }
-
 }
 
+void GLWidget::zeroify_soil_infiltration_above_slope(int min_slope)
+{
+    makeCurrent();
+    m_renderer.slopeBasedInfiltrationRateFilter(m_terrain, m_resources.getSoilInfiltration().textureId(), min_slope);
+}
+
+void GLWidget::soil_infiltration_rate_changed(int infiltration_rate)
+{
+    glm::vec4 rect_color(0, 0, infiltration_rate/SoilInfiltrationControllerWidget::_MAX_INFILTRATION_RATE, .5);
+    m_humidity_rect->setColor(rect_color);
+}
 
 void GLWidget::clear_rays()
 {
@@ -840,6 +989,18 @@ void GLWidget::reset_overlay()
 {
     m_actions->m_overlay_actions[OverlayActionFamily::_NONE]->setChecked(true);
     overlay_changed();
+    enableAllOverlays(true);
+}
+
+void GLWidget::reset_edit_actions()
+{
+    m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_ORIENTATION]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_HUMIDITY]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
 }
 
 bool GLWidget::render_rays()
@@ -895,6 +1056,16 @@ bool GLWidget::overlay_min_illumination()
 bool GLWidget::overlay_max_illumination()
 {
     return m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->isChecked();
+}
+
+bool GLWidget::overlay_soil_infiltration()
+{
+    return m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]->isChecked();
+}
+
+bool GLWidget::edit_infiltration_rate()
+{
+    return m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->isChecked();
 }
 
 bool GLWidget::fps()

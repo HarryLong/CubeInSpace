@@ -15,7 +15,7 @@ public:
     virtual QSize minimumSizeHint() const;
 
 public slots:
-    void update(float altitude, float slope, int water_height,
+    void update(float altitude, float slope, int water_height, int soil_infiltration_rate, int soil_humidity,
                 bool shade_set, bool shaded,
                 bool temp_set, float temp,
                 bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination);
@@ -29,6 +29,8 @@ private slots:
     void setMinDailyIllumination(int min_daily_illumination);
     void setMaxDailyIllumination(int max_daily_illumination);
     void setWaterHeight(int water_height);
+    void setSoilInfiltrationRate(int soil_infiltration_rate);
+    void setSoilHumidity(int soil_humidity);
 
     void setInvalid(QLabel * lbl);
 
@@ -39,6 +41,8 @@ private:
     enum LabelType {
         _ALTITUDE,
         _SLOPE,
+        _SOIL_INFILTRATION_RATE,
+        _SOIL_HUMIDITY,
         _SHADE,
         _TEMP,
         _MIN_DAILY_ILLUMINATION,

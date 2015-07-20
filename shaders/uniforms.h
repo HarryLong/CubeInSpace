@@ -20,7 +20,6 @@ public:
     struct Water{
         static const char * _MATERIAL_AMBIENT;
         static const char * _MATERIAL_DIFFUSE;
-        static const char * _IGNORE_WATER;
    };
 
     struct Texture{
@@ -32,6 +31,7 @@ public:
         static const char * _TEMPERATURE_DEC;
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
+        static const char * _SOIL_INFILTRATION_RATE;
     };
 
     struct Overlay{
@@ -42,6 +42,7 @@ public:
         static const char * _TEMPERATURE;
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
+        static const char * _SOIL_INFILTRATION_RATE;
     };
 
     struct Lighting{
@@ -61,6 +62,15 @@ public:
 
     struct Counter {
         static const char * _VERTICIES_EMPTIED;
+    };
+
+    struct Rainfall{
+        static const char * _RAINFALL;
+        static const char * _INTENSITY;
+    };
+
+    struct SlopeBasedSoilInfiltration{
+        static const char * _MIN_SLOPE;
     };
 };
 

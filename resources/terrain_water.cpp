@@ -16,13 +16,6 @@ TerrainWaterHeightmap::~TerrainWaterHeightmap()
 
 }
 
-void TerrainWaterHeightmap::setData(GLuint * data, int width, int depth)
-{
-    set_balanced(false);
-    TextureElement<GLuint>::setData(data, width, depth);
-    pushToGPU();
-}
-
 bool TerrainWaterHeightmap::balanced()
 {
     return m_balanced.load();
@@ -38,7 +31,7 @@ void TerrainWaterHeightmap::setBalancing(bool balancing)
     m_balancing.store(balancing);
 }
 
-void TerrainWaterHeightmap::set_balanced(bool balanced)
+void TerrainWaterHeightmap::setBalanced(bool balanced)
 {
     if(!balanced)
     {
@@ -67,7 +60,7 @@ void TerrainWaterHeightmap::perform_balancing_check()
 
     if(m_balance_iterations_changes.at(iteration_idx) <= (m_balance_iterations_changes_total/1000.0f))
     {
-        set_balanced(true);
+        setBalanced(true);
     }
 }
 
@@ -128,4 +121,18 @@ void TerrainWater::pushToGPU()
     {
         water_heightmap.pushToGPU();
     }
+}
+
+void TerrainWater::reset(int width, int depth)
+{
+    int sz(sizeof(GLuint) * width * depth);
+
+    for(TerrainWaterHeightmap & heightmap : m_terrain_water)
+    {
+        GLuint * data = (GLuint *) std::malloc(sz);
+        std::memset(data, 0, sz);
+        heightmap.setData(data, width, depth);
+        heightmap.setBalanced(false);
+    }
+    pushToGPU();
 }

@@ -76,6 +76,19 @@ TerrainShader::~TerrainShader()
 
 }
 
+/******************
+ * OVERLAY SHADER *
+ ******************/
+OverlayShader::OverlayShader() : ShaderProgram(":/overlay.vert", ":/overlay.frag")
+{
+
+}
+
+OverlayShader::~OverlayShader()
+{
+
+}
+
 /***************************
  * TERRAIN ELEMENTS SHADER *
  ***************************/
@@ -135,3 +148,34 @@ WaterComparatorShader::~WaterComparatorShader()
 
 }
 
+/***********************************
+ * SOIL HUMIDITY CALCULATOR SHADER *
+ ***********************************/
+const int SoilHumidityCalculatorShader::_GROUP_SIZE_X = 32;
+const int SoilHumidityCalculatorShader::_GROUP_SIZE_Y = 32;
+const int SoilHumidityCalculatorShader::_GROUP_SIZE_Z = 1;
+SoilHumidityCalculatorShader::SoilHumidityCalculatorShader() : ComputeShaderProgram(":/soil_humidity_calculator.comp")
+{
+
+}
+
+SoilHumidityCalculatorShader::~SoilHumidityCalculatorShader()
+{
+
+}
+
+/****************************************
+ * SLOPE BASED SOIL INFILTRATION SHADER *
+ ****************************************/
+const int SlopeBasedSoilInfiltrationShader::_GROUP_SIZE_X = 32;
+const int SlopeBasedSoilInfiltrationShader::_GROUP_SIZE_Y = 32;
+const int SlopeBasedSoilInfiltrationShader::_GROUP_SIZE_Z = 1;
+SlopeBasedSoilInfiltrationShader::SlopeBasedSoilInfiltrationShader() : ComputeShaderProgram(":/slope_based_soil_infiltration.comp")
+{
+
+}
+
+SlopeBasedSoilInfiltrationShader::~SlopeBasedSoilInfiltrationShader()
+{
+
+}

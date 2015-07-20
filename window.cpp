@@ -60,13 +60,14 @@ void MainWindow::init_menu()
     // OVERLAY MENU
     {
         m_overlay_menu = menuBar()->addMenu("Overlay");
-        m_illumination_submenu = m_overlay_menu->addMenu("Illumination");
-
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_NONE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SLOPE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_ALTITUDE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]);
+        m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]);
+
+        m_illumination_submenu = m_overlay_menu->addMenu("Illumination");
         m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]);
         m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]);
     }
@@ -88,6 +89,7 @@ void MainWindow::init_menu()
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TIME]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_LATITUDE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]);
+        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]);
     }
 }
 

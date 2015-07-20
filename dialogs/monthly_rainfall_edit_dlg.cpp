@@ -78,7 +78,7 @@ void RainfallLineEdit::reset()
 
 //--------------------------------------------------------------------------------------
 #define MIN_RAINFALL_INTENSITY 0
-#define MAX_RAINFALL_INTENSITY 50
+#define MAX_RAINFALL_INTENSITY 1000
 #define DEFAULT_RAINFALL_INTENSITY 5
 IntensityLineEdit::IntensityLineEdit(QWidget * parent) :
     QLineEdit(parent),
@@ -308,8 +308,6 @@ void MonthlyRainfallEditDialog::showEvent(QShowEvent * event )
 
 void MonthlyRainfallEditDialog::paintEvent(QPaintEvent * event)
 {
-    qCritical() << "PAINTING";
-
     QPainter painter(this);
     painter.setPen(m_graph_drawer_pen);
 

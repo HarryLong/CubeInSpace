@@ -38,15 +38,13 @@ BaseTerrain::~BaseTerrain()
 const glm::vec4 Terrain::MaterialProperties::_DIFFUSE = glm::vec4(0.7f, 0.6f, 0.5f, 1.0f);
 const glm::vec4 Terrain::MaterialProperties::_SPECULAR = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
 const glm::vec4 Terrain::MaterialProperties::_AMBIENT = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-Terrain::Terrain() :
-    m_selection_rectangle(ShapeFactory::getSelectionRectangle())
+Terrain::Terrain()
 {
     establish_connections();
 }
 
 Terrain::~Terrain()
 {
-    delete m_selection_rectangle;
 }
 
 void Terrain::establish_connections()
@@ -64,9 +62,6 @@ void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
     m_terragen_file = parsed_terrangen_file;
     m_terragen_file.summarize();
 
-    // Remove selection rectangle
-    clear_selection_rectangle();
-
     m_terrain_normals.setTerrainDim(m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
     m_terrain_normals.setValid(false);
 
@@ -76,11 +71,6 @@ void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 
     emit normalsInvalid();
     emit terrainDimensionsChanged(getWidth(), getDepth(), getBaseHeight(), getMaxHeight());
-}
-
-void Terrain::clear_selection_rectangle()
-{
-    m_selection_rectangle->clear();
 }
 
 float Terrain::getMaxHeight() const
@@ -194,16 +184,6 @@ bool Terrain::traceRay(const glm::vec3 & start, const glm::vec3 & direction, glm
         }
     }
     return found;
-}
-
-void Terrain::setSelectionRectangle(glm::vec3 min, glm::vec3 max)
-{
-    m_selection_rectangle->resize(min, max, m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
-}
-
-Asset* Terrain::getSelectionRect()
-{
-    return m_selection_rectangle;
 }
 
 DrawableTerrain & Terrain::getDrawableTerrain()

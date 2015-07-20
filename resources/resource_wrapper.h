@@ -5,6 +5,8 @@
 #include "terrain_daily_illumination.h"
 #include "terrain_temperature.h"
 #include "terrain_water.h"
+#include "soil_infiltration.h"
+#include "soil_humidity.h"
 #include <atomic>
 
 class LightingManager;
@@ -16,7 +18,8 @@ public:
 
     void syncTextures();
 
-    void getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp);
+    void getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
+                         int & soil_infiltration_rate, int & soil_humidity);
 
     void valid(bool & shade, bool & daily_illumination, bool & temp);
     void refreshShade(Terrain & terrain, const glm::vec3 & sun_position);
@@ -25,6 +28,8 @@ public:
 //    void refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec);
 
     TerrainWater & getTerrainWater();
+    SoilInfiltration & getSoilInfiltration();
+    SoilHumidity & getSoilHumidity();
 
     bool recalculatingShade();
     bool recalculatingDailyIllumination();
@@ -62,6 +67,8 @@ private:
     TerrainDailyIllumination m_terrain_daily_illumination;
     TerrainTemperature m_terrain_temp;
     TerrainWater m_terrain_water;
+    SoilInfiltration m_soil_infiltration;
+    SoilHumidity m_soil_humidity;
 
     std::atomic<bool> m_recalculating_shade;
     std::atomic<bool> m_recalculating_daily_illumination;

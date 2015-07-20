@@ -80,14 +80,23 @@ private slots:
     void load_terrain_file();
     void refresh_temperature();
     void refresh_water();
+    void reset_soil_infiltration_rate();
+    void reset_edit_actions();
     void refresh_illumination();
     void refresh_shade();
     void reset_overlay();
     void time_controllers_state_changed(bool active);
     void latitude_controllers_state_changed(bool active);
+    void soil_infiltration_controllers_state_changed(bool active);
+    void disable_all_overlay_widget_actions();
+    void soil_infiltration_rate_changed(int);
     void orientation_controllers_state_changed(bool active);
     void enablePositionDependentOverlays(bool enable);
+    void enableAllOverlays(bool enable);
     void refresh_normals();
+    void update_soil_infiltration_rate(const glm::vec3 & intersection_point);
+    void zeroify_soil_infiltration_above_slope(int slope);
+    void reset_water();
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -112,6 +121,8 @@ private:
     bool overlay_temperature();
     bool overlay_min_illumination();
     bool overlay_max_illumination();
+    bool overlay_soil_infiltration();
+    bool edit_infiltration_rate();
     bool fps();
     bool softimage();
 
@@ -153,6 +164,9 @@ private:
     LightingManager m_lighting_manager;
     Grid m_grid;
     SunAsset m_sun;
+
+    GLTerrainRect * m_selection_rect;
+    GLTerrainRect * m_humidity_rect;
 
     const char * m_active_overlay;
 };

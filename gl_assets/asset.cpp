@@ -11,25 +11,10 @@ Asset::~Asset()
 
 }
 
-//void Asset::setMtwMat(glm::mat4x4 mtw_mat)
-//{
-//    m_mtw_mat = mtw_mat;
-//}
-
-//glm::mat4x4 Asset::getMtwMat() const
-//{
-//    return m_mtw_mat;
-//}
-
-//float Asset::getScale() const
-//{
-//    return m_scale;
-//}
-
-//void Asset::setScale(float scale)
-//{
-//    m_scale = scale;
-//}
+void Asset::setColor(glm::vec4 color)
+{
+    m_color = color;
+}
 
 const std::vector<Asset::AssetTransformations> & Asset::getTransformations()
 {

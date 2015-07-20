@@ -8,10 +8,9 @@
 #include "acceleration_structure.h"
 #include "terrain_normals.h"
 #include "drawable_terrain.h"
-
+#include "../gl_core/glm_wrapper.h"
 #include <QOpenGLTexture>
 #include <glm/common.hpp>
-
 
 /****************
  * BASE TERRAIN *
@@ -26,7 +25,7 @@ public:
 /***********
  * TERRAIN *
  ***********/
-class GLSelectionRect;
+class GLTerrainRect;
 class Terrain : public QObject
 {
     Q_OBJECT    
@@ -41,7 +40,6 @@ public:
     int getWidth() const;
     int getDepth() const;
     bool traceRay(const glm::vec3 & start_point, const glm::vec3 & direction, glm::vec3 & intersection_point, bool search_closest = true);
-    void setSelectionRectangle(glm::vec3 min, glm::vec3 max);
     const SphericalAccelerationStructure<Hierarchical>& getSphereAccelerationStructure();
     void loadBaseTerrain();
     void getTerrainDimensions(int & width, int & depth, int & base_height, int & max_height );
@@ -75,7 +73,6 @@ private:
 
     TerragenFile m_terragen_file;
     SphericalAccelerationStructure<Hierarchical> m_sphere_acceleration_structure;
-    GLSelectionRect * m_selection_rectangle;
     DrawableTerrain m_drawable_terrain;
     TerrainNormals m_terrain_normals;
 };
