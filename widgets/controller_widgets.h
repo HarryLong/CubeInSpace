@@ -30,6 +30,7 @@ signals:
     void latitudeControllersStateChanged(bool active);
     void soilInfiltrationControllersStateChanged(bool active);
     void soilInfiltrationZeroOverSlope(int min_slope);
+    void soilInfiltrationFill(int infiltration_rate);
 
     void monthChanged(int month);
     void latitudeChanged(int latitude);
@@ -47,6 +48,7 @@ private slots:
     void emit_month_changed(int month);
     void emit_soil_infiltration_rate_changed(int month);
     void emit_soil_infiltration_zero_over_slope(int min_slope);
+    void emit_soil_infiltration_fill(int infiltration_rate);
 
 private:
     std::vector<QWidget*> m_raw_widgets;

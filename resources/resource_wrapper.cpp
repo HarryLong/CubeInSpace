@@ -326,7 +326,7 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 #pragma omp parallel for
             for(int x = 0; x < terrain_width; x++)
             {
-                int index(z*terrain_depth+x);
+                int index(z*terrain_width+x);
 
                 float altitude( terrain.getAltitude(glm::vec2(x,z)) );
 
@@ -349,12 +349,11 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 #pragma omp parallel for
             for(int x = 0; x < terrain_width; x++)
             {
-                int index(z*terrain_depth+x);
+                int index(z*terrain_width+x);
 
                 float altitude( terrain.getAltitude(glm::vec2(x,z)) );
 
                 float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
-
                 dec_temp_data[index] = (GLbyte) std::min(50.0f,std::max(-50.0f, temp));
             }
         }

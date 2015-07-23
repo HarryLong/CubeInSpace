@@ -48,6 +48,7 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
     {
         connect(m_soil_infiltration_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_soil_infiltration_rate_changed(int)));
         connect(m_soil_infiltration_shortcut_widget, SIGNAL(soilInfiltrationZeroOverSlope(int)), this, SLOT(emit_soil_infiltration_zero_over_slope(int)));
+        connect(m_soil_infiltration_shortcut_widget, SIGNAL(fill(int)), this, SLOT(emit_soil_infiltration_fill(int)));
 
         m_raw_widgets.push_back(m_soil_infiltration_widget);
         m_raw_widgets.push_back(m_soil_infiltration_shortcut_widget);
@@ -139,7 +140,7 @@ void OverlayWidgets::trigger_soil_infiltration_controllers(bool show)
     else
     {
         m_soil_infiltration_widget->hide();
-        m_soil_infiltration_shortcut_widget->show();
+        m_soil_infiltration_shortcut_widget->hide();
     }
 
     emit soilInfiltrationControllersStateChanged(show);
@@ -178,3 +179,9 @@ void OverlayWidgets::emit_soil_infiltration_zero_over_slope(int min_slope)
 {
     emit soilInfiltrationZeroOverSlope(min_slope);
 }
+
+void OverlayWidgets::emit_soil_infiltration_fill(int infiltration_rate)
+{
+    emit soilInfiltrationFill(infiltration_rate);
+}
+

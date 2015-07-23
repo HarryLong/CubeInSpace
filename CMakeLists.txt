@@ -45,7 +45,7 @@ SET(WIDGETS_SOURCE_FILES widgets/progress_bar_widget widgets/controller_widgets 
     widgets/soil_infiltration_shortcuts_widget )
 SET(GL_ASSETS_SOURCE_FILES gl_assets/asset gl_assets/grid gl_assets/rays gl_assets/shape_factory gl_assets/sun_asset)
 SET(GL_CORE_SOURCE_FILES gl_core/camera gl_core/gl_drawable gl_core/glheader gl_core/renderer gl_core/transform gl_core/glm_wrapper gl_core/glwidget)
-SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/counter_texture)
+SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/counter_texture gl_texture/overlay_texture)
 
 SET(SOURCE_FILES
 ${RESOURCES_SOURCE_FILES}

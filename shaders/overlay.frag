@@ -65,7 +65,7 @@ vec4 daily_illumination_to_output_color(in float daily_illumination)
 
 vec4 soil_infiltration_rate_to_output_color(in float soil_infiltration_rate)
 {
-    float intensity = soil_infiltration_rate/500.0; // 500 is the max
+    float intensity = soil_infiltration_rate/50.0; // 500 is the max
     return vec4(0,0,intensity,.7);
 }
 

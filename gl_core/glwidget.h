@@ -23,6 +23,7 @@
 #include "../gl_assets/sun_asset.h"
 #include "../lighting/lighting_manager.h"
 #include "../actions.h"
+#include "../gl_texture/overlay_texture.h"
 
 class QProgressDialog;
 class QMouseEvent;
@@ -96,7 +97,9 @@ private slots:
     void refresh_normals();
     void update_soil_infiltration_rate(const glm::vec3 & intersection_point);
     void zeroify_soil_infiltration_above_slope(int slope);
+    void fill_infiltration_rate(int infiltration_rate);
     void reset_water();
+    void format_overlay_texture();
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -167,6 +170,7 @@ private:
 
     GLTerrainRect * m_selection_rect;
     GLTerrainRect * m_humidity_rect;
+    OverlayTexture m_overlay_texture;
 
     const char * m_active_overlay;
 };

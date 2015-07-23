@@ -62,7 +62,7 @@ void main()
     {
         world_space_pos.y += mm_to_meters(water_height);
     }
-    world_space_pos.y += .5; // Add one for the overlays
+    world_space_pos.y += 1; // Add one for the overlays
 
     gl_Position = transform.projMat * transform.viewMat * vec4(world_space_pos, 1.0);
 
@@ -74,7 +74,7 @@ void main()
     }
     else if(overlay.altitude)
     {
-        altitude = ((world_space_pos.y-.5)-base_height)/(max_height-base_height);
+        altitude = ((world_space_pos.y-1)-base_height)/(max_height-base_height);
     }
     else if(overlay.temperature)
     {

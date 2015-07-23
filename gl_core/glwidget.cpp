@@ -131,6 +131,7 @@ void GLWidget::establish_connections()
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(refresh_water()));
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(reset_soil_infiltration_rate()));
     connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), &m_resources, SLOT(terrainChanged()));
+    connect(&m_terrain, SIGNAL(terrainDimensionsChanged(int,int,int,int)), this, SLOT(format_overlay_texture()));
 
     // CAMERA ORIENTATION CHANGE
     connect(&m_camera, SIGNAL(cameraDirectionChanged(float,float,float)), &m_orientation_widget, SLOT(setCameraDirection(float,float,float)));
@@ -176,8 +177,9 @@ void GLWidget::establish_connections()
     // TIME CHANGE
     connect(&m_overlay_widgets, SIGNAL(timeChanged(int)), &m_lighting_manager, SLOT(setTime(int)));
 
-    // SOIL INFILTRATION SHORTCUT
+    // SOIL INFILTRATION SHORTCUTS
     connect(&m_overlay_widgets, SIGNAL(soilInfiltrationZeroOverSlope(int)), this, SLOT(zeroify_soil_infiltration_above_slope(int)));
+    connect(&m_overlay_widgets, SIGNAL(soilInfiltrationFill(int)), this, SLOT(fill_infiltration_rate(int)));
 
     // ORIENTATION CHANGE
     connect(&m_orientation_widget, SIGNAL(northOrientationChanged(float,float,float)), &m_lighting_manager, SLOT(setNorthOrientation(float,float,float)));
@@ -265,6 +267,16 @@ void GLWidget::paintGL() // Override
         balance_water();
     }
 
+    // Update the overlay texture
+    if(!overlay_none())
+    {
+        m_renderer.createOverlayTexture(m_overlay_texture.textureId(),
+                                        m_terrain,
+                                        m_resources,
+                                        m_active_overlay,
+                                        month());
+    }
+
     // Draw the grid
     if(render_grid())
     {
@@ -276,13 +288,8 @@ void GLWidget::paintGL() // Override
     if(render_terrain())
     {
         // TERRAIN
-        m_renderer.renderTerrain(m_terrain, m_resources.getTerrainWater()[month()], transform, m_lighting_manager.getSunlightProperties());
-
-        // OVERLAY
-        if(!overlay_none())
-        {
-            m_renderer.renderOverlay(m_terrain, m_resources, transform, m_active_overlay, month());
-        }
+        m_renderer.renderTerrain(m_terrain, m_resources.getTerrainWater()[month()], transform, m_lighting_manager.getSunlightProperties(),
+                m_overlay_texture.textureId(), !overlay_none());
 
         // TERRAIN ELEMENTS
         std::vector<Asset*> terrain_elements_to_render;
@@ -974,6 +981,33 @@ void GLWidget::zeroify_soil_infiltration_above_slope(int min_slope)
     m_renderer.slopeBasedInfiltrationRateFilter(m_terrain, m_resources.getSoilInfiltration().textureId(), min_slope);
 }
 
+void GLWidget::fill_infiltration_rate(int infiltration_rate)
+{
+    qCritical() << "Infiltration rate:" << infiltration_rate;
+    int sz(m_terrain.getWidth() * m_terrain.getDepth() * sizeof(GLuint));
+    GLuint * data = (GLuint*) malloc(sz);
+
+    if(infiltration_rate == 0) // Optimization
+    {
+        std::memset(data, 0, sz);
+    }
+    else
+    {
+#pragma omp parallel for
+        for(int x = 0; x < m_terrain.getWidth(); x++)
+        {
+#pragma omp parallel for
+            for(int z = 0; z < m_terrain.getDepth(); z++)
+            {
+                data[x*m_terrain.getWidth()+z] = infiltration_rate;
+            }
+        }
+    }
+    makeCurrent();
+    m_resources.getSoilInfiltration().setData(data, m_terrain.getWidth(), m_terrain.getDepth());
+    m_resources.getSoilInfiltration().pushToGPU();
+}
+
 void GLWidget::soil_infiltration_rate_changed(int infiltration_rate)
 {
     glm::vec4 rect_color(0, 0, infiltration_rate/SoilInfiltrationControllerWidget::_MAX_INFILTRATION_RATE, .5);
@@ -1001,6 +1035,17 @@ void GLWidget::reset_edit_actions()
     m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
+}
+
+void GLWidget::format_overlay_texture()
+{
+    int sz(m_terrain.getWidth()*m_terrain.getDepth()*sizeof(GLuint));
+    GLfloat * data = (GLfloat*) std::malloc(sz);
+    std::memset(data,0,sz);
+
+    makeCurrent();
+    m_overlay_texture.setData(data, m_terrain.getWidth(), m_terrain.getDepth());
+    m_overlay_texture.pushToGPU();
 }
 
 bool GLWidget::render_rays()

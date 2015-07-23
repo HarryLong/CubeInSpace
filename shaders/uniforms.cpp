@@ -28,6 +28,8 @@ const char * Uniforms::Texture::_MAX_DAILY_ILLUMINATION = "max_daily_illuminatio
 const char * Uniforms::Texture::_SOIL_INFILTRATION_RATE = "soil_infiltration_rate_texture";
 
 // OVERLAY
+const char * Uniforms::Overlay::_ACTIVE = "overlay_active";
+const char * Uniforms::Overlay::_TEXTURE = "overlay_texture";
 const char * Uniforms::Overlay::_NONE = "overlay.none";
 const char * Uniforms::Overlay::_SLOPE = "overlay.slope";
 const char * Uniforms::Overlay::_ALTITUDE = "overlay.altitude";
@@ -57,4 +59,4 @@ const char * Uniforms::Rainfall::_RAINFALL = "rainfall";
 const char * Uniforms::Rainfall::_INTENSITY = "rainfall_intensity";
 
 // SLOPE BASED SOIL INFILTRATION
-const char * Uniforms::SlopeBasedSoilInfiltration::_MIN_SLOPE;
+const char * Uniforms::SlopeBasedSoilInfiltration::_MIN_SLOPE = "min_slope";

@@ -15,6 +15,7 @@ uniform Transformation transform;
 
 uniform sampler2D terrain_height_map_texture;
 uniform usampler2D water_heightmap;
+uniform sampler2D overlay_texture;
 uniform sampler2D normals_texture;
 
 //colours and material
@@ -27,12 +28,14 @@ uniform vec4 light_diffuse_color;
 uniform vec4 light_ambient_color;
 
 uniform float base_height;
+uniform bool overlay_active;
 
 out vec3 camera_space_normal; // vertex normal
 out vec3 light_direction; // toLight
 out vec3 half_vector;
 out vec4 diffuse;
 out vec4 ambient;
+out vec4 overlay_color;
 
 out vec3 world_space_pos;
 
@@ -79,6 +82,11 @@ void main()
     {
         light_direction = vec3(0,0,0);
         half_vector = vec3(0,0,0);
+    }
+
+    if(overlay_active)
+    {
+        overlay_color = texture(overlay_texture, textureCoord).rgba;
     }
 }
 

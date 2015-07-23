@@ -14,5 +14,6 @@
         <file>water_heightmap_comparator.comp</file>
         <file>soil_humidity_calculator.comp</file>
         <file>slope_based_soil_infiltration.comp</file>
+        <file>overlay_texture_creator.comp</file>
     </qresource>
 </RCC>

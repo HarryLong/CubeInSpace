@@ -19,6 +19,7 @@ public:
     WaterComparatorShader m_water_comparator;
     SoilHumidityCalculatorShader m_soil_humidity_calculator;
     SlopeBasedSoilInfiltrationShader m_slope_based_soil_infiltration_calculator;
+    OverlayTextureCreatorShader m_overlay_texture_creator;
 };
 
 #endif // SHADERS_H

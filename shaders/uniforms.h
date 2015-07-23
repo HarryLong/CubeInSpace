@@ -35,6 +35,8 @@ public:
     };
 
     struct Overlay{
+        static const char * _ACTIVE;
+        static const char * _TEXTURE;
         static const char * _NONE;
         static const char * _SLOPE;
         static const char * _ALTITUDE;

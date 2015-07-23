@@ -14,8 +14,11 @@ in vec4 diffuse;
 in vec4 ambient;
 
 in vec3 world_space_pos;
+in vec4 overlay_color;
 
 out vec4 outputColor;
+
+uniform bool overlay_active;
 
 void main()
 {
@@ -31,11 +34,13 @@ void main()
             outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
         }
 
+        if(overlay_active)
+            outputColor = mix(outputColor, overlay_color, 0.8);
+
         // Contour lines
         float f  = abs(fract (world_space_pos.y * 0.5) - 0.5);
         float df = fwidth(world_space_pos.y * 0.5);
         float g = smoothstep(-1.0*df, 1.0*df , f);
-
         float c = g;
         outputColor = vec4(c,c,c,1.0) * outputColor;
     }

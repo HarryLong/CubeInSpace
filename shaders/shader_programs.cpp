@@ -179,3 +179,20 @@ SlopeBasedSoilInfiltrationShader::~SlopeBasedSoilInfiltrationShader()
 {
 
 }
+
+/**********************************
+ * OVERLAY TEXTURE CREATOR SHADER *
+ **********************************/
+const int OverlayTextureCreatorShader::_GROUP_SIZE_X = 32;
+const int OverlayTextureCreatorShader::_GROUP_SIZE_Y = 32;
+const int OverlayTextureCreatorShader::_GROUP_SIZE_Z = 1;
+OverlayTextureCreatorShader::OverlayTextureCreatorShader() : ComputeShaderProgram(":/overlay_texture_creator.comp")
+{
+
+}
+
+OverlayTextureCreatorShader::~OverlayTextureCreatorShader()
+{
+
+}
+

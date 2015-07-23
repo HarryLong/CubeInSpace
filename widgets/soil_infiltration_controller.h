@@ -22,6 +22,7 @@ public:
     int getInfiltration() const;
 
     static const float _MAX_INFILTRATION_RATE;
+    static const float _MIN_INFILTRATION_RATE;
 
 protected slots:
     virtual void refresh_label(int value);

@@ -50,7 +50,7 @@ void TerrainTemperature::pushToGPU()
 }
 
 TerrainTemperatureTexture::TerrainTemperatureTexture() :
-    TextureElement<GLbyte>(QOpenGLTexture::TextureFormat::RG8_SNorm, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Int8)
+    TextureElement<GLbyte>(QOpenGLTexture::TextureFormat::R8_SNorm, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Int8)
 {
 
 }

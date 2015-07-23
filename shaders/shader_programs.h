@@ -144,6 +144,20 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
+/**********************************
+ * OVERLAY TEXTURE CREATOR SHADER *
+ **********************************/
+class OverlayTextureCreatorShader : public ComputeShaderProgram
+{
+public:
+    OverlayTextureCreatorShader();
+    ~OverlayTextureCreatorShader();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
 
 
 #endif //SHADER_PROGRAMS
