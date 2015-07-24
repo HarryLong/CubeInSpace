@@ -64,6 +64,12 @@ void TerrainWaterHeightmap::perform_balancing_check()
     }
 }
 
+void TerrainWaterHeightmap::setHeight(const glm::vec2 point, GLuint height)
+{
+    int index(point[1]*m_width+point[0]);
+    m_raw_data[index] = height;
+}
+
 /*****************
  * TERRAIN WATER *
  *****************/

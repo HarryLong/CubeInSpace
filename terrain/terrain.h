@@ -50,6 +50,7 @@ public:
     float getHeight(const glm::vec2 & point) const;
     float getAltitude(const glm::vec2 & point) const;
     float getSlope(const glm::vec2 & point) const;
+    float getScale() const;
 
     const TerragenFile & getHeightMap();
 

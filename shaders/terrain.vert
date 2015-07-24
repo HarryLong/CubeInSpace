@@ -29,6 +29,7 @@ uniform vec4 light_ambient_color;
 
 uniform float base_height;
 uniform bool overlay_active;
+uniform float terrain_scale;
 
 out vec3 camera_space_normal; // vertex normal
 out vec3 light_direction; // toLight
@@ -39,9 +40,9 @@ out vec4 overlay_color;
 
 out vec3 world_space_pos;
 
-float mm_to_meters(in uint mm)
+float to_terrain_scale(in uint mm)
 {
-    return float(mm)/1000;
+    return float(mm)/(1000*terrain_scale);
 }
 
 void main()
@@ -51,7 +52,7 @@ void main()
     uint water_height = texture(water_heightmap, textureCoord).r;
     if(water_height > 0)
     {
-        world_space_pos.y += mm_to_meters(water_height);
+        world_space_pos.y += to_terrain_scale(water_height);
     }
 
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);

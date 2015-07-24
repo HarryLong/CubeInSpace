@@ -15,6 +15,7 @@ public:
         static const char * _BASE_HEIGHT;
         static const char * _MATERIAL_AMBIENT;
         static const char * _MATERIAL_DIFFUSE;
+        static const char * _SCALE;
     };
 
     struct Water{

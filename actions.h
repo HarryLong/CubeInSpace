@@ -124,6 +124,7 @@ public:
     const static QString _LATITUDE;
     const static QString _MONTHLY_RAINFALL;
     const static QString _SOIL_INFILTRATION_RATE;
+    const static QString _FLOOD_FILL;
 
     EditActionFamily();
     ~EditActionFamily();

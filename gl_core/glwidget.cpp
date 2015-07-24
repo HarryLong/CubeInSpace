@@ -79,7 +79,8 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
   m_active_overlay(Uniforms::Overlay::_NONE),
   m_orientation_widget(this),
   m_selection_rect(ShapeFactory::getTerrainRectangle()),
-  m_humidity_rect(ShapeFactory::getTerrainRectangle())
+  m_humidity_rect(ShapeFactory::getTerrainRectangle()),
+  m_flood_fill_mode(false)
 {
     m_humidity_rect->resize(5,5); // Temporary
 
@@ -144,6 +145,7 @@ void GLWidget::establish_connections()
     connect(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showSettingsDialog()));
     connect(m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showTempDialog()));
     connect(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showMonthlyRainfallDialog()));
+    connect(m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL], SIGNAL(triggered(bool)), this, SLOT(set_flood_fill_enabled(bool)));
 
     // UPDATE PROGRESS BAR
     connect(&m_resources, SIGNAL(processing(QString)), &m_progress_bar_widget, SLOT(processing(QString)));
@@ -202,7 +204,7 @@ void GLWidget::establish_connections()
     connect(m_fps_callback_timer, SIGNAL(timeout()), this, SLOT(update()));
 
     // WHEN A RESOUCE IS INVALIDATED CHECK REFRESH IT IF NECESSARY
-    connect(&m_resources, SIGNAL(resourceInvalidated()), this, SLOT(overlay_changed()));
+    connect(&m_resources, SIGNAL(resourceInvalidated()), this, SLOT(overlay_changed()));    
 }
 
 void GLWidget::control_changed()
@@ -340,6 +342,11 @@ void GLWidget::focusOutEvent ( QFocusEvent * event )
     releaseKeyboard();
 }
 
+void GLWidget::set_flood_fill_enabled(bool enabled)
+{
+    m_flood_fill_mode = enabled;
+}
+
 void GLWidget::normalizeScreenCoordinates(float & p_x, float & p_y)
 {
     float w = (float) width();
@@ -405,6 +412,15 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             {
                 update_soil_infiltration_rate(intersection_point);
             }
+            else if(m_flood_fill_mode)
+            {
+                glm::vec2 seed_point(intersection_point[0], intersection_point[2]);
+                FloodFillTracker tracker;
+                TerrainWaterHeightmap & water_heightmap(m_resources.getTerrainWater()[month()]);
+                int seed_height(m_terrain.getAltitude(seed_point)*1000); // to mm
+                flood_fill(seed_point, tracker, m_terrain, water_heightmap, seed_height);
+                water_heightmap.pushToGPU();
+            }
             else
             {
                 m_terrain_position_tracker.setStartPosition(intersection_point[0],0,intersection_point[2]);
@@ -468,7 +484,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 m_humidity_rect->setTranformation(glm::translate(glm::mat4x4(), glm::vec3(intersection_point.x, 0, intersection_point.z)));
             }
         }
-        else if(event->buttons() == Qt::LeftButton) // Selection rectangle
+        else if(!m_flood_fill_mode &&  event->buttons() == Qt::LeftButton) // Selection rectangle
         {
             glm::vec3 intersection_point;
             if(get_intersection_point_with_terrain(event->x(), event->y(), intersection_point) ||
@@ -962,7 +978,7 @@ void GLWidget::balance_water(bool one_step)
     if(one_step)
     {
         TerrainWaterHeightmap * to_balance = &(m_resources.getTerrainWater()[month()]);
-        m_renderer.balanceWater(m_padded_terrain, to_balance, one_step);
+        m_renderer.balanceWater(m_padded_terrain, to_balance, m_terrain.getScale(), one_step);
 
         to_balance->syncFromGPU();
     }
@@ -971,7 +987,7 @@ void GLWidget::balance_water(bool one_step)
         std::vector<TerrainWaterHeightmap *> to_balance(m_resources.getTerrainWater().getUnbalanced());
 
         for(TerrainWaterHeightmap * twh : to_balance)
-            m_renderer.balanceWater(m_padded_terrain, twh, one_step);
+            m_renderer.balanceWater(m_padded_terrain, twh, m_terrain.getScale(), one_step);
     }
 }
 
@@ -1012,6 +1028,32 @@ void GLWidget::soil_infiltration_rate_changed(int infiltration_rate)
 {
     glm::vec4 rect_color(0, 0, infiltration_rate/SoilInfiltrationControllerWidget::_MAX_INFILTRATION_RATE, .5);
     m_humidity_rect->setColor(rect_color);
+}
+
+void GLWidget::flood_fill(const glm::vec2 & point, FloodFillTracker & tracker, Terrain & terrain,
+                          TerrainWaterHeightmap & terrain_water, int & seed_height_mm)
+{
+    if(!tracker.tracked(point))
+    {
+        tracker.setTracked(point);
+        int terrain_height(std::round(terrain.getAltitude(point)*1000)); // x 1000 to convert to mm
+        int water_height(terrain_water(point[0], point[1]));
+        int aggregate_height(water_height+terrain_height);
+        if(aggregate_height < seed_height)
+        {
+            terrain_water.setHeight(point, seed_height-terrain_height);
+
+            // Start 8 surrounding points
+            for(int x(std::max(0, point.x-1)); x < std::min(terrain.getWidth(), point.x+1); x++)
+            {
+                for(int y(std::max(0, point.y-1)); x < std::min(terrain.getDepth(), point.y+1); y++)
+                {
+                    glm::vec2 neighbour_point(x,y);
+                    flood_fill(neighbour_point, tracker, terrain, terrain_water, seed_height);
+                }
+            }
+        }
+    }
 }
 
 void GLWidget::clear_rays()

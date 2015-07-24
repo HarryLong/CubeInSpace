@@ -69,6 +69,7 @@ void Renderer::renderTerrain(Terrain & terrain,
     m_shaders.m_terrain.setUniformValue(Uniforms::Transform::_PROJECTION, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._Proj)))); CE();
     m_shaders.m_terrain.setUniformValue(Uniforms::Transform::_VIEW, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
     m_shaders.m_terrain.setUniformValue(Uniforms::Transform::_SCALE, transforms._scale); CE();
+    m_shaders.m_terrain.setUniformValue(Uniforms::Terrain::_SCALE, terrain.getScale()); CE();
 
     // Terrain heightmap texture
     {
@@ -403,6 +404,7 @@ void Renderer::renderAssets(const Transform & transforms,
 
 void Renderer::balanceWater(PaddedTerrain & padded_terrain,
                             TerrainWaterHeightmap * terrain_water,
+                            float terrain_scale,
                             bool one_step)
 {
     if(!terrain_water->isBalancing()) // Already balancing
@@ -446,6 +448,8 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         }
 
         m_shaders.m_water_flux_generator.bind();  CE();
+
+        m_shaders.m_water_flux_generator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);
 
         f->glBindImageTexture(0, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);  CE();
         f->glBindImageTexture(1, padded_terrain.textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();

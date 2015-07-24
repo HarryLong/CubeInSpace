@@ -24,6 +24,7 @@
 #include "../lighting/lighting_manager.h"
 #include "../actions.h"
 #include "../gl_texture/overlay_texture.h"
+#include "../resources/flood_fill_tracker.h"
 
 class QProgressDialog;
 class QMouseEvent;
@@ -100,6 +101,9 @@ private slots:
     void fill_infiltration_rate(int infiltration_rate);
     void reset_water();
     void format_overlay_texture();
+    void set_flood_fill_enabled(bool);
+    void flood_fill(const glm::vec2 & point, FloodFillTracker & tracker, Terrain & terrain,
+                    TerrainWaterHeightmap & terrain_water, int & seed_height_mm);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -156,6 +160,7 @@ private:
 
     bool m_navigation_enabled;
     bool m_authorise_navigation_mode_switch;
+    bool m_flood_fill_mode;
 
     QTimer * m_fps_callback_timer;
 

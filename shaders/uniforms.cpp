@@ -11,6 +11,7 @@ const char * Uniforms::Terrain::_MAX_HEIGHT = "max_height";
 const char * Uniforms::Terrain::_BASE_HEIGHT = "base_height";
 const char * Uniforms::Terrain::_MATERIAL_AMBIENT = "terrain_material_ambient";
 const char * Uniforms::Terrain::_MATERIAL_DIFFUSE = "terrain_material_diffuse";
+const char * Uniforms::Terrain::_SCALE = "terrain_scale";
 
 // WATER
 const char * Uniforms::Water::_MATERIAL_AMBIENT = "water_material_ambient";

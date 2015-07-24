@@ -182,7 +182,8 @@ const QString EditActionFamily::_HUMIDITY = "Humidity";
 const QString EditActionFamily::_TIME = "Time";
 const QString EditActionFamily::_LATITUDE = "Latitude";
 const QString EditActionFamily::_MONTHLY_RAINFALL = "Monthly Rainfall";
-const QString EditActionFamily::_SOIL_INFILTRATION_RATE= "Soil Infiltration Rate";
+const QString EditActionFamily::_SOIL_INFILTRATION_RATE = "Soil Infiltration Rate";
+const QString EditActionFamily::_FLOOD_FILL = "Flood fill";
 EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 {
     init_actions();
@@ -206,4 +207,5 @@ void EditActionFamily::init_actions()
     m_actions[EditActionFamily::_LATITUDE] = new QAction(EditActionFamily::_LATITUDE, NULL);
     m_actions[EditActionFamily::_MONTHLY_RAINFALL] = new QAction(EditActionFamily::_MONTHLY_RAINFALL, NULL);
     m_actions[EditActionFamily::_SOIL_INFILTRATION_RATE] = new QAction(EditActionFamily::_SOIL_INFILTRATION_RATE, NULL);
+    m_actions[EditActionFamily::_FLOOD_FILL] = new QAction(EditActionFamily::_FLOOD_FILL, NULL);
 }

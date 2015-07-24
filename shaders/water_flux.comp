@@ -22,6 +22,8 @@ ivec2 to_global(in ivec2 local_coordinate_to_translate, in ivec2 global_referenc
                  global_reference_cell.y+(local_coordinate_to_translate.y-1));
 }
 
+uniform float terrain_scale;
+
 const int _BORDER_INSERT_ALL_WATER = -1;
 
 void main()
@@ -68,7 +70,7 @@ void main()
                 /******************
                  * TERRAIN HEIGHT *
                  ******************/
-                int terrain_height = meters_to_mm(imageLoad(terrain_heightmap, ivec2(global_x+1, global_y+1)).x); //meters_to_mm(texture(height_map_texture, tmp_terrain_heightmap_idx) * scale);
+                int terrain_height = meters_to_mm(imageLoad(terrain_heightmap, ivec2(global_x+1, global_y+1)).x * terrain_scale); //meters_to_mm(texture(height_map_texture, tmp_terrain_heightmap_idx) * scale);
                 terrain_heights[local_coordinate.x][local_coordinate.y] = terrain_height;
 
                 /****************

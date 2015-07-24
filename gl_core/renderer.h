@@ -44,7 +44,7 @@ public:
                                                int terrain_width,
                                                int terrain_depth);
 
-    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, bool one_step = false);
+    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, float terrain_scale, bool one_step = false);
 
     void slopeBasedInfiltrationRateFilter(Terrain & terrain,
                                               GLuint soil_infiltration_texture_id,
