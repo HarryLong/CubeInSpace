@@ -158,6 +158,32 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
+/*********************************
+ * AGGREGATE HEIGHT WATER SHADER *
+ *********************************/
+class AggregateHeightShader : public ComputeShaderProgram
+{
+public:
+    AggregateHeightShader();
+    ~AggregateHeightShader();
 
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
+/**************************
+ * BORDER OVERLAP REDUCER *
+ **************************/
+class BorderOverlapReducer : public ComputeShaderProgram
+{
+public:
+    BorderOverlapReducer();
+    ~BorderOverlapReducer();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
 
 #endif //SHADER_PROGRAMS

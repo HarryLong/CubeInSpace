@@ -11,7 +11,7 @@ public:
     // Terrain shade functions
     virtual void setData(T * data, int width, int depth);
     virtual void syncFromGPU();
-    virtual void pushToGPU();
+    virtual void pushToGPU(bool force = false);
     virtual T operator()(int x, int z) const;
     const T * getRawData() const;
     bool isValid() const;

@@ -64,9 +64,9 @@ template <class T> void TextureElement<T>::syncFromGPU()
     glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data ); CE();
 }
 
-template <class T> void TextureElement<T>::pushToGPU()
+template <class T> void TextureElement<T>::pushToGPU(bool force)
 {
-    if(m_valid && m_requires_push_to_GPU)
+    if(force || (m_valid && m_requires_push_to_GPU))
     {
         delete_texture(); CE();
 

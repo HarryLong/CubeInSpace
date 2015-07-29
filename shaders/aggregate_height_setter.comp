@@ -1,0 +1,36 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, r32f) uniform coherent image2D water_heightmap;
+layout(binding = 1, r32f) uniform coherent image2D terrain_heightmap;
+
+uniform float absolute_height;
+uniform float terrain_scale;
+
+void main()
+{
+    uvec2 heightmap_size = imageSize(water_heightmap);
+    // WATER HEIGHTMAP IMAGE INDICES
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
+
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+
+    if(valid)
+    {
+        float terrain_height = imageLoad(terrain_heightmap, global_idx).x;
+        float water_height = imageLoad(water_heightmap, global_idx).x;
+
+        if(absolute_height > terrain_height+water_height)
+        {
+            float water_to_add = absolute_height - water_height - terrain_height;
+//            imageAtomicAdd(water_heightmap, global_idx, water_to_add);
+            imageStore(water_heightmap, global_idx, vec4(imageLoad(water_heightmap, global_idx).x + water_to_add,0,0,0));
+        }
+    }
+
+    barrier();
+    memoryBarrierImage();
+}

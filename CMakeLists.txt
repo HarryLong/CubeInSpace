@@ -42,7 +42,7 @@ SET(SHADER_SOURCE_FILES shaders/shader_programs shaders/shaders shaders/uniforms
 SET(TERRAIN_SOURCE_FILES terrain/drawable_terrain terrain/terrain terrain/terrain_normals terrain/acceleration_structure terrain/padded_terrain)
 SET(WIDGETS_SOURCE_FILES widgets/progress_bar_widget widgets/controller_widgets widgets/orientation_widget widgets/base_slider_controller
     widgets/latitude_controller widgets/time_controller widgets/month_controller widgets/soil_infiltration_controller
-    widgets/soil_infiltration_shortcuts_widget )
+    widgets/soil_infiltration_shortcuts_widget widgets/water_shortcuts_controller widgets/shortcut_controller_row)
 SET(GL_ASSETS_SOURCE_FILES gl_assets/asset gl_assets/grid gl_assets/rays gl_assets/shape_factory gl_assets/sun_asset)
 SET(GL_CORE_SOURCE_FILES gl_core/camera gl_core/gl_drawable gl_core/glheader gl_core/renderer gl_core/transform gl_core/glm_wrapper gl_core/glwidget)
 SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/counter_texture gl_texture/overlay_texture)

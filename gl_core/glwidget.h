@@ -99,11 +99,11 @@ private slots:
     void update_soil_infiltration_rate(const glm::vec3 & intersection_point);
     void zeroify_soil_infiltration_above_slope(int slope);
     void fill_infiltration_rate(int infiltration_rate);
+    void set_absolute_aggregate_height(int height);
     void reset_water();
     void format_overlay_texture();
     void set_flood_fill_enabled(bool);
-    void flood_fill(const glm::vec2 & point, FloodFillTracker & tracker, Terrain & terrain,
-                    TerrainWaterHeightmap & terrain_water, int & seed_height_mm);
+    bool flood_fill(const glm::ivec2 & point, TerrainWaterHeightmap & terrain_water, float & seed_height);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -115,6 +115,7 @@ private:
     void update_info_pointer_dlg(const glm::vec2 & screen_pos);
     glm::vec3 to_world(const glm::vec3 & screen_coord);
     int month();
+    void append_surrounding_points(const glm::ivec2 & pos, std::vector<glm::ivec2> & surrounding_points, FloodFillTracker & tracker);
     void balance_water(bool one_step = false);
 
     bool render_rays();
@@ -157,6 +158,7 @@ private:
     std::atomic<float> m_mouse_y;
     std::atomic<bool> m_mouse_tracking_thread_run;
     std::atomic<bool> m_ctrl_pressed;
+    std::atomic<bool> m_render_water;
 
     bool m_navigation_enabled;
     bool m_authorise_navigation_mode_switch;
@@ -172,6 +174,7 @@ private:
     LightingManager m_lighting_manager;
     Grid m_grid;
     SunAsset m_sun;
+    FloodFillTracker m_floodfill_tracker;
 
     GLTerrainRect * m_selection_rect;
     GLTerrainRect * m_humidity_rect;

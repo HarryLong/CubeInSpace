@@ -1,6 +1,8 @@
 #include "flood_fill_tracker.h"
+#include <cstring>
+#include <QDebug>
 
-FloodFillTracker::FloodFillTracker()
+FloodFillTracker::FloodFillTracker() : m_tracker(NULL), m_size_x(0), m_size_y(0)
 {
 
 }
@@ -10,18 +12,31 @@ FloodFillTracker::~FloodFillTracker()
 
 }
 
-bool FloodFillTracker::tracked(const glm::vec2 & point)
+void FloodFillTracker::reset(int size_x, int size_y)
 {
-    auto x_it(find(point.x));
-    if(x_it != end())
+    m_size_x = size_x;
+    m_size_y = size_y;
+    int sz(m_size_x*m_size_y*sizeof(bool));
+    if(m_tracker != NULL)
     {
-        auto y_it(x_it->second.find(point.y));
-        return (y_it != x_it->second.end());
+        free(m_tracker);
     }
-    return false;
+    m_tracker = (bool *) std::malloc(sz);
+
+    std::memset(m_tracker, 0, sz);
 }
 
-bool FloodFillTracker::setTracked(const glm::vec2 & point)
+int FloodFillTracker::get_index(const glm::ivec2 & point)
 {
-    (*this)[point.x][point.y] = 0x01;
+    return (point.y*m_size_x)+point.x;
+}
+
+bool FloodFillTracker::tracked(const glm::ivec2 & point)
+{
+    return m_tracker[get_index(point)];
+}
+
+bool FloodFillTracker::setTracked(const glm::ivec2 & point)
+{
+    m_tracker[get_index(point)] = true;
 }

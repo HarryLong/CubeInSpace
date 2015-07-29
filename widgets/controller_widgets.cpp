@@ -4,6 +4,7 @@
 #include "soil_infiltration_controller.h"
 #include "soil_infiltration_shortcuts_widget.h"
 #include "time_controller.h"
+#include "water_shortcuts_controller.h"
 #include <QBoxLayout>
 #include <QDebug>
 #include <QPainter>
@@ -17,7 +18,8 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
     m_month_widget(new MonthControllerWidget(Qt::AlignLeft, parent)),
     m_latitude_widget(new LatitudeControllerWidget(Qt::AlignRight, parent)),
     m_soil_infiltration_widget(new SoilInfiltrationControllerWidget(Qt::AlignRight, parent)),
-    m_soil_infiltration_shortcut_widget(new SoilInfiltrationShortcutWidget(Qt::AlignLeft, parent))
+    m_soil_infiltration_shortcut_widget(new SoilInfiltrationShortcutWidget(Qt::AlignLeft, parent)),
+    m_water_shortcut_widget(new WaterShortcutWidget(Qt::AlignLeft, parent))
 {
     m_alignment_sorted_widgets[Qt::AlignTop] = std::vector<QWidget*>();
     m_alignment_sorted_widgets[Qt::AlignRight] = std::vector<QWidget*>();
@@ -55,6 +57,14 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
 
         m_alignment_sorted_widgets[m_soil_infiltration_widget->alignment()].push_back(m_soil_infiltration_widget);
         m_alignment_sorted_widgets[m_soil_infiltration_shortcut_widget->alignment()].push_back(m_soil_infiltration_shortcut_widget);
+    }
+
+    // WATER SHORTCUTS
+    {
+        connect(m_water_shortcut_widget, SIGNAL(absoluteHeight(int)), this, SLOT(emit_absolute_height_changed(int)));
+
+        m_raw_widgets.push_back(m_water_shortcut_widget);
+        m_alignment_sorted_widgets[m_water_shortcut_widget->alignment()].push_back(m_water_shortcut_widget);
     }
 
     hideAll();
@@ -146,6 +156,21 @@ void OverlayWidgets::trigger_soil_infiltration_controllers(bool show)
     emit soilInfiltrationControllersStateChanged(show);
 }
 
+void OverlayWidgets::trigger_water_controllers(bool show)
+{
+    hideAll();
+    if(show)
+    {
+        m_water_shortcut_widget->show();
+    }
+    else
+    {
+        m_water_shortcut_widget->hide();
+    }
+
+    emit waterControllersStateChanged(show);
+}
+
 void OverlayWidgets::resize(int container_width, int container_height)
 {
     for(QWidget * w : m_alignment_sorted_widgets[Qt::AlignRight])
@@ -183,5 +208,10 @@ void OverlayWidgets::emit_soil_infiltration_zero_over_slope(int min_slope)
 void OverlayWidgets::emit_soil_infiltration_fill(int infiltration_rate)
 {
     emit soilInfiltrationFill(infiltration_rate);
+}
+
+void OverlayWidgets::emit_absolute_height_changed(int height)
+{
+    emit absoluteHeightChanged(height);
 }
 

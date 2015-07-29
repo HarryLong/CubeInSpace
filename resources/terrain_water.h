@@ -9,7 +9,7 @@
 /***************************
  * TERRAIN WATER HEIGHTMAP *
  ***************************/
-class TerrainWaterHeightmap : public TextureElement<GLuint> // TODO: And GL Drawable to actually draw the water bruuuu
+class TerrainWaterHeightmap : public TextureElement<GLfloat> // TODO: And GL Drawable to actually draw the water bruuuu
 {
 public:
     TerrainWaterHeightmap();
@@ -20,7 +20,7 @@ public:
     bool isBalancing();
     void setBalancing(bool balancing);
     void setBalanced(bool balanced);
-    void setHeight(const glm::vec2 point, GLuint height);
+    void setHeight(const glm::ivec2 point, GLfloat height);
 
 private:
     void perform_balancing_check();
@@ -47,7 +47,7 @@ public:
     bool balanced();
     void bind(int);
     TerrainWaterHeightmap& operator[](int);
-    void setData(GLuint * data[12], int width, int height);
+    void setData(GLfloat * data[12], int width, int height);
     std::vector<TerrainWaterHeightmap*> getUnbalanced();
     void pushToGPU();
     void reset(int width, int height);

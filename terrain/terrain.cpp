@@ -127,9 +127,19 @@ float Terrain::getHeight(const glm::vec2 & point) const
     return m_terragen_file(point[0], point[1]);
 }
 
+float Terrain::getHeight(const glm::ivec2 & point) const
+{
+    return m_terragen_file(point[0], point[1]);
+}
+
 float Terrain::getAltitude(const glm::vec2 & point) const
 {
-    return getHeight(point) * m_terragen_file.m_header_data.scale;
+    return getHeight(point) * getScale();
+}
+
+float Terrain::getAltitude(const glm::ivec2 & point) const
+{
+    return getHeight(point) * getScale();
 }
 
 float Terrain::getScale() const

@@ -24,4 +24,6 @@ void Shaders::compileAndLink()
     m_soil_humidity_calculator.compileAndLink();
     m_slope_based_soil_infiltration_calculator.compileAndLink();
     m_overlay_texture_creator.compileAndLink();
+    m_aggregate_height.compileAndLink();
+    m_border_overlap_reducer.compileAndLink();
 }

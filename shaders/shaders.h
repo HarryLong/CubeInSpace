@@ -20,6 +20,8 @@ public:
     SoilHumidityCalculatorShader m_soil_humidity_calculator;
     SlopeBasedSoilInfiltrationShader m_slope_based_soil_infiltration_calculator;
     OverlayTextureCreatorShader m_overlay_texture_creator;
+    AggregateHeightShader m_aggregate_height;
+    BorderOverlapReducer m_border_overlap_reducer;
 };
 
 #endif // SHADERS_H

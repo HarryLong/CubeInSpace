@@ -16,6 +16,7 @@ const char * Uniforms::Terrain::_SCALE = "terrain_scale";
 // WATER
 const char * Uniforms::Water::_MATERIAL_AMBIENT = "water_material_ambient";
 const char * Uniforms::Water::_MATERIAL_DIFFUSE = "water_material_diffuse";
+const char * Uniforms::Water::_RENDER = "render_water";
 
 // TEXTURE
 const char * Uniforms::Texture::_TERRAIN_HEIGHTMAP = "terrain_height_map_texture";
@@ -61,3 +62,10 @@ const char * Uniforms::Rainfall::_INTENSITY = "rainfall_intensity";
 
 // SLOPE BASED SOIL INFILTRATION
 const char * Uniforms::SlopeBasedSoilInfiltration::_MIN_SLOPE = "min_slope";
+
+// WATER EDIT
+const char * Uniforms::WaterEdit::_ABSOLUTE_HEIGHT = "absolute_height";
+
+// BORDER OVERLAP REDUCTION
+const char * Uniforms::BorderOverlapReduction::_OVERLAP_MODE = "overlap_mode";
+

@@ -56,11 +56,12 @@ void Renderer::calculateNormals(Terrain & terrain)
 
 void Renderer::renderTerrain(Terrain & terrain,
                              TerrainWaterHeightmap & water_heightmap,
+                             bool render_water,
                              const Transform & transforms,
                              const LightProperties & sunlight_properties,
                              GLuint overlay_texture_id,
                              bool overlay_active)
-{
+{    
     int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -70,6 +71,7 @@ void Renderer::renderTerrain(Terrain & terrain,
     m_shaders.m_terrain.setUniformValue(Uniforms::Transform::_VIEW, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
     m_shaders.m_terrain.setUniformValue(Uniforms::Transform::_SCALE, transforms._scale); CE();
     m_shaders.m_terrain.setUniformValue(Uniforms::Terrain::_SCALE, terrain.getScale()); CE();
+    m_shaders.m_terrain.setUniformValue(Uniforms::Water::_RENDER, render_water); CE();
 
     // Terrain heightmap texture
     {
@@ -79,6 +81,7 @@ void Renderer::renderTerrain(Terrain & terrain,
         texture_unit++;
     }
     // Water heightmap texture
+    if(render_water)
     {
         // Water heightmap
         f->glActiveTexture(texture_unit); CE();
@@ -136,7 +139,7 @@ void Renderer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
 
     m_shaders.m_overlay_texture_creator.bind();
     reset_overlays(m_shaders.m_overlay_texture_creator);
-    m_shaders.m_overlay.setUniformValue(active_overlay, true); CE();
+    m_shaders.m_overlay_texture_creator.setUniformValue(active_overlay, true); CE();
 
     // Month
     m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Timing::_MONTH, month); CE();
@@ -346,7 +349,7 @@ void Renderer::renderTerrainElements(Terrain & terrain,
     }
 
     // Heightmap base height
-    m_shaders.m_overlay.setUniformValue(Uniforms::Terrain::_BASE_HEIGHT, (GLfloat)(terrain.getBaseHeight())); CE();
+    m_shaders.m_terrain_elements.setUniformValue(Uniforms::Terrain::_BASE_HEIGHT, (GLfloat)(terrain.getBaseHeight())); CE();
 
     // Draw all the assets
     for(Asset * asset : p_assets)
@@ -427,10 +430,36 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
                                                     WaterFluxGeneratorShader::_GROUP_SIZE_Y,
                                                     WaterFluxGeneratorShader::_GROUP_SIZE_Z));
 
+        // Setup overlapping heightmaps
+        {
+            int width (terrain_water->width());
+            int height (group_count.y*2);
+            int sz(width*height*sizeof(GLfloat));
+            GLfloat * data = (GLfloat*) std::malloc(sz);
+            m_horizontal_overlaps.setData(data, width, height);
+            m_horizontal_overlaps.pushToGPU();
+        }
+        {
+            int width (group_count.x*2);
+            int height (terrain_water->height());
+            int sz(width*height*sizeof(GLfloat));
+            GLfloat * data = (GLfloat*) std::malloc(sz);
+            m_vertical_overlaps.setData(data, width, height);
+            m_vertical_overlaps.pushToGPU();
+        }
+        {
+            int width (group_count.x*2);
+            int height (group_count.y*2);
+            int sz(width*height*sizeof(GLfloat));
+            GLfloat * data = (GLfloat*) std::malloc(sz);
+            m_corner_overlaps.setData(data, width, height);
+            m_corner_overlaps.pushToGPU();
+        }
+
         // First set the cache terrain water to the current data
         {
-            int sz(sizeof(GLuint) * terrain_width * terrain_depth);
-            GLuint * cached_terrain_water = (GLuint*) std::malloc(sz);
+            int sz(sizeof(GLfloat) * terrain_width * terrain_depth);
+            GLfloat * cached_terrain_water = (GLfloat*) std::malloc(sz);
             std::memcpy(cached_terrain_water, terrain_water->getRawData(), sz);
 
             m_terrain_water_cache.setData(cached_terrain_water, terrain_width, terrain_depth);
@@ -451,12 +480,61 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
 
         m_shaders.m_water_flux_generator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);
 
-        f->glBindImageTexture(0, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);  CE();
+        f->glBindImageTexture(0, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
         f->glBindImageTexture(1, padded_terrain.textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
+        f->glBindImageTexture(2, m_horizontal_overlaps.textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE();
+        f->glBindImageTexture(3, m_vertical_overlaps.textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE();
+        f->glBindImageTexture(4, m_corner_overlaps.textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE();
+
         f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
         f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
 
         m_shaders.m_water_flux_generator.release();
+
+        /********************
+         * BORDER REDUCTION *
+         ********************/
+        m_shaders.m_border_overlap_reducer.bind();
+
+        f->glBindImageTexture(0, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+
+        // VERTICAL
+        {
+            m_shaders.m_border_overlap_reducer.setUniformValue(Uniforms::BorderOverlapReduction::_OVERLAP_MODE, 0);
+            group_count = calculateGroupCount(m_vertical_overlaps.width(), m_vertical_overlaps.height(), 1,
+                                                BorderOverlapReducer::_GROUP_SIZE_X,
+                                                BorderOverlapReducer::_GROUP_SIZE_Y,
+                                                BorderOverlapReducer::_GROUP_SIZE_Z);
+            f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+            f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
+            f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+        }
+
+        // HORIZONTAL
+        {
+            m_shaders.m_border_overlap_reducer.setUniformValue(Uniforms::BorderOverlapReduction::_OVERLAP_MODE, 1);
+            group_count = calculateGroupCount(m_horizontal_overlaps.width(), m_horizontal_overlaps.height(), 1,
+                                                BorderOverlapReducer::_GROUP_SIZE_X,
+                                                BorderOverlapReducer::_GROUP_SIZE_Y,
+                                                BorderOverlapReducer::_GROUP_SIZE_Z);
+            f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+            f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
+            f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+        }
+
+        // CORNERS
+        {
+            m_shaders.m_border_overlap_reducer.setUniformValue(Uniforms::BorderOverlapReduction::_OVERLAP_MODE, 2);
+            group_count = calculateGroupCount(m_corner_overlaps.width(), m_corner_overlaps.height(), 1,
+                                                BorderOverlapReducer::_GROUP_SIZE_X,
+                                                BorderOverlapReducer::_GROUP_SIZE_Y,
+                                                BorderOverlapReducer::_GROUP_SIZE_Z);
+            f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+            f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
+            f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+        }
+
+        m_shaders.m_border_overlap_reducer.release();
 
         /*****************
          * BALANCE CHECK *
@@ -466,8 +544,8 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
                                             WaterComparatorShader::_GROUP_SIZE_Y,
                                             WaterComparatorShader::_GROUP_SIZE_Z);
         m_shaders.m_water_comparator.bind();
-        f->glBindImageTexture(0, m_terrain_water_cache.textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
-        f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
+        f->glBindImageTexture(0, m_terrain_water_cache.textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
+        f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
         f->glBindImageTexture(2, m_water_comparator_counter.textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
 
         f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
@@ -498,7 +576,8 @@ void Renderer::calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_te
                                                      int rainfall,
                                                      int rainfall_intensity,
                                                      int terrain_width,
-                                                     int terrain_depth)
+                                                     int terrain_depth,
+                                                     float terrain_scale)
 {
     QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
     if(!f)
@@ -514,10 +593,11 @@ void Renderer::calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_te
 
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Rainfall::_RAINFALL, rainfall);
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Rainfall::_INTENSITY, rainfall_intensity);
+    m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);
 
     f->glBindImageTexture(0, soil_infiltration_texture_id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
     f->glBindImageTexture(1, resulting_soil_humidity_texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
-    f->glBindImageTexture(2, resulting_standing_water_texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
+    f->glBindImageTexture(2, resulting_standing_water_texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE();
 
     f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
     f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
@@ -553,6 +633,35 @@ void Renderer::slopeBasedInfiltrationRateFilter(Terrain & terrain,
     f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
 
      m_shaders.m_slope_based_soil_infiltration_calculator.release();
+}
+
+
+void Renderer::setAbsoluteAggregateHeight(Terrain & terrain,
+                                TerrainWaterHeightmap & terrain_water,
+                                float height)
+{
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
+    glm::uvec3 group_count (calculateGroupCount(terrain.getWidth(), terrain.getDepth(), 1,
+                                                AggregateHeightShader::_GROUP_SIZE_X,
+                                                AggregateHeightShader::_GROUP_SIZE_Y,
+                                                AggregateHeightShader::_GROUP_SIZE_Z));
+
+    m_shaders.m_aggregate_height.bind();CE();
+
+    m_shaders.m_aggregate_height.setUniformValue(Uniforms::WaterEdit::_ABSOLUTE_HEIGHT, height);CE();
+    m_shaders.m_aggregate_height.setUniformValue(Uniforms::Terrain::_SCALE, terrain.getScale());CE();
+
+    f->glBindImageTexture(0, terrain_water.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+    f->glBindImageTexture(1, terrain.getDrawableTerrain().textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
+
+    f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
+    f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+
+    m_shaders.m_aggregate_height.release();
 }
 
 glm::uvec3 Renderer::calculateGroupCount(int n_threads_x, int n_threads_y, int n_threads_z,

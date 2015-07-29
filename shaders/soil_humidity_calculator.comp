@@ -4,10 +4,11 @@ layout (local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, r32ui) uniform coherent uimage2D soil_infiltrations;
 layout(binding = 1, r32ui) uniform coherent uimage2D resulting_soil_humidity;
-layout(binding = 2, r32ui) uniform coherent uimage2D resulting_standing_water;
+layout(binding = 2, r32f) uniform coherent image2D resulting_standing_water;
 
 uniform int rainfall;
 uniform int rainfall_intensity;
+uniform float terrain_scale;
 
 void main()
 {
@@ -16,7 +17,7 @@ void main()
     global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
     global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
 
-    uvec2 heightmap_size = imageSize(soil_infiltrations);
+    uvec2 heightmap_size = imageSize(resulting_soil_humidity);
     // WATER HEIGHTMAP IMAGE INDICES
     bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
     if(valid)
@@ -30,9 +31,10 @@ void main()
 
         // Standing water allocation
         int standing_water = rainfall - soil_humidity;
+        float f_standing_water = float(standing_water)/(1000.0*terrain_scale);
 
         imageStore(resulting_soil_humidity, global_idx, uvec4(soil_humidity,0,0,0));
-        imageStore(resulting_standing_water, global_idx, uvec4(standing_water,0,0,0));
+        imageStore(resulting_standing_water, global_idx, vec4(f_standing_water,0,0,0));
     }
 
     memoryBarrierImage();

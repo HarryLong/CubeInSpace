@@ -7,6 +7,7 @@
 
 class BaseSliderControllerWidget;
 class SoilInfiltrationShortcutWidget;
+class WaterShortcutWidget;
 /******************************
  * CONTROLLER WIDGETS WRAPPER *
  ******************************/
@@ -29,8 +30,11 @@ signals:
     void timeControllersStateChanged(bool active);
     void latitudeControllersStateChanged(bool active);
     void soilInfiltrationControllersStateChanged(bool active);
+    void waterControllersStateChanged(bool active);
+
     void soilInfiltrationZeroOverSlope(int min_slope);
     void soilInfiltrationFill(int infiltration_rate);
+    void absoluteHeightChanged(int absoluteHeight);
 
     void monthChanged(int month);
     void latitudeChanged(int latitude);
@@ -41,6 +45,7 @@ public slots:
     void trigger_time_controllers(bool show_widget);
     void trigger_latitude_controllers(bool show_widget);
     void trigger_soil_infiltration_controllers(bool show_widget);
+    void trigger_water_controllers(bool show_widget);
 
 private slots:
     void emit_latitude_changed(int latitude);
@@ -49,6 +54,7 @@ private slots:
     void emit_soil_infiltration_rate_changed(int month);
     void emit_soil_infiltration_zero_over_slope(int min_slope);
     void emit_soil_infiltration_fill(int infiltration_rate);
+    void emit_absolute_height_changed(int infiltration_rate);
 
 private:
     std::vector<QWidget*> m_raw_widgets;
@@ -59,6 +65,7 @@ private:
     BaseSliderControllerWidget * m_latitude_widget;
     BaseSliderControllerWidget * m_soil_infiltration_widget;
     SoilInfiltrationShortcutWidget * m_soil_infiltration_shortcut_widget;
+    WaterShortcutWidget * m_water_shortcut_widget;
 };
 
 

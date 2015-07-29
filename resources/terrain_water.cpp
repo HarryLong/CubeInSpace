@@ -5,7 +5,7 @@
  * TERRAIN WATER HEIGHTMAP *
  ***************************/
 TerrainWaterHeightmap::TerrainWaterHeightmap() :
-    TextureElement<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32),
+    TextureElement<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32),
     m_balanced(true), m_balancing(false), m_balancing_iterations(0)
 {
 
@@ -64,9 +64,10 @@ void TerrainWaterHeightmap::perform_balancing_check()
     }
 }
 
-void TerrainWaterHeightmap::setHeight(const glm::vec2 point, GLuint height)
+void TerrainWaterHeightmap::setHeight(const glm::ivec2 point, GLfloat height)
 {
-    int index(point[1]*m_width+point[0]);
+    glm::ivec2 p = glm::ivec2(point.x, point.y);
+    int index(p.y*m_width+p.x);
     m_raw_data[index] = height;
 }
 
@@ -85,12 +86,13 @@ TerrainWater::~TerrainWater()
 {
 
 }
+
 TerrainWaterHeightmap& TerrainWater::operator[](int month)
 {
     return m_terrain_water[month-1];
 }
 
-void TerrainWater::setData(GLuint * data[12], int width, int height)
+void TerrainWater::setData(GLfloat * data[12], int width, int height)
 {
     for(int i = 0; i < 12; i++)
     {
@@ -131,11 +133,11 @@ void TerrainWater::pushToGPU()
 
 void TerrainWater::reset(int width, int depth)
 {
-    int sz(sizeof(GLuint) * width * depth);
+    int sz(sizeof(GLfloat) * width * depth);
 
     for(TerrainWaterHeightmap & heightmap : m_terrain_water)
     {
-        GLuint * data = (GLuint *) std::malloc(sz);
+        GLfloat * data = (GLfloat *) std::malloc(sz);
         std::memset(data, 0, sz);
         heightmap.setData(data, width, depth);
         heightmap.setBalanced(false);

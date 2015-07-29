@@ -39,18 +39,18 @@ void DrawableTerrain::initGL()
     m_vao_constraints.bind(); CE();
 
     m_vbo_constraints.bind();  CE();
-    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::DynamicDraw);  CE();
+    m_vbo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
 
     m_ibo_constraints.bind(); CE();
-    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::DynamicDraw);  CE();
+    m_ibo_constraints.setUsagePattern(QOpenGLBuffer::UsagePattern::StaticDraw);  CE();
 
     QOpenGLFunctions * f = QOpenGLContext::currentContext()->functions();
     f->glEnableVertexAttribArray(0); CE();
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(0)); CE();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0)); CE();
     // Texture coordinate
-    f->glEnableVertexAttribArray(1); CE();
-    const int sz = 3*sizeof(GLfloat);
-    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
+//    f->glEnableVertexAttribArray(1); CE();
+//    const int sz = 3*sizeof(GLfloat);
+//    f->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void*)(sz)); CE();
 
     m_vao_constraints.release(); CE();
     m_vbo_constraints.release(); CE();
@@ -72,9 +72,9 @@ bool DrawableTerrain::prepareTerrainGeometry(const TerragenFile & terragen_file)
             m_verticies.push_back(.0f); // Y (stored in heightmap texture)
             m_verticies.push_back(z);/*- (m_header_data.depth/2 * m_header_data.dynamic_scale )*/ // Z
 
-            // 2D texture coordinate
-            m_verticies.push_back((float) x / (float) (terragen_file.m_header_data.width - 1)); // X
-            m_verticies.push_back((float) z / (float) (terragen_file.m_header_data.depth - 1)); // Y
+//            // 2D texture coordinate
+//            m_verticies.push_back((float) x / (float) (terragen_file.m_header_data.width)); // X
+//            m_verticies.push_back((float) z / (float) (terragen_file.m_header_data.depth)); // Y
         }
     }
 

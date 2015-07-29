@@ -24,8 +24,13 @@ public:
 
     void calculateNormals(Terrain & terrain);
 
-    void renderTerrain(Terrain & terrain, TerrainWaterHeightmap & water_heightmap, const Transform & transforms,
-                       const LightProperties & sunlight_properties, GLuint overlay_texture_id, bool overlay_active);
+    void renderTerrain(Terrain & terrain,
+                       TerrainWaterHeightmap & water_heightmap,
+                       bool render_water,
+                       const Transform & transforms,
+                       const LightProperties & sunlight_properties,
+                       GLuint overlay_texture_id,
+                       bool overlay_active);
 
 //    void renderOverlay(Terrain & terrain, ResourceWrapper & resources, const Transform & transforms,
 //                       const char * overlay, int month);
@@ -42,13 +47,19 @@ public:
                                                int rainfall,
                                                int rainfall_intensity,
                                                int terrain_width,
-                                               int terrain_depth);
+                                               int terrain_depth,
+                                               float terrain_scale);
 
-    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, float terrain_scale, bool one_step = false);
+    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, float terrain_scale,
+                      bool one_step = false);
 
     void slopeBasedInfiltrationRateFilter(Terrain & terrain,
-                                              GLuint soil_infiltration_texture_id,
-                                              int min_slope);
+                                          GLuint soil_infiltration_texture_id,
+                                          int min_slope);
+
+    void setAbsoluteAggregateHeight(Terrain & terrain,
+                                    TerrainWaterHeightmap & terrain_water,
+                                    float height);
 
 private:
     void reset_overlays(OverlayTextureCreatorShader & shader);
@@ -56,6 +67,9 @@ private:
                                    int group_size_x, int group_size_y, int group_size_z);
     CounterTexture m_water_comparator_counter;
     TerrainWaterHeightmap m_terrain_water_cache;
+    TerrainWaterHeightmap m_horizontal_overlaps;
+    TerrainWaterHeightmap m_vertical_overlaps;
+    TerrainWaterHeightmap m_corner_overlaps;
     Shaders m_shaders;
 };
 

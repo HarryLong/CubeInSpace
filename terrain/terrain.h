@@ -48,7 +48,9 @@ public:
     void calculateNormals();
 //    bool normalsValid();
     float getHeight(const glm::vec2 & point) const;
+    float getHeight(const glm::ivec2 & point) const;
     float getAltitude(const glm::vec2 & point) const;
+    float getAltitude(const glm::ivec2 & point) const;
     float getSlope(const glm::vec2 & point) const;
     float getScale() const;
 

@@ -1,7 +1,7 @@
 #version 430
 
 layout(location = 0) in vec3 vPos;
-layout(location = 1) in vec2 textureCoord;
+//layout(location = 1) in vec2 textureCoord;
 
 // transformations
 struct Transformation
@@ -14,9 +14,10 @@ struct Transformation
 uniform Transformation transform;
 
 uniform sampler2D terrain_height_map_texture;
-uniform usampler2D water_heightmap;
+uniform sampler2D water_heightmap;
 uniform sampler2D overlay_texture;
 uniform sampler2D normals_texture;
+uniform bool render_water;
 
 //colours and material
 uniform vec4 terrain_material_diffuse;
@@ -40,25 +41,32 @@ out vec4 overlay_color;
 
 out vec3 world_space_pos;
 
-float to_terrain_scale(in uint mm)
-{
-    return float(mm)/(1000*terrain_scale);
-}
+//float to_terrain_scale(in uint mm)
+//{
+//    return float(mm)/1000.0/terrain_scale;
+//}
 
 void main()
 {
+    ivec2 texture_size = textureSize(terrain_height_map_texture,0);
+    vec2 texture_coord = vec2(float(vPos.x)/texture_size.x, float(vPos.z)/texture_size.y);
+
     // Fetch the y coordinate from the heightmap texture
-    world_space_pos = vec3(vPos.x*transform.scale, texture(terrain_height_map_texture, textureCoord).r * transform.scale, vPos.z * transform.scale);
-    uint water_height = texture(water_heightmap, textureCoord).r;
-    if(water_height > 0)
+    world_space_pos = vec3(vPos.x, texture(terrain_height_map_texture, texture_coord).r, vPos.z);
+    float water_height = 0;
+    if(render_water)
     {
-        world_space_pos.y += to_terrain_scale(water_height);
+        water_height = texture(water_heightmap, texture_coord).r;
+        if(water_height > 0)
+        {
+            world_space_pos.y += water_height;
+        }
     }
 
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);
     gl_Position = transform.projMat * camera_space_pos;
 
-    vec3 normal = texture(normals_texture, textureCoord).rgb;
+    vec3 normal = texture(normals_texture, texture_coord).rgb;
     // map normal to camera space for lighting calculations
     camera_space_normal = normalize(mat3(transform.viewMat) * normal);
 
@@ -87,7 +95,7 @@ void main()
 
     if(overlay_active)
     {
-        overlay_color = texture(overlay_texture, textureCoord).rgba;
+        overlay_color = texture(overlay_texture, texture_coord).rgba;
     }
 }
 

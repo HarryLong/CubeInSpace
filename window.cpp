@@ -91,6 +91,7 @@ void MainWindow::init_menu()
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL]);
+        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]);
     }
 }
 

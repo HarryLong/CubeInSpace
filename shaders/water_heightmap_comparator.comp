@@ -2,8 +2,8 @@
 
 layout (local_size_x = 32, local_size_y = 32) in;
 
-layout(binding = 0, r32ui) uniform coherent uimage2D water_heightmap_one;
-layout(binding = 1, r32ui) uniform coherent uimage2D water_heightmap_two;
+layout(binding = 0, r32f) uniform coherent image2D water_heightmap_one;
+layout(binding = 1, r32f) uniform coherent image2D water_heightmap_two;
 layout(binding = 2, r32ui) uniform coherent uimage2D result;
 
 shared uint shared_results[gl_WorkGroupSize.x][gl_WorkGroupSize.y];
@@ -22,8 +22,8 @@ void main()
 
     if(valid)
     {
-        uint water_one = imageLoad(water_heightmap_one, global_idx).x;
-        uint water_two = imageLoad(water_heightmap_two, global_idx).x;
+        float water_one = imageLoad(water_heightmap_one, global_idx).x;
+        float water_two = imageLoad(water_heightmap_two, global_idx).x;
 
         if(water_one > 0 && water_two == 0 ||
             water_two > 0 && water_one == 0)

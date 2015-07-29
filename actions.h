@@ -125,6 +125,7 @@ public:
     const static QString _MONTHLY_RAINFALL;
     const static QString _SOIL_INFILTRATION_RATE;
     const static QString _FLOOD_FILL;
+    const static QString _ABSOLUTE_AGGREGATE_HEIGHT;
 
     EditActionFamily();
     ~EditActionFamily();

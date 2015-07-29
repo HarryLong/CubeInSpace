@@ -21,6 +21,7 @@ public:
     struct Water{
         static const char * _MATERIAL_AMBIENT;
         static const char * _MATERIAL_DIFFUSE;
+        static const char * _RENDER;
    };
 
     struct Texture{
@@ -74,6 +75,15 @@ public:
 
     struct SlopeBasedSoilInfiltration{
         static const char * _MIN_SLOPE;
+    };
+
+    struct WaterEdit {
+        static const char * _ABSOLUTE_HEIGHT;
+    };
+
+    struct BorderOverlapReduction
+    {
+        static const char * _OVERLAP_MODE;
     };
 };
 

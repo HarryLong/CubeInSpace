@@ -17,6 +17,7 @@ PointerInformationDialog::~PointerInformationDialog()
 
 void PointerInformationDialog::init_labels()
 {
+    m_labels[LabelType::_POINT] = new QLabel(this);
     m_labels[LabelType::_ALTITUDE] = new QLabel(this);
     m_labels[LabelType::_SLOPE] = new QLabel(this);
     m_labels[LabelType::_SOIL_INFILTRATION_RATE] = new QLabel(this);
@@ -26,11 +27,20 @@ void PointerInformationDialog::init_labels()
     m_labels[LabelType::_MIN_DAILY_ILLUMINATION] = new QLabel(this);
     m_labels[LabelType::_MAX_DAILY_ILLUMINATION] = new QLabel(this);
     m_labels[LabelType::_WATER_HEIGHT] = new QLabel(this);
+    m_labels[LabelType::_AGGREGATE_HEIGHT] = new QLabel(this);
 }
 
 QSize PointerInformationDialog::minimumSizeHint() const
 {
     return QSize(200,400);
+}
+
+
+void PointerInformationDialog::setPoint(const glm::vec2 & point)
+{
+    QString point_str("[");
+    point_str.append(QString::number(point.x)).append(",").append(QString::number(point.y)).append("]");
+    m_labels[LabelType::_POINT]->setText(point_str);
 }
 
 void PointerInformationDialog::setAltitude(float altitude)
@@ -78,22 +88,29 @@ void PointerInformationDialog::setSoilHumidity(int soil_humidity)
     m_labels[LabelType::_SOIL_HUMIDITY]->setText(QString::number(soil_humidity));
 }
 
+void PointerInformationDialog::setAggregateHeight(int height)
+{
+    m_labels[LabelType::_AGGREGATE_HEIGHT]->setText(QString::number(height));
+}
+
 void PointerInformationDialog::invalidPoint()
 {
     for(std::pair<LabelType, QLabel*> lbl_pair : m_labels)
         setInvalid(lbl_pair.second);
 }
 
-void PointerInformationDialog::update(float altitude, float slope, int water_height, int soil_infiltration_rate, int soil_humidity,
-            bool shade_set, bool shaded,
-            bool temp_set, float temp,
-            bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination)
+void PointerInformationDialog::update(const glm::vec2 & point,
+                                      float altitude, float slope, int water_height, int soil_infiltration_rate, int soil_humidity,
+                                      bool shade_set, bool shaded,
+                                      bool temp_set, float temp,
+                                      bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination)
 {
+    //POINT
+    setPoint(point);
     // ALTITUDE
     setAltitude(altitude);
     // SLOPE
     setSlope(slope);
-
     // WATER HEIGHT
     setWaterHeight(water_height);
 
@@ -102,6 +119,11 @@ void PointerInformationDialog::update(float altitude, float slope, int water_hei
 
     // SOIL HUMIDITY
     setSoilHumidity(soil_humidity);
+
+    // Aggregate Height
+    {
+        setAggregateHeight(altitude*1000 + water_height);
+    }
 
     // SHADE
     if(shade_set)
@@ -140,7 +162,15 @@ void PointerInformationDialog::setInvalid(QLabel * lbl)
 void PointerInformationDialog::init_layout()
 {
     QVBoxLayout * main_layout (new QVBoxLayout);
+    // Point
+    {
+        QHBoxLayout * layout (new QHBoxLayout);
 
+        layout->addWidget(new QLabel("Point: "), 1, Qt::AlignLeft);
+        layout->addWidget(m_labels[LabelType::_POINT], 1, Qt::AlignRight);
+
+        main_layout->addLayout(layout, 0);
+    }
     // Altitude
     {
         QHBoxLayout * layout (new QHBoxLayout);
@@ -229,6 +259,18 @@ void PointerInformationDialog::init_layout()
 
         layout->addWidget(new QLabel("Water height (mm): "), 1, Qt::AlignLeft);
         layout->addWidget(m_labels[LabelType::_WATER_HEIGHT], 1, Qt::AlignRight);
+
+        main_layout->addLayout(layout, 0);
+    }
+
+
+    // Aggregate height
+    {
+        QHBoxLayout * layout (new QHBoxLayout);
+
+
+        layout->addWidget(new QLabel("Aggregate height (mm): "), 1, Qt::AlignLeft);
+        layout->addWidget(m_labels[LabelType::_AGGREGATE_HEIGHT], 1, Qt::AlignRight);
 
         main_layout->addLayout(layout, 0);
     }

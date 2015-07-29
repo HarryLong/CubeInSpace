@@ -196,3 +196,34 @@ OverlayTextureCreatorShader::~OverlayTextureCreatorShader()
 
 }
 
+/*********************************
+ * AGGREGATE HEIGHT WATER SHADER *
+ *********************************/
+const int AggregateHeightShader::_GROUP_SIZE_X = 32;
+const int AggregateHeightShader::_GROUP_SIZE_Y = 32;
+const int AggregateHeightShader::_GROUP_SIZE_Z = 1;
+AggregateHeightShader::AggregateHeightShader() : ComputeShaderProgram(":/aggregate_height_setter.comp")
+{
+
+}
+
+AggregateHeightShader::~AggregateHeightShader()
+{
+
+}
+
+/**************************
+ * BORDER OVERLAP REDUCER *
+ **************************/
+const int BorderOverlapReducer::_GROUP_SIZE_X = 32;
+const int BorderOverlapReducer::_GROUP_SIZE_Y = 32;
+const int BorderOverlapReducer::_GROUP_SIZE_Z = 1;
+BorderOverlapReducer::BorderOverlapReducer() : ComputeShaderProgram("border_overlap_reducer.comp")
+{
+
+}
+
+BorderOverlapReducer::~BorderOverlapReducer()
+{
+
+}
