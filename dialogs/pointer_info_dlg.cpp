@@ -78,7 +78,7 @@ void PointerInformationDialog::setMaxDailyIllumination(int max_daily_illuminatio
     m_labels[LabelType::_MAX_DAILY_ILLUMINATION]->setText(QString::number(max_daily_illumination));
 }
 
-void PointerInformationDialog::setWaterHeight(int water_height)
+void PointerInformationDialog::setWaterHeight(float water_height)
 {
     m_labels[LabelType::_WATER_HEIGHT]->setText(QString::number(water_height));
 }
@@ -100,7 +100,7 @@ void PointerInformationDialog::invalidPoint()
 }
 
 void PointerInformationDialog::update(const glm::vec2 & point,
-                                      float altitude, float slope, int water_height, int soil_infiltration_rate, int soil_humidity,
+                                      float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity,
                                       bool shade_set, bool shaded,
                                       bool temp_set, float temp,
                                       bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination)

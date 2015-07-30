@@ -39,7 +39,7 @@ void SoilHumidity::reset(int width, int depth)
         std::memset(data, 0, sz);
         heightmap.setData(data, width, depth);
     }
-    pushToGPU();
+//    pushToGPU();
 }
 
 void SoilHumidity::pushToGPU()

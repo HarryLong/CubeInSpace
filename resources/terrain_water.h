@@ -20,7 +20,6 @@ public:
     bool isBalancing();
     void setBalancing(bool balancing);
     void setBalanced(bool balanced);
-    void setHeight(const glm::ivec2 point, GLfloat height);
 
 private:
     void perform_balancing_check();

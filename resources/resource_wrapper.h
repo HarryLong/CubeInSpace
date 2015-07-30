@@ -18,7 +18,7 @@ public:
 
     void syncTextures();
 
-    void getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
+    void getResourceInfo(const glm::vec2 & pos, int month, float & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
                          int & soil_infiltration_rate, int & soil_humidity);
 
     void valid(bool & shade, bool & daily_illumination, bool & temp);

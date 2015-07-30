@@ -436,24 +436,27 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             int height (group_count.y*2);
             int sz(width*height*sizeof(GLfloat));
             GLfloat * data = (GLfloat*) std::malloc(sz);
+            std::memset(data, 0, sz);
             m_horizontal_overlaps.setData(data, width, height);
-            m_horizontal_overlaps.pushToGPU();
+//            m_horizontal_overlaps.pushToGPU();
         }
         {
             int width (group_count.x*2);
             int height (terrain_water->height());
             int sz(width*height*sizeof(GLfloat));
             GLfloat * data = (GLfloat*) std::malloc(sz);
+            std::memset(data, 0, sz);
             m_vertical_overlaps.setData(data, width, height);
-            m_vertical_overlaps.pushToGPU();
+//            m_vertical_overlaps.pushToGPU();
         }
         {
             int width (group_count.x*2);
             int height (group_count.y*2);
             int sz(width*height*sizeof(GLfloat));
             GLfloat * data = (GLfloat*) std::malloc(sz);
+            std::memset(data, 0, sz);
             m_corner_overlaps.setData(data, width, height);
-            m_corner_overlaps.pushToGPU();
+//            m_corner_overlaps.pushToGPU();
         }
 
         // First set the cache terrain water to the current data
@@ -461,9 +464,8 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             int sz(sizeof(GLfloat) * terrain_width * terrain_depth);
             GLfloat * cached_terrain_water = (GLfloat*) std::malloc(sz);
             std::memcpy(cached_terrain_water, terrain_water->getRawData(), sz);
-
             m_terrain_water_cache.setData(cached_terrain_water, terrain_width, terrain_depth);
-            m_terrain_water_cache.pushToGPU();
+//            m_terrain_water_cache.pushToGPU();
         }
 
         // Now set the counter texture data
@@ -472,8 +474,7 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             GLuint * counter_data = (GLuint*) malloc(sz);
             std::memset(counter_data, 0, sz);
             m_water_comparator_counter.setData(counter_data, group_count.x, group_count.y);
-
-            m_water_comparator_counter.pushToGPU();
+//            m_water_comparator_counter.pushToGPU();
         }
 
         m_shaders.m_water_flux_generator.bind();  CE();
@@ -489,7 +490,46 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
         f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
 
+//        //TMP
+//        terrain_water->syncFromGPU();
+//        qCritical() << "***********BEFORE BORDER CONTROL*******************";
+//        for(int y = 0; y < terrain_water->height(); y++)
+//        {
+//            for(int x = 0; x < terrain_water->width(); x++)
+//            {
+//                qCritical() << "[" << x << ", " << y << "] --> " << (*terrain_water)(x,y);
+//            }
+//        }
+
         m_shaders.m_water_flux_generator.release();
+
+//        m_horizontal_overlaps.syncFromGPU();
+//        m_vertical_overlaps.syncFromGPU();
+//        m_corner_overlaps.syncFromGPU();
+//        qCritical() << "***********HORIZONTAL BORDERS*******************";
+//        for(int y = 0; y < m_horizontal_overlaps.height(); y++)
+//        {
+//            for(int x = 0; x < m_horizontal_overlaps.width(); x++)
+//            {
+//                qCritical() << "[" << x << ", " << y << " --> " << m_horizontal_overlaps(x,y);
+//            }
+//        }
+//        qCritical() << "***********VERTICAL BORDERS*******************";
+//        for(int x = 0; x < m_vertical_overlaps.width(); x++)
+//        {
+//            for(int y = 0; y < m_vertical_overlaps.height(); y++)
+//            {
+//                qCritical() << "[" << x << ", " << y << " --> " << m_vertical_overlaps(x,y);
+//            }
+//        }
+//        qCritical() << "***********CORNER BORDERS*******************";
+//        for(int x = 0; x < m_corner_overlaps.width(); x++)
+//        {
+//            for(int y = 0; y < m_corner_overlaps.height(); y++)
+//            {
+//                qCritical() << "[" << x << ", " << y << " --> " << m_corner_overlaps(x,y);
+//            }
+//        }
 
         /********************
          * BORDER REDUCTION *
@@ -505,9 +545,9 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
                                                 BorderOverlapReducer::_GROUP_SIZE_X,
                                                 BorderOverlapReducer::_GROUP_SIZE_Y,
                                                 BorderOverlapReducer::_GROUP_SIZE_Z);
-            f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+            f->glBindImageTexture(1, m_vertical_overlaps.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
-            f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+            f->glMemoryBarrier(GL_ALL_BARRIER_BITS);   CE();
         }
 
         // HORIZONTAL
@@ -517,7 +557,7 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
                                                 BorderOverlapReducer::_GROUP_SIZE_X,
                                                 BorderOverlapReducer::_GROUP_SIZE_Y,
                                                 BorderOverlapReducer::_GROUP_SIZE_Z);
-            f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+            f->glBindImageTexture(1, m_horizontal_overlaps.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
             f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
         }
@@ -529,12 +569,23 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
                                                 BorderOverlapReducer::_GROUP_SIZE_X,
                                                 BorderOverlapReducer::_GROUP_SIZE_Y,
                                                 BorderOverlapReducer::_GROUP_SIZE_Z);
-            f->glBindImageTexture(1, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
+            f->glBindImageTexture(1, m_corner_overlaps.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
             f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
         }
 
         m_shaders.m_border_overlap_reducer.release();
+
+        //TMP
+//        terrain_water->syncFromGPU();
+//        qCritical() << "***********POST BORDER CONTROL*******************";
+//        for(int y = 0; y < terrain_water->height(); y++)
+//        {
+//            for(int x = 0; x < terrain_water->width(); x++)
+//            {
+//                qCritical() << "[" << x << ", " << y << "] --> " << (*terrain_water)(x,y);
+//            }
+//        }
 
         /*****************
          * BALANCE CHECK *
@@ -590,7 +641,6 @@ void Renderer::calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_te
                                                 SoilHumidityCalculatorShader::_GROUP_SIZE_Z));
 
     m_shaders.m_soil_humidity_calculator.bind();
-
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Rainfall::_RAINFALL, rainfall);
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Rainfall::_INTENSITY, rainfall_intensity);
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);

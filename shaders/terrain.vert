@@ -49,7 +49,7 @@ out vec3 world_space_pos;
 void main()
 {
     ivec2 texture_size = textureSize(terrain_height_map_texture,0);
-    vec2 texture_coord = vec2(float(vPos.x)/texture_size.x, float(vPos.z)/texture_size.y);
+    vec2 texture_coord = vec2(float(vPos.x)/(texture_size.x-1), float(vPos.z)/(texture_size.y-1));
 
     // Fetch the y coordinate from the heightmap texture
     world_space_pos = vec3(vPos.x, texture(terrain_height_map_texture, texture_coord).r, vPos.z);
@@ -57,9 +57,13 @@ void main()
     if(render_water)
     {
         water_height = texture(water_heightmap, texture_coord).r;
-        if(water_height > 0)
+        if(water_height > 1e-5)
         {
             world_space_pos.y += water_height;
+        }
+        else
+        {
+            water_height = 0;
         }
     }
 

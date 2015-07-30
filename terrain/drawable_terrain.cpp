@@ -103,5 +103,5 @@ bool DrawableTerrain::prepareTerrainGeometry(const TerragenFile & terragen_file)
 void DrawableTerrain::refreshHeightmapTexture(const TerragenFile & terragen_file)
 {
     setData(terragen_file.m_height_data, terragen_file.m_header_data.width, terragen_file.m_header_data.depth);
-    pushToGPU();
+//    pushToGPU();
 }

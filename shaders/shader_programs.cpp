@@ -218,7 +218,7 @@ AggregateHeightShader::~AggregateHeightShader()
 const int BorderOverlapReducer::_GROUP_SIZE_X = 32;
 const int BorderOverlapReducer::_GROUP_SIZE_Y = 32;
 const int BorderOverlapReducer::_GROUP_SIZE_Z = 1;
-BorderOverlapReducer::BorderOverlapReducer() : ComputeShaderProgram("border_overlap_reducer.comp")
+BorderOverlapReducer::BorderOverlapReducer() : ComputeShaderProgram(":/border_overlap_reducer.comp")
 {
 
 }

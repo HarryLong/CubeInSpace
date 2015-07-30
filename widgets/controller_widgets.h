@@ -26,6 +26,11 @@ public:
     int getSoilInfiltrationRate();
     int getSoilInfiltrationZeroOverSlope();
 
+    bool timeControllersActive();
+    bool latitudeControllersActive();
+    bool soilInfiltrationControllersActive();
+    bool waterControllersActive();
+
 signals:
     void timeControllersStateChanged(bool active);
     void latitudeControllersStateChanged(bool active);

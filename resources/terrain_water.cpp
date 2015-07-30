@@ -58,17 +58,10 @@ void TerrainWaterHeightmap::perform_balancing_check()
 {
     int iteration_idx(m_balance_iterations_changes.size()-1);
 
-    if(m_balance_iterations_changes.at(iteration_idx) <= (m_balance_iterations_changes_total/1000.0f))
+    if(m_balance_iterations_changes.at(iteration_idx) <= (m_balance_iterations_changes_total/500.0f))
     {
         setBalanced(true);
     }
-}
-
-void TerrainWaterHeightmap::setHeight(const glm::ivec2 point, GLfloat height)
-{
-    glm::ivec2 p = glm::ivec2(point.x, point.y);
-    int index(p.y*m_width+p.x);
-    m_raw_data[index] = height;
 }
 
 /*****************
@@ -142,5 +135,5 @@ void TerrainWater::reset(int width, int depth)
         heightmap.setData(data, width, depth);
         heightmap.setBalanced(false);
     }
-    pushToGPU();
+//    pushToGPU();
 }

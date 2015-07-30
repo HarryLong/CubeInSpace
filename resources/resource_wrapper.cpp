@@ -45,9 +45,9 @@ void ResourceWrapper::valid(bool & shade, bool & daily_illumination, bool & temp
 
 void ResourceWrapper::syncTextures()
 {
-    m_terrain_shade.pushToGPU();
-    m_terrain_daily_illumination.pushToGPU();
-    m_terrain_temp.pushToGPU();
+//    m_terrain_shade.pushToGPU();
+//    m_terrain_daily_illumination.pushToGPU();
+//    m_terrain_temp.pushToGPU();
 //    m_terrain_water.pushToGPU();
 }
 
@@ -101,12 +101,12 @@ void ResourceWrapper::bindDecTemperature()
     m_terrain_temp.bindDec();
 }
 
-void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, int & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
+void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
                                       int & soil_infiltration_rate, int & soil_humidity)
 {
     // Water
     {
-        water_height = (int) m_terrain_water[month](pos[0], pos[1]);
+        water_height = m_terrain_water[month](pos[0], pos[1]);
     }
     // Shade
     if(m_terrain_shade.isValid())

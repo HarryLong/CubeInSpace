@@ -101,6 +101,26 @@ int OverlayWidgets::getSoilInfiltrationZeroOverSlope()
     return m_soil_infiltration_shortcut_widget->getSoilInfiltrationZeroOverSlope();
 }
 
+bool OverlayWidgets::timeControllersActive()
+{
+    return m_time_widget->isVisible();
+}
+
+bool OverlayWidgets::latitudeControllersActive()
+{
+    return m_latitude_widget->isVisible();
+}
+
+bool OverlayWidgets::soilInfiltrationControllersActive()
+{
+    return m_soil_infiltration_widget->isVisible();
+}
+
+bool OverlayWidgets::waterControllersActive()
+{
+    return m_water_shortcut_widget->isVisible();
+}
+
 void OverlayWidgets::hideAll()
 {
     for(QWidget* w : m_raw_widgets)
