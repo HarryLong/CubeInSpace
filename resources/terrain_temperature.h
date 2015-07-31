@@ -23,11 +23,6 @@ public:
 
     void setData(GLbyte * jun_data, GLbyte * dec_data, int width, int height);
 
-    void pushToGPU();
-
-    void invalidate();
-    bool isValid();
-
     void getTempData(int x, int z, GLbyte & jun_temp, GLbyte & dec_temp);
 
 private:

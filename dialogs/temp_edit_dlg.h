@@ -70,7 +70,6 @@ public:
     TemperatureEditDialog(QWidget * parent = 0, Qt::WindowFlags f = 0);
     ~TemperatureEditDialog();
 
-    bool isValid();
     void reset();
     TemperatureAttributes getJunTemperatureAttributes();
     TemperatureAttributes getDecTemperatureAttributes();

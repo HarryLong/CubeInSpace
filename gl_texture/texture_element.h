@@ -3,38 +3,39 @@
 
 #include "../gl_core/glheader.h"
 #include <QOpenGLTexture>
+#include "../fixed_size_stack.h"
 
-template <class T> class TextureElement : public QOpenGLTexture {
+template <class T> class TextureElement {
 public:
     TextureElement(QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format, QOpenGLTexture::PixelType pixel_type);
     virtual ~TextureElement();
     // Terrain shade functions
-    virtual void setData(T * data, int width, int depth, bool cache = false);
-    virtual void syncFromGPU(bool cache = false);
+    virtual void setData(T * data, int width, int depth, bool stack = false);
+    virtual void syncFromGPU(bool stack = false);
     virtual void pushToGPU();
     virtual T operator()(int x, int z) const;
     const T * getRawData() const;
-    bool isValid() const;
-    void setValid(bool valid);
-    void invalidate();
     void set(int x, int y, T data);
-    QOpenGLTexture::TextureFormat getTextureFormat() const;
-    QOpenGLTexture::PixelFormat getPixelFormat() const;
-    QOpenGLTexture::PixelType getPixelType() const;
+    void bind();
+    int width();
+    int height();
+    GLuint textureId();
+    QOpenGLTexture::TextureFormat textureFormat() const;
+    QOpenGLTexture::PixelFormat pixelFormat() const;
+    QOpenGLTexture::PixelType pixelType() const;
 
     void pop();
     void push();
 
 protected:
-//    bool m_requires_push_to_GPU;
-    bool m_valid;
-    int m_width, m_depth;
+    int m_width, m_height;
 
 private:
     void delete_texture();
-//    T * m_pushed_data;
     T * m_raw_data;
 
+    FixedSizeStack<T> m_stack;
+    QOpenGLTexture m_texture;
     QOpenGLTexture::TextureFormat m_texture_format;
     QOpenGLTexture::PixelFormat m_pixel_format;
     QOpenGLTexture::PixelType m_pixel_type;

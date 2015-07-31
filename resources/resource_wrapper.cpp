@@ -4,10 +4,9 @@
 #include <cstring>
 
 ResourceWrapper::ResourceWrapper() :
-    m_recalculating_shade(false),
-    m_recalculating_daily_illumination(false),
-    m_recalculating_temperature(false),
-    m_recalculating_water(false)
+    m_temp_valid(false),
+    m_daily_illumination_valid(false),
+    m_shade_valid(false)
 {
 }
 
@@ -16,89 +15,65 @@ ResourceWrapper::~ResourceWrapper()
 
 }
 
-bool ResourceWrapper::recalculatingShade()
-{
-    return m_recalculating_shade.load();
-}
-
-bool ResourceWrapper::recalculatingDailyIllumination()
-{
-    return m_recalculating_temperature.load();
-}
-
-bool ResourceWrapper::recalculatingTemperature()
-{
-    return m_recalculating_temperature.load();
-}
-
-bool ResourceWrapper::recalculatingWater()
-{
-    return m_recalculating_water.load();
-}
-
 void ResourceWrapper::valid(bool & shade, bool & daily_illumination, bool & temp)
 {
-    shade = m_terrain_shade.isValid();
-    daily_illumination = m_terrain_daily_illumination.isValid();
-    temp = m_terrain_temp.isValid();
-}
-
-void ResourceWrapper::syncTextures()
-{
-//    m_terrain_shade.pushToGPU();
-//    m_terrain_daily_illumination.pushToGPU();
-//    m_terrain_temp.pushToGPU();
-//    m_terrain_water.pushToGPU();
+    shade = m_shade_valid;
+    daily_illumination = m_daily_illumination_valid;
+    temp = m_temp_valid;
 }
 
 void ResourceWrapper::terrainChanged()
 {
-    m_terrain_shade.invalidate();
-    m_terrain_daily_illumination.invalidate();
-    m_terrain_temp.invalidate();
-//    m_terrain_water.invalidate(); TERRAIN WATER DEALT WITH SEPARATELY
+    m_temp_valid = false;
+    m_daily_illumination_valid = false;
+    m_shade_valid = false;
 
     emit resourceInvalidated();
 }
 
 void ResourceWrapper::latitudeChanged()
 {
-    m_terrain_shade.invalidate();
-    m_terrain_daily_illumination.invalidate();
+    m_shade_valid = false;
+    m_daily_illumination_valid = false;
 
     emit resourceInvalidated();
 }
 
 void ResourceWrapper::sunPositionChanged()
 {
-    m_terrain_shade.invalidate();
+    m_shade_valid = false;
 
     emit resourceInvalidated();
 }
 
-void ResourceWrapper::bindShade()
+TerrainWater & ResourceWrapper::getTerrainWater()
 {
-    m_terrain_shade.bind();
+    return m_terrain_water;
 }
 
-void ResourceWrapper::bindMinIllumination()
+SoilInfiltration & ResourceWrapper::getSoilInfiltration()
 {
-    m_terrain_daily_illumination.bindMin();
+    return m_soil_infiltration;
 }
 
-void ResourceWrapper::bindMaxIllumination()
+TerrainDailyIllumination & ResourceWrapper::getDailyIllumination()
 {
-    m_terrain_daily_illumination.bindMax();
+    return m_terrain_daily_illumination;
 }
 
-void ResourceWrapper::bindJunTemperature()
+TerrainShade & ResourceWrapper::getShade()
 {
-    m_terrain_temp.bindJun();
+    return m_terrain_shade;
 }
 
-void ResourceWrapper::bindDecTemperature()
+TerrainTemperature & ResourceWrapper::getTerrainTemp()
 {
-    m_terrain_temp.bindDec();
+    return m_terrain_temp;
+}
+
+SoilHumidity & ResourceWrapper::getSoilHumidity()
+{
+    return m_soil_humidity;
 }
 
 void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
@@ -109,10 +84,10 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
         water_height = m_terrain_water[month](pos[0], pos[1]);
     }
     // Shade
-    if(m_terrain_shade.isValid())
+    if(m_shade_valid)
         shaded = m_terrain_shade(pos[0], pos[1]);
     // Daily illumination
-    if(m_terrain_daily_illumination.isValid())
+    if(m_daily_illumination_valid)
     {
         GLubyte min, max;
         m_terrain_daily_illumination.getIlluminationData(pos[0], pos[1], min, max);
@@ -120,7 +95,7 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
         max_illumination = (int) max;
     }
     // Temperature
-    if(m_terrain_temp.isValid())
+    if(m_temp_valid)
     {
         GLbyte jun, dec;
         m_terrain_temp.getTempData(pos[0], pos[1], jun, dec);
@@ -141,21 +116,8 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
 
 void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_position)
 {
-    m_recalculating_shade.store(true);
-
     m_terrain_shade.setData(get_shade(terrain, sun_position), terrain.getWidth(), terrain.getDepth());
-
-    m_recalculating_shade.store(false);
-}
-
-TerrainWater & ResourceWrapper::getTerrainWater()
-{
-    return m_terrain_water;
-}
-
-SoilInfiltration & ResourceWrapper::getSoilInfiltration()
-{
-    return m_soil_infiltration;
+    m_shade_valid = true;
 }
 
 GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates)
@@ -222,8 +184,6 @@ GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_po
 
 void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain)
 {
-    m_recalculating_daily_illumination.store(true);
-
     int current_month(lighting_manager.currentMonth());
     int current_time(lighting_manager.currentTime());
 
@@ -298,13 +258,11 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
 
     emit processingComplete();
 
-    m_recalculating_daily_illumination.store(false);
+    m_daily_illumination_valid = true;
 }
 
 void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec)
 {
-    m_recalculating_temperature.store(true);
-
     int terrain_width(terrain.getWidth());
     int terrain_depth(terrain.getDepth());
     int n_iterations(terrain_depth*terrain_width*2);
@@ -361,49 +319,5 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     m_terrain_temp.setData(jun_temp_data, dec_temp_data, terrain_width, terrain_depth);
 
     emit processingComplete();
-
-    m_recalculating_temperature.store(false);
+    m_temp_valid = true;
 }
-
-SoilHumidity & ResourceWrapper::getSoilHumidity()
-{
-    return m_soil_humidity;
-}
-
-//void ResourceWrapper::refreshWater(int terrain_width, int terrain_depth, int rainfall_jun, int rainfal_intensity_jun, int rainfall_dec, int rainfal_intensity_dec)
-//{
-//    m_recalculating_water.store(true);
-
-//    int sz(sizeof(GLuint) * terrain_width * terrain_depth);
-
-//    GLuint * jun_water_data = (GLuint*) malloc(sz);
-//    GLuint * dec_water_data = (GLuint*) malloc(sz);
-
-//    if( rainfall_jun == 0 && rainfall_dec == 0 ) // Optimization
-//    {
-//        std::memset(jun_water_data, 0, sz);
-//        std::memset(dec_water_data, 0, sz);
-//    }
-//    else
-//    {
-//#pragma omp parallel for
-//        for(int z = 0; z < terrain_depth; z++)
-//        {
-//#pragma omp parallel for
-//            for(int x = 0; x < terrain_width; x++)
-//            {
-//                int index(z*terrain_depth+x);
-//                jun_water_data[index] = rainfall_jun;
-//                dec_water_data[index] = rainfall_dec;
-//            }
-//        }
-//    }
-
-//    m_terrain_water.setData(jun_water_data, dec_water_data, terrain_width, terrain_depth);
-
-////    if( rainfall_jun == 0 && rainfall_dec == 0 ) // No point trying to balance
-////        m_terrain_water.setBalanced(true);
-
-//    m_recalculating_water.store(false);
-//}
-

@@ -116,14 +116,6 @@ std::vector<TerrainWaterHeightmap*> TerrainWater::getUnbalanced()
     return unbalanced;
 }
 
-void TerrainWater::pushToGPU()
-{
-    for(TerrainWaterHeightmap& water_heightmap : m_terrain_water)
-    {
-        water_heightmap.pushToGPU();
-    }
-}
-
 void TerrainWater::reset(int width, int depth)
 {
     int sz(sizeof(GLfloat) * width * depth);
@@ -135,5 +127,4 @@ void TerrainWater::reset(int width, int depth)
         heightmap.setData(data, width, depth);
         heightmap.setBalanced(false);
     }
-//    pushToGPU();
 }

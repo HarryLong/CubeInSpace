@@ -57,7 +57,7 @@ ${WIDGETS_SOURCE_FILES}
 ${GL_ASSETS_SOURCE_FILES}
 ${GL_CORE_SOURCE_FILES}
 ${GL_TEXTURE_SOURCE_FILES}
-window main debug geom actions )
+window main debug geom actions fixed_size_stack)
 
 # Shaders
 add_subdirectory(shaders)

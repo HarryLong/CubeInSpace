@@ -59,11 +59,11 @@ public:
     void loadTerrain(QString filename);
 
 protected:
-    void initializeGL(); // Override
-    void paintGL(); // Override
-    void resizeGL(int p_width, int p_height); // Override
-    QSize minimumSizeHint() const; //Override
-    QSize sizeHint() const;//Override
+    void initializeGL() override;
+    void paintGL() override;
+    void resizeGL(int p_width, int p_height) override;
+    QSize minimumSizeHint() const override;
+    QSize sizeHint() const override;
     void focusInEvent ( QFocusEvent * event );
     void focusOutEvent ( QFocusEvent * event );
     // Mouse input stuff
@@ -90,6 +90,7 @@ private slots:
     void time_controllers_state_changed(bool active);
     void latitude_controllers_state_changed(bool active);
     void soil_infiltration_controllers_state_changed(bool active);
+    void water_controllers_state_changed(bool active);
     void disable_all_overlay_widget_actions();
     void soil_infiltration_rate_changed(int);
     void orientation_controllers_state_changed(bool active);

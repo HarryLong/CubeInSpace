@@ -18,14 +18,8 @@ public:
 
     void bindMax();
     void bindMin();
-    void pushToGPU();
 
     void setData(GLubyte * min_data, GLubyte * max_data, int width, int height);
-
-    void setCalculating(bool calculating);
-
-    void invalidate();
-    bool isValid();
 
     void getIlluminationData(int x, int z, GLubyte & min, GLubyte & max);
 

@@ -111,7 +111,5 @@ void PaddedTerrain::refresh(Terrain & terrain)
         }
     }
 
-
     setData(padded_data, padded_terrain_width, padded_terrain_depth);
-//    pushToGPU();
 }

@@ -2,11 +2,12 @@
 #include <QOpenGLContext>
 #include <QWindow>
 #include <cstring>
+#include <assert.h>
 
 template <class T> TextureElement<T>::TextureElement(QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format,
-                                                     QOpenGLTexture::PixelType pixel_type) : QOpenGLTexture(QOpenGLTexture::Target::Target2D),
-    m_texture_format(texture_format), m_pixel_format(pixel_format), m_pixel_type(pixel_type),
-    m_valid(false), m_raw_data(nullptr)//, m_pushed_data(nullptr)
+                                                     QOpenGLTexture::PixelType pixel_type) :
+    m_texture(QOpenGLTexture::Target::Target2D), m_texture_format(texture_format), m_pixel_format(pixel_format), m_pixel_type(pixel_type),
+    m_raw_data(nullptr), m_stack(10)
 {
 }
 
@@ -16,33 +17,19 @@ template <class T> TextureElement<T>::~TextureElement()
         delete m_raw_data;
 }
 
-// Terrain shade functions
-template <class T> bool TextureElement<T>::isValid() const
+template <class T> void TextureElement<T>::setData(T * data, int w, int h, bool stack)
 {
-    return m_valid;
-}
+    if(w != m_width || h != m_height)
+        m_stack.clear();
 
-template <class T> void TextureElement<T>::setData(T * data, int w, int h, bool cache)
-{
-//    if(cache)
-//        push();
+    if(stack)
+        push();
     if(m_raw_data)
-        free(m_raw_data);
+        delete m_raw_data;
     m_raw_data = data;
     m_width = w;
-    m_depth = h;
-    m_valid = true;
+    m_height = h;
     pushToGPU();
-}
-
-template <class T> void TextureElement<T>::invalidate()
-{
-    m_valid = false;
-}
-
-template <class T> void TextureElement<T>::setValid(bool valid)
-{
-    m_valid = valid;
 }
 
 template <class T> T TextureElement<T>::operator()(int x, int z) const
@@ -53,10 +40,8 @@ template <class T> T TextureElement<T>::operator()(int x, int z) const
 
 template <class T> void TextureElement<T>::delete_texture()
 {    
-    if(QOpenGLTexture::isCreated())
-    {
-        QOpenGLTexture::destroy();
-    }
+    if(m_texture.isCreated())
+        m_texture.destroy();
 }
 
 template <class T> const T * TextureElement<T>::getRawData() const
@@ -64,43 +49,43 @@ template <class T> const T * TextureElement<T>::getRawData() const
     return m_raw_data;
 }
 
-template <class T> void TextureElement<T>::syncFromGPU(bool cache)
+template <class T> void TextureElement<T>::syncFromGPU(bool stack)
 {
-    this->bind();
+    if(stack)
+        push();
+    m_texture.bind();
     glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data ); CE();
 }
 
 template <class T> void TextureElement<T>::pushToGPU()
 {
-    if(m_valid)
-    {
-        delete_texture(); CE();
+    assert(m_raw_data != nullptr && width() != 0 && height() != 0);
 
-        QOpenGLTexture::create(); CE();
-        QOpenGLTexture::setWrapMode(QOpenGLTexture::WrapMode::MirroredRepeat);
-        QOpenGLTexture::bind();
-        QOpenGLTexture::setSize(m_width, m_depth); CE();
-        QOpenGLTexture::setFormat(m_texture_format); CE();
+    delete_texture(); CE();
 
-        QOpenGLTexture::allocateStorage(); CE();
+    m_texture.create(); CE();
+    m_texture.setWrapMode(QOpenGLTexture::WrapMode::MirroredRepeat);
 
-        QOpenGLTexture::setData(m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data); CE();
+    m_texture.bind();
+    m_texture.setSize(m_width, m_height); CE();
+    m_texture.setFormat(m_texture_format); CE();
+    m_texture.allocateStorage(); CE();
+    m_texture.setData(m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data); CE();
 
-        QOpenGLTexture::release();
-    }
+    m_texture.release();
 }
 
-template <class T> QOpenGLTexture::TextureFormat TextureElement<T>::getTextureFormat() const
+template <class T> QOpenGLTexture::TextureFormat TextureElement<T>::textureFormat() const
 {
     return m_texture_format;
 }
 
-template <class T> QOpenGLTexture::PixelFormat TextureElement<T>::getPixelFormat() const
+template <class T> QOpenGLTexture::PixelFormat TextureElement<T>::pixelFormat() const
 {
     return m_pixel_format;
 }
 
-template <class T> QOpenGLTexture::PixelType TextureElement<T>::getPixelType() const
+template <class T> QOpenGLTexture::PixelType TextureElement<T>::pixelType() const
 {
     return m_pixel_type;
 }
@@ -111,24 +96,42 @@ template <class T> void TextureElement<T>::set(int x, int y, T data)
     m_raw_data[index] = data;
 }
 
+template <class T> void TextureElement<T>::bind()
+{
+    m_texture.bind();
+}
+
+template <class T> int TextureElement<T>::width()
+{
+    return m_width;
+}
+
+template <class T> int TextureElement<T>::height()
+{
+    return m_height;
+}
+
+template <class T> GLuint TextureElement<T>::textureId()
+{
+    return m_texture.textureId();
+}
+
 template <class T> void TextureElement<T>::pop()
 {
-//    if(m_pushed_data != NULL)
-//        setData(m_pushed_data, width(), height());
+    if(!m_stack.empty())
+    {
+        setData(m_stack.pop(), m_width, m_height, false);
+    }
 }
 
 template <class T> void TextureElement<T>::push()
 {
-//    if(m_pushed_data != NULL)
-//        free(m_pushed_data);
-
-//    // Make a copy
-//    if(m_raw_data != NULL)
-//    {
-//        int sz(width()*height()*sizeof(T));
-//        T * copy = (T*) std::malloc(sz);
-//        std::memcpy(copy, m_raw_data, sz);
-//    }
+    if(m_raw_data)
+    {
+        T * cpy = new T[m_width*m_height];
+        std::memcpy(cpy, m_raw_data, sizeof(T)*m_width*m_height);
+        m_stack.push(cpy);
+    }
 }
 
 template class TextureElement<GLubyte>;

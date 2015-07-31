@@ -167,23 +167,24 @@ void Renderer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
     {
         f->glActiveTexture(texture_unit);CE();
         m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_SHADE, texture_unit-GL_TEXTURE0); CE();
-        resources.bindShade(); CE();
+        resources.getShade().bind(); CE();
         texture_unit++;
     }
     else if(active_overlay == Uniforms::Overlay::_TEMPERATURE)
     {
+        TerrainTemperature & temp (resources.getTerrainTemp());
         // June temperature
         {
             f->glActiveTexture(texture_unit);CE();
             m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_TEMPERATURE_JUN, texture_unit-GL_TEXTURE0); CE();
-            resources.bindJunTemperature(); CE();
+            temp.bindJun(); CE();
             texture_unit++;
         }
         // December Temp
         {
             f->glActiveTexture(texture_unit);CE();
             m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_TEMPERATURE_DEC, texture_unit-GL_TEXTURE0); CE();
-            resources.bindDecTemperature(); CE();
+            temp.bindDec(); CE();
             texture_unit++;
         }
     }
@@ -191,14 +192,14 @@ void Renderer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
     {
         f->glActiveTexture(texture_unit);CE();
         m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_MIN_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-        resources.bindMinIllumination();
+        resources.getDailyIllumination().bindMin();CE();
         texture_unit++;
     }
     else if(active_overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION)
     {
         f->glActiveTexture(texture_unit);CE();
         m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_MAX_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-        resources.bindMaxIllumination();
+        resources.getDailyIllumination().bindMax();CE();
         texture_unit++;
     }
     else if(active_overlay == Uniforms::Overlay::_SOIL_INFILTRATION_RATE)
@@ -438,7 +439,6 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             GLfloat * data = (GLfloat*) std::malloc(sz);
             std::memset(data, 0, sz);
             m_horizontal_overlaps.setData(data, width, height);
-//            m_horizontal_overlaps.pushToGPU();
         }
         {
             int width (group_count.x*2);
@@ -447,7 +447,6 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             GLfloat * data = (GLfloat*) std::malloc(sz);
             std::memset(data, 0, sz);
             m_vertical_overlaps.setData(data, width, height);
-//            m_vertical_overlaps.pushToGPU();
         }
         {
             int width (group_count.x*2);
@@ -456,7 +455,6 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             GLfloat * data = (GLfloat*) std::malloc(sz);
             std::memset(data, 0, sz);
             m_corner_overlaps.setData(data, width, height);
-//            m_corner_overlaps.pushToGPU();
         }
 
         // First set the cache terrain water to the current data
@@ -465,7 +463,6 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             GLfloat * cached_terrain_water = (GLfloat*) std::malloc(sz);
             std::memcpy(cached_terrain_water, terrain_water->getRawData(), sz);
             m_terrain_water_cache.setData(cached_terrain_water, terrain_width, terrain_depth);
-//            m_terrain_water_cache.pushToGPU();
         }
 
         // Now set the counter texture data
@@ -474,7 +471,6 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
             GLuint * counter_data = (GLuint*) malloc(sz);
             std::memset(counter_data, 0, sz);
             m_water_comparator_counter.setData(counter_data, group_count.x, group_count.y);
-//            m_water_comparator_counter.pushToGPU();
         }
 
         m_shaders.m_water_flux_generator.bind();  CE();

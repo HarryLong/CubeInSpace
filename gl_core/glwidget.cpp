@@ -166,6 +166,7 @@ void GLWidget::establish_connections()
     connect(&m_overlay_widgets, SIGNAL(latitudeControllersStateChanged(bool)), this, SLOT(latitude_controllers_state_changed(bool)));
     connect(&m_overlay_widgets, SIGNAL(timeControllersStateChanged(bool)), this, SLOT(time_controllers_state_changed(bool)));
     connect(&m_overlay_widgets, SIGNAL(soilInfiltrationControllersStateChanged(bool)), this, SLOT(soil_infiltration_controllers_state_changed(bool)));
+    connect(&m_overlay_widgets, SIGNAL(waterControllersStateChanged(bool)), this, SLOT(water_controllers_state_changed(bool)));
     connect(&m_overlay_widgets, SIGNAL(soilInfiltrationRateChanged(int)), this, SLOT(soil_infiltration_rate_changed(int)));
     connect(&m_overlay_widgets, SIGNAL(absoluteHeightChanged(int)), this, SLOT(set_absolute_aggregate_height(int)));
 
@@ -253,8 +254,6 @@ void GLWidget::paintGL() // Override
     static int i(0);
     if(!m_fps_callback_timer->isActive())
         return;
-
-    m_resources.syncTextures(); // Needs openGL context to be active    
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); CE();
 
@@ -667,14 +666,14 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
     }
     if(event->key() == Qt::Key_Z && m_ctrl_pressed.load()) // UNDO
     {
-//        if(m_flood_fill_mode || m_overlay_widgets.waterControllersActive())
-//        {
-//            makeCurrent();
-//            TerrainWaterHeightmap & twh = m_resources.getTerrainWater()[month()];
-//            twh.pop();
-//            twh.pushToGPU();
-//        }
-//        return;
+        if(m_flood_fill_mode || m_overlay_widgets.waterControllersActive())
+        {
+            makeCurrent();
+            TerrainWaterHeightmap & twh = m_resources.getTerrainWater()[month()];
+            twh.pop();
+            twh.pushToGPU();
+        }
+        return;
     }
     if(m_navigation_enabled)
     {
@@ -748,9 +747,10 @@ void GLWidget::load_terrain_file()
         TerragenFile parsed_terragen_file(fileName.toStdString());
         reset_overlay();
         reset_edit_actions();
+
         makeCurrent();
-        m_padded_terrain.invalidate();
         m_terrain.setTerrain(parsed_terragen_file);
+        m_padded_terrain.refresh(m_terrain); // refresh the padded terrain for water flow calculations
     }
 }
 
@@ -879,8 +879,6 @@ void GLWidget::reset_soil_infiltration_rate()
     std::memset(data, 0, sz);
 
     m_resources.getSoilInfiltration().setData(data, terrain_width, terrain_depth);
-//    m_resources.getSoilInfiltration().pushToGPU();
-
     m_fps_callback_timer->start();
 }
 
@@ -888,15 +886,9 @@ void GLWidget::refresh_water()
 {
     m_fps_callback_timer->stop();
 
-    makeCurrent();
-
-    // REFRESH PADDED TERRAIN IF INVALID (NEEDED FOR WATER FLOW)
-    if(!m_padded_terrain.isValid())
-    {
-        m_padded_terrain.refresh(m_terrain);
-    }
-
     reset_water();
+
+    makeCurrent();
 
     GLuint m_soil_infiltration_texture_id(m_resources.getSoilInfiltration().textureId());
     //  CALCULATE SOILD HUMIDITY AND STANDING WATER
@@ -1000,11 +992,19 @@ void GLWidget::soil_infiltration_controllers_state_changed(bool active)
         reset_water();
 }
 
+void GLWidget::water_controllers_state_changed(bool active)
+{
+    disable_all_overlay_widget_actions();
+    m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]->setChecked(active);
+}
+
+
 void GLWidget::disable_all_overlay_widget_actions()
 {
     m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]->setChecked(false);
 }
 
 void GLWidget::orientation_controllers_state_changed(bool active)
@@ -1089,7 +1089,6 @@ void GLWidget::fill_infiltration_rate(int infiltration_rate)
     }
     makeCurrent();
     m_resources.getSoilInfiltration().setData(data, m_terrain.getWidth(), m_terrain.getDepth());
-//    m_resources.getSoilInfiltration().pushToGPU();
 }
 
 void GLWidget::soil_infiltration_rate_changed(int infiltration_rate)
@@ -1130,6 +1129,7 @@ void GLWidget::set_absolute_aggregate_height(int height)
     float terrain_scale_height(height/m_terrain.getScale());
     makeCurrent();
     TerrainWaterHeightmap & twh(m_resources.getTerrainWater()[month()]);
+    twh.push();
 
     m_renderer.setAbsoluteAggregateHeight(m_terrain,
                                           twh,
@@ -1158,6 +1158,10 @@ void GLWidget::reset_edit_actions()
     m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]->setChecked(false);
+    m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL]->setChecked(false);
+
+    set_flood_fill_enabled(false);
 }
 
 void GLWidget::format_overlay_texture()
@@ -1168,7 +1172,6 @@ void GLWidget::format_overlay_texture()
 
     makeCurrent();
     m_overlay_texture.setData(data, m_terrain.getWidth(), m_terrain.getDepth());
-//    m_overlay_texture.pushToGPU();
 }
 
 bool GLWidget::render_rays()

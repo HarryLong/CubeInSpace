@@ -26,27 +26,10 @@ void TerrainDailyIllumination::setData(GLubyte * min_data, GLubyte * max_data, i
     m_max_illumination.setData(max_data, width, height);
 }
 
-void TerrainDailyIllumination::invalidate()
-{
-    m_min_illumination.invalidate();
-    m_max_illumination.invalidate();
-}
-
-bool TerrainDailyIllumination::isValid()
-{
-    return m_min_illumination.isValid() && m_max_illumination.isValid();
-}
-
 void TerrainDailyIllumination::getIlluminationData(int x, int z, GLubyte & min, GLubyte & max)
 {
     min = m_min_illumination(x,z);
     max = m_max_illumination(x,z);
-}
-
-void TerrainDailyIllumination::pushToGPU()
-{
-    m_min_illumination.pushToGPU();
-    m_max_illumination.pushToGPU();
 }
 
 TerrainDailyIlluminationTexture::TerrainDailyIlluminationTexture() :

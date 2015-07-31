@@ -48,18 +48,7 @@ public:
     TerrainWaterHeightmap& operator[](int);
     void setData(GLfloat * data[12], int width, int height);
     std::vector<TerrainWaterHeightmap*> getUnbalanced();
-    void pushToGPU();
     void reset(int width, int height);
-
-//    void bindJun();
-//    GLuint getDecTextureId();
-//    GLuint getJunTextureId();
-//    void pushToGPU();
-//    void setData(GLuint * jun_data, GLuint * dec_data, int width, int height);
-//    void syncFromGPU();
-//    void getWaterData(int x, int z, GLuint & jun, GLuint & dec);
-//    const GLuint * getJunRawData();
-//    const GLuint * getDecRawData();
 
 private:
     TerrainWaterHeightmap m_terrain_water[12];

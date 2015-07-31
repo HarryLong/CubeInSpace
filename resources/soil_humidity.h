@@ -17,7 +17,7 @@ class SoilHumidity : public QObject
 public:
     SoilHumidity();
     ~SoilHumidity();
-    void pushToGPU();
+//    void pushToGPU();
     void syncFromGPU();
     void reset(int width, int height);
     SoilHumidityHeightmap& operator[](int);
