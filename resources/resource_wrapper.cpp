@@ -76,8 +76,13 @@ SoilHumidity & ResourceWrapper::getSoilHumidity()
     return m_soil_humidity;
 }
 
+WeightedSoilHumidity & ResourceWrapper::getWeightedSoilHumidity()
+{
+    return m_weighted_soil_humidity;
+}
+
 void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
-                                      int & soil_infiltration_rate, int & soil_humidity)
+                                      int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity)
 {
     // Water
     {
@@ -112,6 +117,10 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
     {
         soil_humidity = m_soil_humidity[month](pos[0], pos[1]);
     }
+    // Weighted soil Humidity
+    {
+        weighted_soil_humidity = m_weighted_soil_humidity[month](pos[0], pos[1]);
+    }
 }
 
 void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_position)
@@ -138,7 +147,7 @@ GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_po
     // Generate the data
     shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
 
-    if(sun_position[1] <= terrain.getBaseHeight()) // Optimization - the sun is set. There will be no light
+    if(sun_position[1] <= terrain.getMinHeight()) // Optimization - the sun is set. There will be no light
     {
         memset(shade_data, 0xFF, terrain_depth*terrain_width);
     }

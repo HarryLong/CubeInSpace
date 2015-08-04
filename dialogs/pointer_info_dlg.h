@@ -17,7 +17,7 @@ public:
 
 public slots:
     void update(const glm::vec2 & point,
-                float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity,
+                float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity, float weighted_soil_humidity,
                 bool shade_set, bool shaded,
                 bool temp_set, float temp,
                 bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination);
@@ -34,6 +34,7 @@ private slots:
     void setWaterHeight(float water_height);
     void setSoilInfiltrationRate(int soil_infiltration_rate);
     void setSoilHumidity(int soil_humidity);
+    void setWeightedSoilHumidity(float weighted_soil_humidity);
     void setAggregateHeight(int height);
 
     void setInvalid(QLabel * lbl);
@@ -48,6 +49,7 @@ private:
         _SLOPE,
         _SOIL_INFILTRATION_RATE,
         _SOIL_HUMIDITY,
+        _WEIGHTED_SOIL_HUMIDITY,
         _SHADE,
         _TEMP,
         _MIN_DAILY_ILLUMINATION,

@@ -73,6 +73,11 @@ void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
     emit terrainDimensionsChanged(getWidth(), getDepth(), getBaseHeight(), getMaxHeight());
 }
 
+float Terrain::getMinHeight() const
+{
+    return m_terragen_file.m_header_data.min_height;
+}
+
 float Terrain::getMaxHeight() const
 {
     return m_terragen_file.m_header_data.max_height;

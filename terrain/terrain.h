@@ -35,6 +35,7 @@ public:
 
     Asset* getSelectionRect();
     void setTerrain(TerragenFile parsed_terrangen_file);
+    float getMinHeight() const;
     float getMaxHeight() const;
     float getBaseHeight() const;
     int getWidth() const;

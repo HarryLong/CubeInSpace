@@ -22,6 +22,7 @@ void PointerInformationDialog::init_labels()
     m_labels[LabelType::_SLOPE] = new QLabel(this);
     m_labels[LabelType::_SOIL_INFILTRATION_RATE] = new QLabel(this);
     m_labels[LabelType::_SOIL_HUMIDITY] = new QLabel(this);
+    m_labels[LabelType::_WEIGHTED_SOIL_HUMIDITY] = new QLabel(this);
     m_labels[LabelType::_SHADE] = new QLabel(this);
     m_labels[LabelType::_TEMP] = new QLabel(this);
     m_labels[LabelType::_MIN_DAILY_ILLUMINATION] = new QLabel(this);
@@ -88,6 +89,11 @@ void PointerInformationDialog::setSoilHumidity(int soil_humidity)
     m_labels[LabelType::_SOIL_HUMIDITY]->setText(QString::number(soil_humidity));
 }
 
+void PointerInformationDialog::setWeightedSoilHumidity(float weighted_soil_humidity)
+{
+    m_labels[LabelType::_WEIGHTED_SOIL_HUMIDITY]->setText(QString::number(weighted_soil_humidity));
+}
+
 void PointerInformationDialog::setAggregateHeight(int height)
 {
     m_labels[LabelType::_AGGREGATE_HEIGHT]->setText(QString::number(height));
@@ -100,7 +106,7 @@ void PointerInformationDialog::invalidPoint()
 }
 
 void PointerInformationDialog::update(const glm::vec2 & point,
-                                      float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity,
+                                      float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity, float weighted_soil_humidity,
                                       bool shade_set, bool shaded,
                                       bool temp_set, float temp,
                                       bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination)
@@ -119,6 +125,9 @@ void PointerInformationDialog::update(const glm::vec2 & point,
 
     // SOIL HUMIDITY
     setSoilHumidity(soil_humidity);
+
+    // WEIGHTED SOIL HUMIDITY
+    setWeightedSoilHumidity(weighted_soil_humidity);
 
     // Aggregate Height
     {
@@ -207,6 +216,16 @@ void PointerInformationDialog::init_layout()
 
         layout->addWidget(new QLabel("Soil humidity (mm): "), 1, Qt::AlignLeft);
         layout->addWidget(m_labels[LabelType::_SOIL_HUMIDITY], 1, Qt::AlignRight);
+
+        main_layout->addLayout(layout, 0);
+    }
+
+    // Weighted Soil Humidity
+    {
+        QHBoxLayout * layout (new QHBoxLayout);
+
+        layout->addWidget(new QLabel("Weighted soil humidity (mm): "), 1, Qt::AlignLeft);
+        layout->addWidget(m_labels[LabelType::_WEIGHTED_SOIL_HUMIDITY], 1, Qt::AlignRight);
 
         main_layout->addLayout(layout, 0);
     }

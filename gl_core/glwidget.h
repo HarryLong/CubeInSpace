@@ -131,6 +131,8 @@ private:
     bool overlay_min_illumination();
     bool overlay_max_illumination();
     bool overlay_soil_infiltration();
+    bool overlay_monthly_soil_humidity();
+    bool overlay_weighted_avg_soil_humidity();
     bool edit_infiltration_rate();
     bool fps();
     bool softimage();

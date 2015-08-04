@@ -40,19 +40,3 @@ void SoilHumidity::reset(int width, int depth)
         heightmap.setData(data, width, depth);
     }
 }
-
-//void SoilHumidity::pushToGPU()
-//{
-//    for(SoilHumidityHeightmap & heightmap : m_soil_humidity)
-//    {
-//        heightmap.pushToGPU();
-//    }
-//}
-
-void SoilHumidity::syncFromGPU()
-{
-    for(SoilHumidityHeightmap & heightmap : m_soil_humidity)
-    {
-        heightmap.syncFromGPU();
-    }
-}

@@ -7,6 +7,7 @@
 #include "terrain_water.h"
 #include "soil_infiltration.h"
 #include "soil_humidity.h"
+#include "weighted_soil_humidity.h"
 #include <atomic>
 
 class LightingManager;
@@ -17,7 +18,7 @@ public:
     ~ResourceWrapper();
 
     void getResourceInfo(const glm::vec2 & pos, int month, float & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
-                         int & soil_infiltration_rate, int & soil_humidity);
+                         int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity);
 
     void valid(bool & shade, bool & daily_illumination, bool & temp);
     void refreshShade(Terrain & terrain, const glm::vec3 & sun_position);
@@ -26,10 +27,11 @@ public:
 
     TerrainWater & getTerrainWater();
     SoilInfiltration & getSoilInfiltration();
-    SoilHumidity & getSoilHumidity();
     TerrainDailyIllumination & getDailyIllumination();
     TerrainShade & getShade();
     TerrainTemperature & getTerrainTemp();
+    SoilHumidity & getSoilHumidity();
+    WeightedSoilHumidity & getWeightedSoilHumidity();
 
 signals:
     void processing(QString description);
@@ -56,6 +58,7 @@ private:
     TerrainWater m_terrain_water;
     SoilInfiltration m_soil_infiltration;
     SoilHumidity m_soil_humidity;
+    WeightedSoilHumidity m_weighted_soil_humidity;
 };
 
 #endif // RESOURCE_WRAPPER_H

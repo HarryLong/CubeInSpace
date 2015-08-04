@@ -26,4 +26,5 @@ void Shaders::compileAndLink()
     m_overlay_texture_creator.compileAndLink();
     m_aggregate_height.compileAndLink();
     m_border_overlap_reducer.compileAndLink();
+    m_weighted_avg_calculator.compileAndLink();
 }

@@ -91,6 +91,8 @@ public:
     const static QString _MIN_DAILY_ILLUMINATION;
     const static QString _MAX_DAILY_ILLUMINATION;
     const static QString _SOIL_INFILTRATION_RATE;
+    const static QString _MONTHLY_SOIL_HUMIDITY;
+    const static QString _WEIGHTED_AVG_SOIL_HUMIDITY;
     OverlayActionFamily();
     ~OverlayActionFamily();
 
@@ -119,7 +121,6 @@ class EditActionFamily : public ActionFamily{
 public:
     const static QString _TEMPERATURE;
     const static QString _ORIENTATION;
-    const static QString _HUMIDITY;
     const static QString _TIME;
     const static QString _LATITUDE;
     const static QString _MONTHLY_RAINFALL;

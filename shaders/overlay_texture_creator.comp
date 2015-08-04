@@ -14,11 +14,13 @@ struct OverlayMode
     bool daily_illumination_min;
     bool daily_illumination_max;
     bool soil_infiltration_rate;
+    bool monthly_soil_humidity;
+    bool weighted_avg_soil_humidity;
 };
 
 uniform OverlayMode overlay;
+uniform float min_height;
 uniform float max_height;
-uniform float base_height;
 uniform int month;
 
 uniform sampler2D terrain_height_map_texture;
@@ -29,6 +31,8 @@ uniform sampler2D min_daily_illumination_texture;
 uniform sampler2D max_daily_illumination_texture;
 uniform usampler2D shade_texture;
 uniform usampler2D soil_infiltration_rate_texture;
+uniform usampler2D monthly_soil_humidity_texture;
+uniform sampler2D weighted_avg_soil_humidity_texture;
 
 float mm_to_meters(in uint mm)
 {
@@ -74,7 +78,22 @@ vec4 daily_illumination_to_output_color(in uint daily_illumination)
 
 vec4 soil_infiltration_rate_to_output_color(in uint soil_infiltration_rate)
 {
-    float intensity = float(soil_infiltration_rate)/50.0; // 500 is the max
+    float intensity = float(soil_infiltration_rate)/50.0; // 50 is the max
+    return vec4(0,0,intensity,.7);
+}
+
+vec4 soil_humidity_to_color(in float soil_humidity)
+{
+//    if(soil_humidity > 500)
+//    {
+//        return vec4(1,1,1,.7);
+//    }
+//    else
+//    {
+//        return vec4(0,0,0,.7);
+//    }
+
+    float intensity = soil_humidity/500.0; // 500 is the max
     return vec4(0,0,intensity,.7);
 }
 
@@ -102,7 +121,7 @@ void main()
         else if(overlay.altitude)
         {
             float height = texture(terrain_height_map_texture, texture_coord).r;
-            float altitude = (height-base_height)/(max_height-base_height);
+            float altitude = (height-min_height)/(max_height-min_height);
             resulting_color = altitude_to_output_color(altitude);
         }
         else if(overlay.temperature)
@@ -138,7 +157,16 @@ void main()
             uint soil_infiltration_rate = texture(soil_infiltration_rate_texture, texture_coord).r;
             resulting_color = soil_infiltration_rate_to_output_color(soil_infiltration_rate);
         }
-
+        else if(overlay.monthly_soil_humidity)
+        {
+            uint soil_humidity = texture(monthly_soil_humidity_texture, texture_coord).r;
+            resulting_color = soil_humidity_to_color(float(soil_humidity));
+        }
+        else if(overlay.weighted_avg_soil_humidity)
+        {
+            float soil_humidity = texture(weighted_avg_soil_humidity_texture, texture_coord).r;
+            resulting_color = soil_humidity_to_color(soil_humidity);
+        }
         imageStore(resulting_overlay, global_idx, resulting_color);
     }
 

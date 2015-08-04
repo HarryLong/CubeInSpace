@@ -227,3 +227,19 @@ BorderOverlapReducer::~BorderOverlapReducer()
 {
 
 }
+
+/****************************
+ * WEIGHTED AVERAGE CREATOR *
+ ****************************/
+const int WeightedAverageCalculator::_GROUP_SIZE_X = 32;
+const int WeightedAverageCalculator::_GROUP_SIZE_Y = 32;
+const int WeightedAverageCalculator::_GROUP_SIZE_Z = 1;
+WeightedAverageCalculator::WeightedAverageCalculator() : ComputeShaderProgram(":/weighted_avg_calculator.comp")
+{
+
+}
+
+WeightedAverageCalculator::~WeightedAverageCalculator()
+{
+
+}

@@ -1,0 +1,42 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, r32ui) uniform coherent uimage2D soil_humidity;
+layout(binding = 1, r32ui) uniform coherent uimage2D soil_humidity_minus_one;
+layout(binding = 2, r32ui) uniform coherent uimage2D soil_humidity_minus_two;
+
+layout(binding = 3, r32f) uniform coherent image2D resulting_weighted_soil_humidity;
+
+float calculate_avg(uint month, uint month_minus_one, uint month_minus_two)
+{
+    float avg = float(month) * (3.0/6.0);
+    avg += (float(month_minus_one) * (2.0/6.0));
+    avg += (float(month_minus_two) * (1.0/6.0));
+
+    return avg;
+}
+
+void main()
+{
+    uvec2 size = imageSize(soil_humidity);
+
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y);
+    bool valid = global_idx.x < int(size.x) && global_idx.y < int(size.y);
+
+    if(valid)
+    {
+        uint humidities[3];
+        humidities[0] = imageLoad(soil_humidity, global_idx).x;
+        humidities[1] = imageLoad(soil_humidity_minus_one, global_idx).x;
+        humidities[2] = imageLoad(soil_humidity_minus_two, global_idx).x;
+
+        float weighted = calculate_avg(humidities[0], humidities[1], humidities[2]);
+
+        imageStore(resulting_weighted_soil_humidity, global_idx, vec4(weighted,0,0,0));
+    }
+    memoryBarrierImage();
+}
+

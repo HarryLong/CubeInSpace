@@ -38,8 +38,6 @@ void depth_init( inout float[9] to_init)
     }
 }
 
-uniform float terrain_scale;
-
 const int _BORDER_INSERT_ALL_WATER = -1;
 
 shared float water_to_add_to_cell[gl_WorkGroupSize.x+2][gl_WorkGroupSize.y+2][9];

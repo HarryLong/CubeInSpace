@@ -17,5 +17,6 @@
         <file>overlay_texture_creator.comp</file>
 	<file>aggregate_height_setter.comp</file>
         <file>border_overlap_reducer.comp</file>
+        <file>weighted_avg_calculator.comp</file>
     </qresource>
 </RCC>

@@ -125,6 +125,8 @@ const QString OverlayActionFamily::_TEMPERATURE = "Temperature";
 const QString OverlayActionFamily::_MIN_DAILY_ILLUMINATION = "Min. Daily Illumination";
 const QString OverlayActionFamily::_MAX_DAILY_ILLUMINATION = "Max. Daily Illumination";
 const QString OverlayActionFamily::_SOIL_INFILTRATION_RATE = "Soil Infiltration Rate";
+const QString OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY = "Monthly";
+const QString OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY = "Weighted average";
 OverlayActionFamily::OverlayActionFamily() : ActionFamily(false, true)
 {
     init_actions();
@@ -148,6 +150,8 @@ void OverlayActionFamily::init_actions()
     m_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION] = new QAction(OverlayActionFamily::_MIN_DAILY_ILLUMINATION, NULL);
     m_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION] = new QAction(OverlayActionFamily::_MAX_DAILY_ILLUMINATION, NULL);
     m_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE] = new QAction(OverlayActionFamily::_SOIL_INFILTRATION_RATE, NULL);
+    m_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY] = new QAction(OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY, NULL);
+    m_actions[OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY] = new QAction(OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY, NULL);
 }
 
 /****************
@@ -178,14 +182,12 @@ void ShowActionFamily::init_actions()
  *****************/
 const QString EditActionFamily::_TEMPERATURE = "Temperature";
 const QString EditActionFamily::_ORIENTATION = "Orientation";
-const QString EditActionFamily::_HUMIDITY = "Humidity";
 const QString EditActionFamily::_TIME = "Time";
 const QString EditActionFamily::_LATITUDE = "Latitude";
 const QString EditActionFamily::_MONTHLY_RAINFALL = "Monthly Rainfall";
 const QString EditActionFamily::_SOIL_INFILTRATION_RATE = "Soil Infiltration Rate";
 const QString EditActionFamily::_FLOOD_FILL = "Flood fill";
 const QString EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT = "Absolute Aggregate Height";
-
 EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 {
     init_actions();
@@ -204,7 +206,6 @@ void EditActionFamily::init_actions()
 {
     m_actions[EditActionFamily::_TEMPERATURE] = new QAction(EditActionFamily::_TEMPERATURE, NULL);
     m_actions[EditActionFamily::_ORIENTATION] = new QAction(EditActionFamily::_ORIENTATION, NULL);
-    m_actions[EditActionFamily::_HUMIDITY] = new QAction(EditActionFamily::_HUMIDITY, NULL);
     m_actions[EditActionFamily::_TIME] = new QAction(EditActionFamily::_TIME, NULL);
     m_actions[EditActionFamily::_LATITUDE] = new QAction(EditActionFamily::_LATITUDE, NULL);
     m_actions[EditActionFamily::_MONTHLY_RAINFALL] = new QAction(EditActionFamily::_MONTHLY_RAINFALL, NULL);

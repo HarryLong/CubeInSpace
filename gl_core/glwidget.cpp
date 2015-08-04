@@ -786,9 +786,9 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
 
         bool shaded;
         int min_daily_illumination, max_daily_illumination, soil_infiltration_rate, soil_humidity;
-        float temperature, water_height;
+        float temperature, water_height, weighted_soil_humidity;
         m_resources.getResourceInfo(intersecion_point_2d, month(), water_height, shaded, min_daily_illumination, max_daily_illumination,
-                                    temperature, soil_infiltration_rate, soil_humidity);
+                                    temperature, soil_infiltration_rate, soil_humidity, weighted_soil_humidity);
         bool shade_valid, temp_valid, illumination_valid;
         m_resources.valid(shade_valid,illumination_valid,temp_valid);
 
@@ -796,7 +796,7 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
         water_height = water_height * m_terrain.getScale() * 1000;
 
         m_dialogs.m_pointer_info_dlg.update(intersecion_point_2d,
-                                            altitude, slope, water_height, soil_infiltration_rate, soil_humidity,
+                                            altitude, slope, water_height, soil_infiltration_rate, soil_humidity, weighted_soil_humidity,
                                             shade_valid, shaded,
                                             temp_valid, temperature,
                                             illumination_valid, min_daily_illumination, max_daily_illumination);
@@ -817,6 +817,10 @@ void GLWidget::overlay_changed()
         m_active_overlay = Uniforms::Overlay::_ALTITUDE;
     else if(overlay_soil_infiltration())
         m_active_overlay = Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
+    else if(overlay_monthly_soil_humidity())
+        m_active_overlay = Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY;
+    else if(overlay_weighted_avg_soil_humidity())
+        m_active_overlay = Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY;
     else if(overlay_shade())
     {
         if(!shade_valid)
@@ -891,7 +895,8 @@ void GLWidget::refresh_water()
     makeCurrent();
 
     GLuint m_soil_infiltration_texture_id(m_resources.getSoilInfiltration().textureId());
-    //  CALCULATE SOILD HUMIDITY AND STANDING WATER
+
+    //  CALCULATE SOIL HUMIDITY AND STANDING WATER
     for(int i = 0; i < 12; i++)
     {
         SoilHumidityHeightmap & tsh (m_resources.getSoilHumidity()[i+1]);
@@ -909,7 +914,15 @@ void GLWidget::refresh_water()
         twh.syncFromGPU();
     }
 
-    m_resources.getSoilHumidity().syncFromGPU();
+    //  CALCULATE WEIGHTED SOIL HUMIDITY
+    WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
+    m_renderer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
+
+    // Sync from GPU
+    for(int i(0); i < 12; i++)
+    {
+        wsh[i+1].syncFromGPU();
+    }
 
     // Disable fps callback temporarily
     m_fps_callback_timer->start();
@@ -932,9 +945,11 @@ void GLWidget::reset_water()
 {
     makeCurrent();
     // RESET SOIL HUMIDITY
-    m_resources.getTerrainWater().reset(m_terrain.getWidth(), m_terrain.getDepth());
-    // RESET TERRAIN WATER
     m_resources.getSoilHumidity().reset(m_terrain.getWidth(), m_terrain.getDepth());
+    // RESET WEIGHTED SOIL HUMIDITY
+    m_resources.getWeightedSoilHumidity().reset(m_terrain.getWidth(), m_terrain.getDepth());
+    // RESET TERRAIN WATER
+    m_resources.getTerrainWater().reset(m_terrain.getWidth(), m_terrain.getDepth());
 }
 
 void GLWidget::refresh_shade()
@@ -1067,7 +1082,6 @@ void GLWidget::zeroify_soil_infiltration_above_slope(int min_slope)
 
 void GLWidget::fill_infiltration_rate(int infiltration_rate)
 {
-    qCritical() << "Infiltration rate:" << infiltration_rate;
     int sz(m_terrain.getWidth() * m_terrain.getDepth() * sizeof(GLuint));
     GLuint * data = (GLuint*) malloc(sz);
 
@@ -1153,7 +1167,6 @@ void GLWidget::reset_edit_actions()
 {
     m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_ORIENTATION]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_HUMIDITY]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
     m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]->setChecked(false);
@@ -1232,6 +1245,16 @@ bool GLWidget::overlay_max_illumination()
 bool GLWidget::overlay_soil_infiltration()
 {
     return m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]->isChecked();
+}
+
+bool GLWidget::overlay_monthly_soil_humidity()
+{
+    return m_actions->m_overlay_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY]->isChecked();
+}
+
+bool GLWidget::overlay_weighted_avg_soil_humidity()
+{
+    return m_actions->m_overlay_actions[OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY]->isChecked();
 }
 
 bool GLWidget::edit_infiltration_rate()

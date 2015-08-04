@@ -11,6 +11,7 @@ public:
     };
 
     struct Terrain{
+        static const char * _MIN_HEIGHT;
         static const char * _MAX_HEIGHT;
         static const char * _BASE_HEIGHT;
         static const char * _MATERIAL_AMBIENT;
@@ -34,6 +35,8 @@ public:
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
         static const char * _SOIL_INFILTRATION_RATE;
+        static const char * _MONTHLY_SOIL_HUMIDITY;
+        static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;
     };
 
     struct Overlay{
@@ -47,6 +50,8 @@ public:
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
         static const char * _SOIL_INFILTRATION_RATE;
+        static const char * _MONTHLY_SOIL_HUMIDITY;
+        static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;
     };
 
     struct Lighting{

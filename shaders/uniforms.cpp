@@ -7,6 +7,7 @@ const char * Uniforms::Transform::_MODEL  = "transform.mtwMat";
 const char * Uniforms::Transform::_SCALE = "transform.scale";
 
 // TERRAIN
+const char * Uniforms::Terrain::_MIN_HEIGHT = "min_height";
 const char * Uniforms::Terrain::_MAX_HEIGHT = "max_height";
 const char * Uniforms::Terrain::_BASE_HEIGHT = "base_height";
 const char * Uniforms::Terrain::_MATERIAL_AMBIENT = "terrain_material_ambient";
@@ -28,6 +29,8 @@ const char * Uniforms::Texture::_TEMPERATURE_DEC = "dec_temperature_texture";
 const char * Uniforms::Texture::_MIN_DAILY_ILLUMINATION = "min_daily_illumination_texture";
 const char * Uniforms::Texture::_MAX_DAILY_ILLUMINATION = "max_daily_illumination_texture";
 const char * Uniforms::Texture::_SOIL_INFILTRATION_RATE = "soil_infiltration_rate_texture";
+const char * Uniforms::Texture::_MONTHLY_SOIL_HUMIDITY = "monthly_soil_humidity_texture";
+const char * Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY = "weighted_avg_soil_humidity_texture";
 
 // OVERLAY
 const char * Uniforms::Overlay::_ACTIVE = "overlay_active";
@@ -40,6 +43,8 @@ const char * Uniforms::Overlay::_TEMPERATURE = "overlay.temperature";
 const char * Uniforms::Overlay::_MIN_DAILY_ILLUMINATION = "overlay.daily_illumination_min";
 const char * Uniforms::Overlay::_MAX_DAILY_ILLUMINATION = "overlay.daily_illumination_max";
 const char * Uniforms::Overlay::_SOIL_INFILTRATION_RATE = "overlay.soil_infiltration_rate";
+const char * Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY = "overlay.monthly_soil_humidity";
+const char * Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY = "overlay.weighted_avg_soil_humidity";
 
 // LIGHTING
 const char * Uniforms::Lighting::_POSITION = "light_position";

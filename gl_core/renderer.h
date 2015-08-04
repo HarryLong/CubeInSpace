@@ -50,6 +50,9 @@ public:
                                                int terrain_depth,
                                                float terrain_scale);
 
+    void calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
+                                       WeightedSoilHumidity & weighted_soil_humidities);
+
     void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, float terrain_scale,
                       bool one_step = false);
 

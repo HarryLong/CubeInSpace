@@ -146,10 +146,10 @@ void Renderer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
 
     if(active_overlay == Uniforms::Overlay::_ALTITUDE)
     {
-        // Heightmap maximum height
+        // Heightmap min height
+        m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Terrain::_MIN_HEIGHT, (GLfloat)(terrain.getMinHeight())); CE();
+        // Heightmap max height
         m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Terrain::_MAX_HEIGHT, (GLfloat)(terrain.getMaxHeight())); CE();
-        // Heightmap base height
-        m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Terrain::_BASE_HEIGHT, (GLfloat)(terrain.getBaseHeight())); CE();
 
         f->glActiveTexture(texture_unit); CE();
         m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_TERRAIN_HEIGHTMAP, texture_unit-GL_TEXTURE0); CE();
@@ -209,6 +209,20 @@ void Renderer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
         resources.getSoilInfiltration().bind();
         texture_unit++;
     }
+    else if(active_overlay == Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY)
+    {
+        f->glActiveTexture(texture_unit);CE();
+        m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_MONTHLY_SOIL_HUMIDITY, texture_unit-GL_TEXTURE0); CE();
+        resources.getSoilHumidity()[month].bind();
+        texture_unit++;
+    }
+    else if(active_overlay == Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY)
+    {
+        f->glActiveTexture(texture_unit);CE();
+        m_shaders.m_overlay_texture_creator.setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY, texture_unit-GL_TEXTURE0); CE();
+        resources.getWeightedSoilHumidity()[month].bind();
+        texture_unit++;
+    }
 
     glm::vec3 group_count ( calculateGroupCount(terrain.getWidth(), terrain.getDepth(), 1,
                                         OverlayTextureCreatorShader::_GROUP_SIZE_X,
@@ -223,111 +237,6 @@ void Renderer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
 
     m_shaders.m_overlay_texture_creator.release();
 }
-
-//void Renderer::renderOverlay(Terrain & terrain, ResourceWrapper & resources, const Transform & transforms,
-//                   const char * overlay, int month)
-//{
-//    int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
-//    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
-//    m_shaders.m_overlay.bind();
-
-//    m_shaders.m_overlay.setUniformValue(Uniforms::Transform::_PROJECTION, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._Proj)))); CE();
-//    m_shaders.m_overlay.setUniformValue(Uniforms::Transform::_VIEW, QMatrix4x4(glm::value_ptr(glm::transpose(transforms._MV)))); CE();
-//    m_shaders.m_overlay.setUniformValue(Uniforms::Transform::_SCALE, transforms._scale); CE();
-
-//    // Month
-//    m_shaders.m_overlay.setUniformValue(Uniforms::Timing::_MONTH, month); CE();
-
-//    // Terrain heightmap texture
-//    {
-//        f->glActiveTexture(texture_unit); CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_TERRAIN_HEIGHTMAP, texture_unit-GL_TEXTURE0); CE();
-//        terrain.getDrawableTerrain().bind();CE();
-//        texture_unit++;
-//    }
-//    // Water heightmap texture
-//    {
-//        // Water heightmap
-//        f->glActiveTexture(texture_unit); CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_WATER_HEIGHTMAP, texture_unit-GL_TEXTURE0); CE();
-//        resources.getTerrainWater()[month].bind();CE();
-//        texture_unit++;
-//    }
-
-//    // Normals texture
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_NORMALS, texture_unit-GL_TEXTURE0); CE();
-//        f->glBindTexture(GL_TEXTURE_2D, terrain.getNormals().getTextureUnit());CE();
-//        texture_unit++;
-//    }
-
-//    reset_overlays(m_shaders.m_overlay);
-//    m_shaders.m_overlay.setUniformValue(overlay, true); CE();
-
-//    // Bind shade texture
-//    if(overlay == Uniforms::Overlay::_SHADE)
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_SHADE, texture_unit-GL_TEXTURE0); CE();
-//        resources.bindShade(); CE();
-//        texture_unit++;
-//    }
-//    else if(overlay == Uniforms::Overlay::_TEMPERATURE)
-//    {
-//        // June temperature
-//        {
-//            f->glActiveTexture(texture_unit);CE();
-//            m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_TEMPERATURE_JUN, texture_unit-GL_TEXTURE0); CE();
-//            resources.bindJunTemperature(); CE();
-//            texture_unit++;
-//        }
-//        // December Temp
-//        {
-//            f->glActiveTexture(texture_unit);CE();
-//            m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_TEMPERATURE_DEC, texture_unit-GL_TEXTURE0); CE();
-//            resources.bindDecTemperature(); CE();
-//            texture_unit++;
-//        }
-//    }
-//    else if(overlay == Uniforms::Overlay::_MIN_DAILY_ILLUMINATION)
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_MIN_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-//        resources.bindMinIllumination();
-//        texture_unit++;
-//    }
-//    else if(overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION)
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_MAX_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-//        resources.bindMaxIllumination();
-//        texture_unit++;
-//    }
-//    else if(overlay == Uniforms::Overlay::_SOIL_INFILTRATION_RATE)
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_overlay.setUniformValue(Uniforms::Texture::_SOIL_INFILTRATION_RATE, texture_unit-GL_TEXTURE0); CE();
-//        resources.getSoilInfiltration().bind();
-//        texture_unit++;
-//    }
-
-//    // Heightmap maximum height
-//    m_shaders.m_overlay.setUniformValue(Uniforms::Terrain::_MAX_HEIGHT, (GLfloat)(terrain.getMaxHeight())); CE();
-
-//    // Heightmap base height
-//    m_shaders.m_overlay.setUniformValue(Uniforms::Terrain::_BASE_HEIGHT, (GLfloat)(terrain.getBaseHeight())); CE();
-
-//    f->glEnable(GL_BLEND);CE();
-//    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);CE();
-
-//    terrain.render();
-
-//    f->glDisable(GL_BLEND);CE();
-
-//    m_shaders.m_overlay.release();
-//}
 
 void Renderer::renderTerrainElements(Terrain & terrain,
                                      Transform & transforms,
@@ -348,9 +257,6 @@ void Renderer::renderTerrainElements(Terrain & terrain,
         terrain.getDrawableTerrain().bind();
         texture_unit++;
     }
-
-    // Heightmap base height
-    m_shaders.m_terrain_elements.setUniformValue(Uniforms::Terrain::_BASE_HEIGHT, (GLfloat)(terrain.getBaseHeight())); CE();
 
     // Draw all the assets
     for(Asset * asset : p_assets)
@@ -474,8 +380,6 @@ void Renderer::balanceWater(PaddedTerrain & padded_terrain,
         }
 
         m_shaders.m_water_flux_generator.bind();  CE();
-
-        m_shaders.m_water_flux_generator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);
 
         f->glBindImageTexture(0, terrain_water->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
         f->glBindImageTexture(1, padded_terrain.textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
@@ -647,6 +551,38 @@ void Renderer::calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_te
 
     f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
     f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+
+    m_shaders.m_soil_humidity_calculator.release();
+}
+
+void Renderer::calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
+                                             WeightedSoilHumidity & weighted_soil_humidities)
+{
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
+    glm::uvec3 group_count (calculateGroupCount(soil_humdities[1].width(), soil_humdities[1].height(), 1,
+                                                WeightedAverageCalculator::_GROUP_SIZE_X,
+                                                WeightedAverageCalculator::_GROUP_SIZE_Y,
+                                                WeightedAverageCalculator::_GROUP_SIZE_Z));
+
+    m_shaders.m_weighted_avg_calculator.bind();
+
+    for(int i(0); i < 12; i++)
+    {
+        f->glBindImageTexture(0, soil_humdities[i+1].textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
+        f->glBindImageTexture(1, soil_humdities[((i+11) % 12)+1 ].textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
+        f->glBindImageTexture(2, soil_humdities[((i+10) % 12)+1].textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
+
+        f->glBindImageTexture(3, weighted_soil_humidities[i+1].textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE(); // Resulting weighted soil humidity
+
+        f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
+        f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+    }
+
+    m_shaders.m_weighted_avg_calculator.release();
 }
 
 void Renderer::slopeBasedInfiltrationRateFilter(Terrain & terrain,
@@ -729,5 +665,7 @@ void Renderer::reset_overlays(OverlayTextureCreatorShader & shader)
     shader.setUniformValue(Uniforms::Overlay::_MIN_DAILY_ILLUMINATION, false); CE();
     shader.setUniformValue(Uniforms::Overlay::_MAX_DAILY_ILLUMINATION, false); CE();
     shader.setUniformValue(Uniforms::Overlay::_SOIL_INFILTRATION_RATE, false); CE();
+    shader.setUniformValue(Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY, false); CE();
+    shader.setUniformValue(Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY, false); CE();
 }
 

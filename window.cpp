@@ -70,6 +70,10 @@ void MainWindow::init_menu()
         m_illumination_submenu = m_overlay_menu->addMenu("Illumination");
         m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]);
         m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]);
+
+        m_soil_humidity_submenu = m_overlay_menu->addMenu("Soil humidity");
+        m_soil_humidity_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY]);
+        m_soil_humidity_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY]);
     }
 
     // SHOW MENU
@@ -85,7 +89,6 @@ void MainWindow::init_menu()
 
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_ORIENTATION]);
-        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_HUMIDITY]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_TIME]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_LATITUDE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]);

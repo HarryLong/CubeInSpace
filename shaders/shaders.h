@@ -22,6 +22,7 @@ public:
     OverlayTextureCreatorShader m_overlay_texture_creator;
     AggregateHeightShader m_aggregate_height;
     BorderOverlapReducer m_border_overlap_reducer;
+    WeightedAverageCalculator m_weighted_avg_calculator;
 };
 
 #endif // SHADERS_H

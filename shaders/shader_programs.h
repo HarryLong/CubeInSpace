@@ -186,4 +186,18 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
+/****************************
+ * WEIGHTED AVERAGE CREATOR *
+ ****************************/
+class WeightedAverageCalculator : public ComputeShaderProgram
+{
+public:
+    WeightedAverageCalculator();
+    ~WeightedAverageCalculator();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
 #endif //SHADER_PROGRAMS

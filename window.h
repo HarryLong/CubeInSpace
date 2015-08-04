@@ -41,6 +41,7 @@ private:
 
     // Submenu elements
     QMenu * m_illumination_submenu;
+    QMenu * m_soil_humidity_submenu;
 
     GLWidget * m_glwidget;
 };
