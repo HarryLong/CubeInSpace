@@ -5,7 +5,7 @@
  * TERRAIN WATER HEIGHTMAP *
  ***************************/
 TerrainWaterHeightmap::TerrainWaterHeightmap() :
-    TextureElement<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32),
+    TextureElement2D<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32),
     m_balanced(true), m_balancing(false), m_balancing_iterations(0)
 {
 
@@ -85,11 +85,11 @@ TerrainWaterHeightmap& TerrainWater::operator[](int month)
     return m_terrain_water[month-1];
 }
 
-void TerrainWater::setData(GLfloat * data[12], int width, int height)
+void TerrainWater::setData(GLfloat * data[12])
 {
     for(int i = 0; i < 12; i++)
     {
-        m_terrain_water[i].setData(data[i], width, height);
+        m_terrain_water[i].setData(data[i]);
     }
 }
 
@@ -122,9 +122,7 @@ void TerrainWater::reset(int width, int depth)
 
     for(TerrainWaterHeightmap & heightmap : m_terrain_water)
     {
-        GLfloat * data = (GLfloat *) std::malloc(sz);
-        std::memset(data, 0, sz);
-        heightmap.setData(data, width, depth);
-        heightmap.setBalanced(false);
+        heightmap.reset(width, depth);
+        heightmap.setBalanced(true);
     }
 }

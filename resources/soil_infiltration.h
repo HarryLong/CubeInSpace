@@ -1,10 +1,10 @@
 #ifndef SOIL_INFILTRATION_H
 #define SOIL_INFILTRATION_H
 
-#include "../gl_texture/texture_element.h"
+#include "../gl_texture/texture_element_2d.h"
 #include "glm/common.hpp"
 
-class SoilInfiltration : public TextureElement<GLuint> // TODO: And GL Drawable to actually draw the water bruuuu
+class SoilInfiltration : public TextureElement2D<GLuint> // TODO: And GL Drawable to actually draw the water bruuuu
 {
 public:
     SoilInfiltration();

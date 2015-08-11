@@ -22,8 +22,28 @@ void ResourceWrapper::valid(bool & shade, bool & daily_illumination, bool & temp
     temp = m_temp_valid;
 }
 
-void ResourceWrapper::terrainChanged()
+void ResourceWrapper::terrainChanged(int width, int depth)
 {
+    m_terrain_shade.setDimensions(width, depth);
+
+    m_terrain_daily_illumination.getMin().setDimensions(width, depth);
+    m_terrain_daily_illumination.getMax().setDimensions(width, depth);
+
+    m_terrain_temp.setDimensions(width, depth);
+
+    for(int i = 1; i < 13; i++)
+    {
+        m_terrain_water[i].setDimensions(width, depth);
+        m_soil_humidity[i].setDimensions(width, depth);
+        m_weighted_soil_humidity[i].setDimensions(width, depth);
+    }
+
+    m_soil_infiltration.reset(width, depth);
+
+    m_slope.setDimensions(width, depth);
+
+    m_terrain_shade.setDimensions(width, depth);
+
     m_temp_valid = false;
     m_daily_illumination_valid = false;
     m_shade_valid = false;
@@ -81,9 +101,18 @@ WeightedSoilHumidity & ResourceWrapper::getWeightedSoilHumidity()
     return m_weighted_soil_humidity;
 }
 
-void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & water_height, bool & shaded, int & min_illumination, int & max_illumination, float & temp,
-                                      int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity)
+Slope & ResourceWrapper::getSlope()
 {
+    return m_slope;
+}
+
+void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & slope, float & water_height, bool & shaded, int & min_illumination,
+                                      int & max_illumination, float & temp, int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity)
+{
+    // Slope
+    {
+        slope = m_slope(pos[0], pos[1]);
+    }
     // Water
     {
         water_height = m_terrain_water[month](pos[0], pos[1]);
@@ -94,16 +123,15 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
     // Daily illumination
     if(m_daily_illumination_valid)
     {
-        GLubyte min, max;
-        m_terrain_daily_illumination.getIlluminationData(pos[0], pos[1], min, max);
-        min_illumination = (int) min;
-        max_illumination = (int) max;
+        min_illumination = (int) m_terrain_daily_illumination.getMin()(pos[0], pos[1]);
+        max_illumination = (int) m_terrain_daily_illumination.getMax()(pos[0], pos[1]);
     }
     // Temperature
     if(m_temp_valid)
     {
-        GLbyte jun, dec;
-        m_terrain_temp.getTempData(pos[0], pos[1], jun, dec);
+        GLbyte jun = m_terrain_temp(TerrainTemperature::_JUN_LAYER_IDX, pos[0], pos[1]);
+        GLbyte dec = m_terrain_temp(TerrainTemperature::_DEC_LAYER_IDX, pos[0], pos[1]);
+
         GLbyte temp_diff = jun - dec;
 
         float jun_percentage = (6.f-(abs(6.f-month)))/6.f;
@@ -125,7 +153,7 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
 
 void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_position)
 {
-    m_terrain_shade.setData(get_shade(terrain, sun_position), terrain.getWidth(), terrain.getDepth());
+    m_terrain_shade.setData(get_shade(terrain, sun_position));
     m_shade_valid = true;
 }
 
@@ -259,7 +287,8 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
         }
     }
     free(intermediary_illumination_data);
-    m_terrain_daily_illumination.setData(aggregated_min, aggregated_max, terrain_width, terrain_depth);
+    m_terrain_daily_illumination.getMin().setData(aggregated_min);
+    m_terrain_daily_illumination.getMax().setData(aggregated_max);
 
     // Restore time and date
     lighting_manager.setMonth(current_month);
@@ -279,8 +308,16 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     emit processing("Calculating Temperature...");
     int iteration_counter(0);
 
-    GLbyte * jun_temp_data = (GLbyte*) malloc(sizeof(GLbyte) * terrain_width * terrain_depth);
-    GLbyte * dec_temp_data = (GLbyte*) malloc(sizeof(GLbyte) * terrain_width * terrain_depth);
+//    GLbyte * temp_data = new GLbyte[terrain_width * terrain_depth * 2];
+    GLbyte * jun_temp_data = new GLbyte[terrain_width * terrain_depth];
+    GLbyte * dec_temp_data = new GLbyte[terrain_width * terrain_depth];
+
+////    std::memset(temp_data, 0, sizeof(GLbyte)*terrain_width * terrain_depth * 2);
+
+//    int dec_start_idx(terrain_width * terrain_depth);
+
+//    GLbyte * data = new GLbyte[terrain_width * terrain_depth * 2];
+//    std::memset(data, 0, terrain_width * terrain_depth * 2 * sizeof(GLbyte));
 
     // June temperatures
     {
@@ -299,7 +336,7 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 
                 float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
 
-                jun_temp_data[index] = (GLbyte) std::min(50.0f,std::max(-50.0f, temp));
+                jun_temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
             }
         }
     }
@@ -316,16 +353,22 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 #pragma omp parallel for
             for(int x = 0; x < terrain_width; x++)
             {
-                int index(z*terrain_width+x);
+                int index((z*terrain_width+x));
 
                 float altitude( terrain.getAltitude(glm::vec2(x,z)) );
 
                 float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
-                dec_temp_data[index] = (GLbyte) std::min(50.0f,std::max(-50.0f, temp));
+                dec_temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
             }
         }
     }
-    m_terrain_temp.setData(jun_temp_data, dec_temp_data, terrain_width, terrain_depth);
+
+//    m_terrain_temp.setData(temp_data, terrain_width, terrain_depth, 2);
+    m_terrain_temp.setData(TerrainTemperature::_JUN_LAYER_IDX,jun_temp_data);
+    m_terrain_temp.setData(TerrainTemperature::_DEC_LAYER_IDX,dec_temp_data);
+//    m_terrain_temp.getDec().setData(dec_temp_data);
+
+//    m_terrain_temp.setData(data);
 
     emit processingComplete();
     m_temp_valid = true;

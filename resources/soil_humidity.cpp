@@ -2,7 +2,7 @@
 #include <cstring>
 
 SoilHumidityHeightmap::SoilHumidityHeightmap() :
-    TextureElement<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32)
+    TextureElement2D<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32)
 {
 
 }
@@ -31,12 +31,8 @@ SoilHumidityHeightmap& SoilHumidity::operator[](int month)
 
 void SoilHumidity::reset(int width, int depth)
 {
-    int sz(sizeof(GLuint) * width * depth);
-
     for(SoilHumidityHeightmap & heightmap : m_soil_humidity)
     {
-        GLuint * data = (GLuint *) std::malloc(sz);
-        std::memset(data, 0, sz);
-        heightmap.setData(data, width, depth);
+        heightmap.reset(width, depth);
     }
 }

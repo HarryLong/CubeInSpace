@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QScopedPointer>
 #include <QComboBox>
-#include "gl_core/glwidget.h"
+#include "gl_core/central_widget.h"
 #include <QMenu>
 #include <map>
 #include "actions.h"
@@ -42,8 +42,6 @@ private:
     // Submenu elements
     QMenu * m_illumination_submenu;
     QMenu * m_soil_humidity_submenu;
-
-    GLWidget * m_glwidget;
 };
 
 #endif

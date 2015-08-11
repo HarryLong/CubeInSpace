@@ -9,7 +9,7 @@
 
 const glm::vec3 OrientationWidget::_BASE_NORTH_ORIENTATION = glm::vec3(0,0,-1);
 
-OrientationWidget::OrientationWidget(QWidget * parent, Qt::WindowFlags f) :QWidget(parent, f),
+OrientationWidget::OrientationWidget(QWidget * parent, Qt::WindowFlags f) : QWidget(parent, f),
     m_font("times", 40, QFont::Bold), m_font_metrics(m_font), m_edit_mode(false), m_north_direction(OrientationWidget::_BASE_NORTH_ORIENTATION),
     m_edit_mode_brush(QColor(0, 250, 0, 150)), m_default_brush(QColor(100, 100, 100, 150)), m_camera_direction(0,0,-1)
 {
@@ -41,7 +41,7 @@ void OrientationWidget::saveOrientation()
 #include <QPaintEvent>
 void OrientationWidget::paintEvent(QPaintEvent * event)
 {
-    QWidget::paintEvent(event);
+    QWidget::paintEvent(event); // Don't call this as it will trigger a redraw on the render window
 
     int w (width());
     int h (height());
@@ -116,9 +116,8 @@ void OrientationWidget::paintEvent(QPaintEvent * event)
 
 void OrientationWidget::setCameraDirection(glm::vec3 direction)
 {
-    m_camera_direction = glm::vec3(direction[0], 0, direction[2]);
-    m_camera_direction = glm::normalize(m_camera_direction);
-    repaint();
+    m_camera_direction = glm::normalize(glm::vec3(direction[0], 0, direction[2]));
+    update();
 }
 
 void OrientationWidget::setCameraDirection(float camera_direction_x, float camera_direction_y, float camera_direction_z)

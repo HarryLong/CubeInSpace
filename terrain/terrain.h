@@ -67,7 +67,8 @@ public:
     };
 
 signals:
-    void terrainDimensionsChanged(int width, int depth, int base_height, int max_height);
+    void newTerrainLoaded(int width, int depth);
+    void newTerrainGoingToLoad(int width, int depth);
     void normalsInvalid();
 
 private:

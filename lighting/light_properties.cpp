@@ -90,7 +90,7 @@ int SunLightProperties::time() const
     return m_time_of_day;
 }
 
-void SunLightProperties::setTerrainDimensions(int width, int depth, int base_height, int max_height)
+void SunLightProperties::setTerrainDimensions(int width, int depth)
 {
     m_terrain_width = width;
     m_terrain_depth = depth;

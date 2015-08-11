@@ -24,7 +24,7 @@ uniform float max_height;
 uniform int month;
 
 uniform sampler2D terrain_height_map_texture;
-uniform sampler2D normals_texture;
+uniform sampler2D slope_texture;
 uniform sampler2D jun_temperature_texture;
 uniform sampler2D dec_temperature_texture;
 uniform sampler2D min_daily_illumination_texture;
@@ -33,6 +33,7 @@ uniform usampler2D shade_texture;
 uniform usampler2D soil_infiltration_rate_texture;
 uniform usampler2D monthly_soil_humidity_texture;
 uniform sampler2D weighted_avg_soil_humidity_texture;
+//uniform sampler2DArray temperature_texture;
 
 float mm_to_meters(in uint mm)
 {
@@ -41,6 +42,20 @@ float mm_to_meters(in uint mm)
 
 vec4 temp_to_output_color(in float temperature)
 {
+//    float intensity = temperature/10000;
+//    return vec4(intensity, intensity, intensity,1);
+//    if(temperature > 0)
+//    {
+//        return vec4(1,0,0,1);
+//    }
+//    else if(temperature == 0)
+//    {
+//        return vec4(0,1,0,1);
+//    }
+//    else
+//    {
+//        return vec4(0,0,1,1);
+//    }
     float color_at_plus_fifty_degrees_percentage = (temperature+50)/100.0;
     float color_at_minus_fifty_degrees_percentage = 1-color_at_plus_fifty_degrees_percentage;
 
@@ -113,9 +128,7 @@ void main()
         vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
         if(overlay.slope)
         {
-            vec3 normal = texture(normals_texture, texture_coord).rgb;
-            vec3 vertical_vector = vec3(0,1,0);
-            float slope = 1 - abs(dot(normal, vertical_vector));
+            float slope = texture(slope_texture, texture_coord).x/90.0;
             resulting_color = slope_to_output_color(slope);
         }
         else if(overlay.altitude)
@@ -126,6 +139,26 @@ void main()
         }
         else if(overlay.temperature)
         {
+//            float jun_temperature = texture(temperature_texture, vec3(texture_coord,0)).r * 127;
+//            float jun_temperature = texture(temperature_texture, vec3(texture_coord.x,texture_coord.y,0)).r * 127;
+
+//            resulting_color = temp_to_output_color(jun_temperature);
+
+//            float jun_temperature = texture(jun_temperature_texture, texture_coord).r * 127;
+
+//            if(jun_temperature > 0)
+//            {
+//                resulting_color = vec4(1,0,0,1);
+//            }
+//            else if(jun_temperature == 0)
+//            {
+//                resulting_color = vec4(0,1,0,1);
+//            }
+//            else
+//            {
+//                resulting_color = vec4(0,0,1,1);
+//            }
+
             float jun_temperature = texture(jun_temperature_texture, texture_coord).r * 127;
             float dec_temperature = texture(dec_temperature_texture, texture_coord).r * 127;
             float temp_diff = jun_temperature - dec_temperature;

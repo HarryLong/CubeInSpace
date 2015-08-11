@@ -2,10 +2,10 @@
 #define DRAWABLE_TERRAIN_H
 
 #include "../gl_core/gl_drawable.h"
-#include "../gl_texture/texture_element.h"
+#include "../gl_texture/texture_element_2d.h"
 #include "terragen_file_manager/terragen_file.h"
 
-class DrawableTerrain : public GlDrawable, public TextureElement<GLfloat>
+class DrawableTerrain : public GlDrawable, public TextureElement2D<GLfloat>
 {
 public:
     DrawableTerrain();

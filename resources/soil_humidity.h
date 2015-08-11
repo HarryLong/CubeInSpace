@@ -1,11 +1,11 @@
 #ifndef WEIGHTED_SOIL_HUMIDITY_H
 #define WEIGHTED_SOIL_HUMIDITY_H
 
-#include "../gl_texture/texture_element.h"
+#include "../gl_texture/texture_element_2d.h"
 #include "glm/common.hpp"
 #include <QObject>
 
-class SoilHumidityHeightmap : public TextureElement<GLuint>
+class SoilHumidityHeightmap : public TextureElement2D<GLuint>
 {
 public:
     SoilHumidityHeightmap();

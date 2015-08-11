@@ -51,22 +51,22 @@ void Camera::update() {
         m_proj = glm::ortho(-1.5f * float(m_aspect), 1.5f * float(m_aspect), -1.5f, 1.5f, -10.0f, 10.f);
     } else if (camera_type == FREE) {
         m_proj = glm::perspective(m_fov, m_aspect, m_near_clip, m_far_clip);
-		//detmine axis for pitch rotation
+        //detmine axis for pitch rotation
         glm::vec3 left_right_axis = glm::cross(m_camera_direction, m_camera_up);
-		//compute quaternion for pitch based on the camera pitch angle
+        //compute quaternion for pitch based on the camera pitch angle
         glm::quat pitch_quat = glm::angleAxis(m_camera_pitch, left_right_axis);
-		//determine heading quaternion from the camera up vector and the heading angle
+        //determine heading quaternion from the camera up vector and the heading angle
         glm::quat yaw_quat = glm::angleAxis(m_camera_yaw, m_camera_up);
-		//add the two quaternions
+        //add the two quaternions
         glm::quat temp = glm::cross(pitch_quat, yaw_quat);
-		temp = glm::normalize(temp);
-		//update the direction from the quaternion
+        temp = glm::normalize(temp);
+        //update the direction from the quaternion
         m_camera_direction = glm::rotate(temp, m_camera_direction);
-		//add the camera delta
+        //add the camera delta
         m_camera_position += m_camera_position_delta;
-		//set the look at to be infront of the camera
+        //set the look at to be infront of the camera
         m_camera_look_at = m_camera_position + m_camera_direction * 1.0f;
-		//damping for smooth camera
+        //damping for smooth camera
         m_camera_yaw *= .5;
         m_camera_pitch *= .5;
         m_camera_position_delta = m_camera_position_delta * .8f;

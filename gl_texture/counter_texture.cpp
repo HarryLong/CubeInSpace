@@ -4,7 +4,7 @@
  * TERRAIN SHADE *
  *****************/
 CounterTexture::CounterTexture() :
-    TextureElement<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32)
+    TextureElement2D<GLuint>(QOpenGLTexture::TextureFormat::R32U, QOpenGLTexture::PixelFormat::Red_Integer, QOpenGLTexture::PixelType::UInt32)
 {
 
 }

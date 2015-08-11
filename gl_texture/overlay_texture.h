@@ -1,6 +1,6 @@
-#include "texture_element.h"
+#include "texture_element_2d.h"
 
-class OverlayTexture : public TextureElement<GLfloat>
+class OverlayTexture : public TextureElement2D<GLfloat>
 {
 public:
     OverlayTexture();

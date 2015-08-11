@@ -200,4 +200,32 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
+/********************
+ * NORMALS TO SLOPE *
+ ********************/
+class NormalsToSlopeConverter : public ComputeShaderProgram
+{
+public:
+    NormalsToSlopeConverter();
+    ~NormalsToSlopeConverter();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
+/**************************
+ * CLOSEST CLUSTER FINDER *
+ **************************/
+class ClosestClusterFinder : public ComputeShaderProgram
+{
+public:
+    ClosestClusterFinder();
+    ~ClosestClusterFinder();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
 #endif //SHADER_PROGRAMS

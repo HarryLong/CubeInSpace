@@ -24,7 +24,7 @@ public slots:
     void setMonth(int month);
     void setTime(int minutes);
     void setLatitude(int latitude);
-    void setTerrainDimensions(int width, int depth, int base_height, int max_height);
+    void setTerrainDimensions(int width, int depth);
     void setNorthOrientation(float north_x, float north_y, float north_z);
     void emit_sun_position_change(float pos_x, float pos_y, float pos_z);
     void signal_sun_position_change(bool enabled);

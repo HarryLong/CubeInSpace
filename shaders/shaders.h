@@ -23,6 +23,8 @@ public:
     AggregateHeightShader m_aggregate_height;
     BorderOverlapReducer m_border_overlap_reducer;
     WeightedAverageCalculator m_weighted_avg_calculator;
+    NormalsToSlopeConverter m_normals_to_slope_converter;
+    ClosestClusterFinder m_closest_cluster_finder;
 };
 
 #endif // SHADERS_H

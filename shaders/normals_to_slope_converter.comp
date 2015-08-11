@@ -1,0 +1,35 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+uniform sampler2D normals_texture;
+
+layout(binding = 1, r32f) uniform image2D resulting_slope;
+
+void main()
+{
+    uvec2 size = imageSize(resulting_slope);
+
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y);
+    bool valid = global_idx.x < int(size.x) && global_idx.y < int(size.y);
+
+    if(valid)
+    {
+        float slope;
+
+        vec2 texture_coord = vec2(float(global_idx.x)/size.x, float(global_idx.y)/size.y);
+        vec3 normal = texture(normals_texture, texture_coord).rgb;
+        vec3 vertical_vector = vec3(0,1,0);
+
+        float dot_product = dot(normal, vertical_vector);
+        float slope_radians = abs(acos(dot_product));
+
+        slope = degrees(slope_radians);
+
+        imageStore(resulting_slope, global_idx, vec4(slope,0,0,0));
+    }
+    memoryBarrierImage();
+}
+

@@ -15,6 +15,8 @@
 #include "shaders/uniforms.h"
 #include "../gl_texture/counter_texture.h"
 #include "resources/resource_wrapper.h"
+#include "../clustering/cluster.h"
+#include "../clustering/cluster_membership_texture.h"
 
 class Renderer {
 public:
@@ -53,16 +55,19 @@ public:
     void calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
                                        WeightedSoilHumidity & weighted_soil_humidities);
 
-    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, float terrain_scale,
-                      bool one_step = false);
+    void balanceWater(PaddedTerrain & terrain, TerrainWaterHeightmap * terrain_water, bool one_step = false);
 
-    void slopeBasedInfiltrationRateFilter(Terrain & terrain,
-                                          GLuint soil_infiltration_texture_id,
+    void slopeBasedInfiltrationRateFilter(Slope & terrain_slope,
+                                          SoilInfiltration & soil_infiltration,
                                           int min_slope);
 
     void setAbsoluteAggregateHeight(Terrain & terrain,
                                     TerrainWaterHeightmap & terrain_water,
                                     float height);
+
+    void convertNormalsToSlope(TerrainNormals & terrain_normals, Slope & slope);
+
+    void findClosestCluster(Clusters & clusters, ResourceWrapper & resources, ClusterMembershipTexture & cluster_memberships);
 
 private:
     void reset_overlays(OverlayTextureCreatorShader & shader);

@@ -1,7 +1,7 @@
 #ifndef TERRAIN_WATER_H
 #define TERRAIN_WATER_H
 
-#include "../gl_texture/texture_element.h"
+#include "../gl_texture/texture_element_2d.h"
 #include "glm/common.hpp"
 #include <atomic>
 #include <mutex>
@@ -9,7 +9,7 @@
 /***************************
  * TERRAIN WATER HEIGHTMAP *
  ***************************/
-class TerrainWaterHeightmap : public TextureElement<GLfloat> // TODO: And GL Drawable to actually draw the water bruuuu
+class TerrainWaterHeightmap : public TextureElement2D<GLfloat> // TODO: And GL Drawable to actually draw the water bruuuu
 {
 public:
     TerrainWaterHeightmap();
@@ -46,7 +46,7 @@ public:
     bool balanced();
     void bind(int);
     TerrainWaterHeightmap& operator[](int);
-    void setData(GLfloat * data[12], int width, int height);
+    void setData(GLfloat * data[12]);
     std::vector<TerrainWaterHeightmap*> getUnbalanced();
     void reset(int width, int height);
 

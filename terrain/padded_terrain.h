@@ -1,10 +1,10 @@
 #ifndef PADDED_TERRAIN_H
 #define PADDED_TERRAIN_H
 
-#include "../gl_texture/texture_element.h"
+#include "../gl_texture/texture_element_2d.h"
 #include "terrain.h"
 
-class PaddedTerrain : public TextureElement<GLfloat> {
+class PaddedTerrain : public TextureElement2D<GLfloat> {
 public:
     PaddedTerrain();
     ~PaddedTerrain();

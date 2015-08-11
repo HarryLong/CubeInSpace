@@ -25,24 +25,10 @@ void main(void)
     dfdy.y = (texture(terrain_height_map_texture, vec2(pos.x, pos.y+delta.y) ).r -
               texture(terrain_height_map_texture, vec2(pos.x, pos.y-delta.y) ).r)/2.0;
 
-    /*
-    pos = gl_FragCoord.xy;
-
-    ivec2 p = ivec2(pos);
-
-    dfdx.z = (texelFetch(htMap, ivec2(p.x+1, p.y), 0 ).r -
-              texelFetch(htMap, ivec2(p.x-1, p.y), 0 ).r)/(0.004);
-    dfdy.z = (texelFetch(htMap, ivec2(p.x, p.y+1), 0 ).r -
-              texelFetch(htMap, ivec2(p.x, p.y-1), 0 ).r)/(0.004);
-    */
-
     vec3 n = cross(dfdx, dfdy);
 
     if(n[1] < 0)
         n = -n;
 
     norm = vec3(normalize(n));
-//    norm = vec3(1,0,0);
-
-//    norm = vec4(0.0, .0, 0.0, 0.0);
 }

@@ -3,138 +3,137 @@
 #include <QWindow>
 #include <cstring>
 #include <assert.h>
+#include <QOpenGLFunctions_4_5_Core>
 
-template <class T> TextureElement<T>::TextureElement(QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format,
-                                                     QOpenGLTexture::PixelType pixel_type) :
-    m_texture(QOpenGLTexture::Target::Target2D), m_texture_format(texture_format), m_pixel_format(pixel_format), m_pixel_type(pixel_type),
-    m_raw_data(nullptr), m_stack(10)
+TextureElement::TextureElement(QOpenGLTexture::Target target, QOpenGLTexture::TextureFormat texture_format,
+                               QOpenGLTexture::PixelFormat pixel_format, QOpenGLTexture::PixelType pixel_type) :
+    m_texture_target(target), m_texture_format(texture_format), m_pixel_format(pixel_format), m_pixel_type(pixel_type), m_texture(target),
+    m_color_element_count(TextureElement::pixel_format_to_color_element_count(pixel_format))
 {
 }
 
-template <class T> TextureElement<T>::~TextureElement()
+TextureElement::~TextureElement()
 {
-    if(m_raw_data)
-        delete m_raw_data;
+    delete_texture();
 }
 
-template <class T> void TextureElement<T>::setData(T * data, int w, int h, bool stack)
+void TextureElement::delete_texture()
 {
-    if(w != m_width || h != m_height)
-        m_stack.clear();
-
-    if(stack)
-        push();
-    if(m_raw_data)
-        delete m_raw_data;
-    m_raw_data = data;
-    m_width = w;
-    m_height = h;
-    pushToGPU();
-}
-
-template <class T> T TextureElement<T>::operator()(int x, int z) const
-{
-    int index((z*m_width)+x);
-    return m_raw_data[index];
-}
-
-template <class T> void TextureElement<T>::delete_texture()
-{    
     if(m_texture.isCreated())
-        m_texture.destroy();
+            m_texture.destroy();
 }
 
-template <class T> const T * TextureElement<T>::getRawData() const
+QOpenGLTexture::Target TextureElement::textureTarget() const
 {
-    return m_raw_data;
+    return m_texture_target;
 }
 
-template <class T> void TextureElement<T>::syncFromGPU(bool stack)
-{
-    if(stack)
-        push();
-    m_texture.bind();
-    glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data ); CE();
-}
-
-template <class T> void TextureElement<T>::pushToGPU()
-{
-    assert(m_raw_data != nullptr && width() != 0 && height() != 0);
-
-    delete_texture(); CE();
-
-    m_texture.create(); CE();
-    m_texture.setWrapMode(QOpenGLTexture::WrapMode::MirroredRepeat);
-
-    m_texture.bind();
-    m_texture.setSize(m_width, m_height); CE();
-    m_texture.setFormat(m_texture_format); CE();
-    m_texture.allocateStorage(); CE();
-    m_texture.setData(m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data); CE();
-
-    m_texture.release();
-}
-
-template <class T> QOpenGLTexture::TextureFormat TextureElement<T>::textureFormat() const
+QOpenGLTexture::TextureFormat TextureElement::textureFormat() const
 {
     return m_texture_format;
 }
 
-template <class T> QOpenGLTexture::PixelFormat TextureElement<T>::pixelFormat() const
+QOpenGLTexture::PixelFormat TextureElement::pixelFormat() const
 {
     return m_pixel_format;
 }
 
-template <class T> QOpenGLTexture::PixelType TextureElement<T>::pixelType() const
+QOpenGLTexture::PixelType TextureElement::pixelType() const
 {
     return m_pixel_type;
 }
 
-template <class T> void TextureElement<T>::set(int x, int y, T data)
-{
-    int index(y*m_width+x);
-    m_raw_data[index] = data;
-}
-
-template <class T> void TextureElement<T>::bind()
+void TextureElement::bind()
 {
     m_texture.bind();
 }
 
-template <class T> int TextureElement<T>::width()
+int TextureElement::width()
 {
     return m_width;
 }
 
-template <class T> int TextureElement<T>::height()
+int TextureElement::height()
 {
     return m_height;
 }
 
-template <class T> GLuint TextureElement<T>::textureId()
+int TextureElement::depth()
+{
+    return m_depth;
+}
+
+GLuint TextureElement::textureId()
 {
     return m_texture.textureId();
 }
 
-template <class T> void TextureElement<T>::pop()
+int TextureElement::get_index(int x, int y) const
 {
-    if(!m_stack.empty())
-    {
-        setData(m_stack.pop(), m_width, m_height, false);
+    return m_width*y+x;
+}
+
+bool TextureElement::multi_level_target(const QOpenGLTexture::Target & qt_target)
+{
+    return qt_target == QOpenGLTexture::Target::Target1DArray ||
+            qt_target == QOpenGLTexture::Target::Target2DArray ||
+            qt_target == QOpenGLTexture::Target::TargetCubeMapArray ||
+            qt_target == QOpenGLTexture::Target::Target2DMultisampleArray;
+}
+
+GLenum TextureElement::qt_texture_target_to_gl_texture_target(const QOpenGLTexture::Target & qt_target)
+{
+    switch(qt_target){
+    case QOpenGLTexture::Target::Target1D:
+        return GL_TEXTURE_1D;
+    case QOpenGLTexture::Target::Target1DArray:
+        return GL_TEXTURE_1D_ARRAY;
+    case QOpenGLTexture::Target::Target2D:
+        return GL_TEXTURE_2D;
+    case QOpenGLTexture::Target::Target2DArray:
+        return GL_TEXTURE_2D_ARRAY;
+    case QOpenGLTexture::Target::Target3D:
+        return GL_TEXTURE_3D;
+    case QOpenGLTexture::Target::TargetCubeMap:
+        return GL_TEXTURE_CUBE_MAP;
+    case QOpenGLTexture::Target::TargetCubeMapArray:
+        return GL_TEXTURE_CUBE_MAP_ARRAY;
+    case QOpenGLTexture::Target::Target2DMultisample:
+        return GL_TEXTURE_2D_MULTISAMPLE;
+    case QOpenGLTexture::Target::Target2DMultisampleArray:
+        return GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+    case QOpenGLTexture::Target::TargetRectangle:
+        return GL_TEXTURE_RECTANGLE;
+    case QOpenGLTexture::Target::TargetBuffer:
+        return GL_TEXTURE_BUFFER;
     }
 }
 
-template <class T> void TextureElement<T>::push()
+ int TextureElement::pixel_format_to_color_element_count(const QOpenGLTexture::PixelFormat & format)
 {
-    if(m_raw_data)
+    switch(format)
     {
-        T * cpy = new T[m_width*m_height];
-        std::memcpy(cpy, m_raw_data, sizeof(T)*m_width*m_height);
-        m_stack.push(cpy);
+    case QOpenGLTexture::PixelFormat::NoSourceFormat:
+        return 0;
+    case QOpenGLTexture::PixelFormat::Red:
+    case QOpenGLTexture::PixelFormat::Red_Integer:
+    case QOpenGLTexture::PixelFormat::Stencil:
+    case QOpenGLTexture::PixelFormat::Depth:
+    case QOpenGLTexture::PixelFormat::DepthStencil:
+    case QOpenGLTexture::PixelFormat::Alpha:
+    case QOpenGLTexture::PixelFormat::Luminance:
+    case QOpenGLTexture::PixelFormat::LuminanceAlpha:
+        return 1;
+    case QOpenGLTexture::PixelFormat::RG:
+    case QOpenGLTexture::PixelFormat::RG_Integer:
+        return 2;
+    case QOpenGLTexture::PixelFormat::RGB:
+    case QOpenGLTexture::PixelFormat::RGB_Integer:
+        return 3;
+    case QOpenGLTexture::PixelFormat::RGBA:
+    case QOpenGLTexture::PixelFormat::BGRA:
+    case QOpenGLTexture::PixelFormat::RGBA_Integer:
+    case QOpenGLTexture::PixelFormat::BGRA_Integer:
+        return 4;
     }
 }
-
-template class TextureElement<GLubyte>;
-template class TextureElement<GLbyte>;
-template class TextureElement<GLfloat>;
-template class TextureElement<GLuint>;

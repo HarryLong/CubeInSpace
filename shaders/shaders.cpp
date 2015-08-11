@@ -27,4 +27,6 @@ void Shaders::compileAndLink()
     m_aggregate_height.compileAndLink();
     m_border_overlap_reducer.compileAndLink();
     m_weighted_avg_calculator.compileAndLink();
+    m_normals_to_slope_converter.compileAndLink();
+    m_closest_cluster_finder.compileAndLink();
 }

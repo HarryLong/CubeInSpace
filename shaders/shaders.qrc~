@@ -19,6 +19,5 @@
         <file>border_overlap_reducer.comp</file>
         <file>weighted_avg_calculator.comp</file>
         <file>normals_to_slope_converter.comp</file>
-        <file>closest_cluster_finder.comp</file>
     </qresource>
 </RCC>

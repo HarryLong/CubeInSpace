@@ -41,7 +41,7 @@ public slots:
     void setMonth(int month);
     void setTime(int minutes);
     void setLatitude(int latitude);
-    void setTerrainDimensions(int width, int depth, int base_height, int max_height);
+    void setTerrainDimensions(int width, int depth);
 
 signals:
     void sunPositionChanged(float pos_x, float pos_y, float pos_z);

@@ -10,30 +10,30 @@ TerrainDailyIllumination::~TerrainDailyIllumination()
 
 }
 
-void TerrainDailyIllumination::bindMin()
+TerrainDailyIlluminationTexture & TerrainDailyIllumination::getMin()
 {
-    m_min_illumination.bind();
+    return m_min_illumination;
 }
 
-void TerrainDailyIllumination::bindMax()
+TerrainDailyIlluminationTexture & TerrainDailyIllumination::getMax()
 {
-    m_max_illumination.bind();
+    return m_max_illumination;
 }
 
-void TerrainDailyIllumination::setData(GLubyte * min_data, GLubyte * max_data, int width, int height)
-{
-    m_min_illumination.setData(min_data, width, height);
-    m_max_illumination.setData(max_data, width, height);
-}
+//void TerrainDailyIllumination::setData(GLubyte * min_data, GLubyte * max_data, int width, int height)
+//{
+//    m_min_illumination.setData(min_data, width, height);
+//    m_max_illumination.setData(max_data, width, height);
+//}
 
-void TerrainDailyIllumination::getIlluminationData(int x, int z, GLubyte & min, GLubyte & max)
-{
-    min = m_min_illumination(x,z);
-    max = m_max_illumination(x,z);
-}
+//void TerrainDailyIllumination::getIlluminationData(int x, int z, GLubyte & min, GLubyte & max)
+//{
+//    min = m_min_illumination(x,z);
+//    max = m_max_illumination(x,z);
+//}
 
 TerrainDailyIlluminationTexture::TerrainDailyIlluminationTexture() :
-    TextureElement<GLubyte>(QOpenGLTexture::TextureFormat::R8_UNorm, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8)
+    TextureElement2D<GLubyte>(QOpenGLTexture::TextureFormat::R8_UNorm, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8)
 {
 
 }

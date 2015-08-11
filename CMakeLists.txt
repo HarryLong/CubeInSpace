@@ -35,7 +35,7 @@ SET(CMAKE_BUILD_TYPE RELWITHDEBINFO)
 
 SET(RESOURCES_SOURCE_FILES resources/terrain_shade resources/terrain_daily_illumination resources/terrain_temperature
 resources/terrain_water resources/resource_wrapper resources/soil_infiltration resources/soil_humidity resources/flood_fill_tracker
-resources/weighted_soil_humidity)
+resources/weighted_soil_humidity resources/slope)
 SET(LIGHTING_SOURCE_FILES lighting/lighting_manager lighting/light_properties)
 SET(DIALOGS_SOURCE_FILES dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs
     dialogs/monthly_rainfall_edit_dlg)
@@ -45,8 +45,11 @@ SET(WIDGETS_SOURCE_FILES widgets/progress_bar_widget widgets/controller_widgets 
     widgets/latitude_controller widgets/time_controller widgets/month_controller widgets/soil_infiltration_controller
     widgets/soil_infiltration_shortcuts_widget widgets/water_shortcuts_controller widgets/shortcut_controller_row)
 SET(GL_ASSETS_SOURCE_FILES gl_assets/asset gl_assets/grid gl_assets/rays gl_assets/shape_factory gl_assets/sun_asset)
-SET(GL_CORE_SOURCE_FILES gl_core/camera gl_core/gl_drawable gl_core/glheader gl_core/renderer gl_core/transform gl_core/glm_wrapper gl_core/glwidget)
-SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/counter_texture gl_texture/overlay_texture)
+SET(GL_CORE_SOURCE_FILES gl_core/camera gl_core/gl_drawable gl_core/glheader gl_core/renderer gl_core/transform gl_core/glm_wrapper gl_core/glwidget
+    gl_core/central_widget)
+SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/texture_element_2d gl_texture/counter_texture gl_texture/overlay_texture
+gl_texture/texture_element_2d_array)
+SET(CLUSTERING_SOURCE_FILES clustering/k_means_clusterer clustering/cluster clustering/cluster_membership_texture)
 
 SET(SOURCE_FILES
 ${RESOURCES_SOURCE_FILES}
@@ -58,6 +61,7 @@ ${WIDGETS_SOURCE_FILES}
 ${GL_ASSETS_SOURCE_FILES}
 ${GL_CORE_SOURCE_FILES}
 ${GL_TEXTURE_SOURCE_FILES}
+${CLUSTERING_SOURCE_FILES}
 window main debug geom actions fixed_size_stack)
 
 # Shaders

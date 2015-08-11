@@ -5,7 +5,7 @@
  * DRAWABLE TERRAIN *
  ********************/
 DrawableTerrain::DrawableTerrain() :
-    TextureElement<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32)
+    TextureElement2D<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32)
 {
 
 }
@@ -102,5 +102,6 @@ bool DrawableTerrain::prepareTerrainGeometry(const TerragenFile & terragen_file)
 
 void DrawableTerrain::refreshHeightmapTexture(const TerragenFile & terragen_file)
 {
-    setData(terragen_file.m_height_data, terragen_file.m_header_data.width, terragen_file.m_header_data.depth);
+    setDimensions(terragen_file.m_header_data.width, terragen_file.m_header_data.depth);
+    setData(terragen_file.m_height_data);
 }

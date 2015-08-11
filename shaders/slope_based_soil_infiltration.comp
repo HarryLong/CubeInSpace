@@ -2,8 +2,7 @@
 #define M_PI 3.1415926535897932384626433832795
 layout (local_size_x = 32, local_size_y = 32) in;
 
-uniform sampler2D normals_texture;
-
+layout(binding = 0, r32f) uniform coherent image2D slopes;
 layout(binding = 1, r32ui) uniform coherent uimage2D soil_infiltrations;
 
 uniform int min_slope;
@@ -15,18 +14,14 @@ void main()
     global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
     global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
 
-    uvec2 heightmap_size = imageSize(soil_infiltrations);
+    uvec2 size = imageSize(slopes);
     // WATER HEIGHTMAP IMAGE INDICES
-    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+    bool valid = global_idx.x < int(size.x) && global_idx.y < int(size.y);
     if(valid)
     {
-        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
-        vec3 normal = texture(normals_texture, texture_coord).rgb;
-//        vec3 normal = normalize(vec3(1,1,0));
+        float slope = imageLoad(slopes, global_idx).x;
 
-        vec3 vertical_vector = vec3(0,1,0);
-
-        if(abs(acos(dot(normal, vertical_vector))) > radians(min_slope))
+        if(slope > min_slope)
         {
             imageStore(soil_infiltrations, global_idx, uvec4(0,0,0,0));
         }

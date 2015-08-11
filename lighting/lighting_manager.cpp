@@ -22,9 +22,9 @@ SunLightProperties & LightingManager::getSunlightProperties()
     return m_sunlight_properties;
 }
 
-void LightingManager::setTerrainDimensions(int width, int depth, int base_height, int max_height)
+void LightingManager::setTerrainDimensions(int width, int depth)
 {
-    m_sunlight_properties.setTerrainDimensions(width, depth, base_height, max_height);
+    m_sunlight_properties.setTerrainDimensions(width, depth);
 }
 
 void LightingManager::setMonth(int month)

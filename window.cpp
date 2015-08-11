@@ -7,9 +7,9 @@ MainWindow::MainWindow() : m_actions(new AllActions)
     establish_connections();
     init_menu();
 
-    m_glwidget = new GLWidget(m_actions, this);
+    CentralWidget * cw  = new CentralWidget(m_actions, this);
 
-    setCentralWidget(m_glwidget); // Takes ownership of widget
+    setCentralWidget(cw); // Takes ownership of widget
     setWindowTitle("");
 }
 
@@ -37,7 +37,6 @@ void MainWindow::init_menu()
         m_file_menu->addAction(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS]);
         m_file_menu->addAction(m_actions->m_base_actions[BaseActionFamily::_CLOSE_APP]);
     }
-
 
     // RENDER MENU
     {

@@ -243,3 +243,35 @@ WeightedAverageCalculator::~WeightedAverageCalculator()
 {
 
 }
+
+/********************
+ * NORMALS TO SLOPE *
+ ********************/
+const int NormalsToSlopeConverter::_GROUP_SIZE_X = 32;
+const int NormalsToSlopeConverter::_GROUP_SIZE_Y = 32;
+const int NormalsToSlopeConverter::_GROUP_SIZE_Z = 1;
+NormalsToSlopeConverter::NormalsToSlopeConverter() : ComputeShaderProgram(":/normals_to_slope_converter.comp")
+{
+
+}
+
+NormalsToSlopeConverter::~NormalsToSlopeConverter()
+{
+
+}
+
+/**************************
+ * CLOSEST CLUSTER FINDER *
+ **************************/
+const int ClosestClusterFinder::_GROUP_SIZE_X = 32;
+const int ClosestClusterFinder::_GROUP_SIZE_Y = 32;
+const int ClosestClusterFinder::_GROUP_SIZE_Z = 1;
+ClosestClusterFinder::ClosestClusterFinder() : ComputeShaderProgram(":/closest_cluster_finder.comp")
+{
+
+}
+
+ClosestClusterFinder::~ClosestClusterFinder()
+{
+
+}

@@ -1,0 +1,140 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+const uint max_clusters = 25;
+
+uniform uint n_clusters;
+
+uniform int cluster_data_jun_temperatures[max_clusters];
+uniform int cluster_data_dec_temperatures[max_clusters];
+
+uniform uint cluster_data_min_illumination[max_clusters];
+uniform uint cluster_data_max_illumination[max_clusters];
+
+uniform float cluster_data_jan_soil_humidity[max_clusters];
+uniform float cluster_data_feb_soil_humidity[max_clusters];
+uniform float cluster_data_mar_soil_humidity[max_clusters];
+uniform float cluster_data_apr_soil_humidity[max_clusters];
+uniform float cluster_data_may_soil_humidity[max_clusters];
+uniform float cluster_data_jun_soil_humidity[max_clusters];
+uniform float cluster_data_jul_soil_humidity[max_clusters];
+uniform float cluster_data_aug_soil_humidity[max_clusters];
+uniform float cluster_data_sep_soil_humidity[max_clusters];
+uniform float cluster_data_oct_soil_humidity[max_clusters];
+uniform float cluster_data_nov_soil_humidity[max_clusters];
+uniform float cluster_data_dec_soil_humidity[max_clusters];
+
+uniform float cluster_data_slope[max_clusters];
+
+uniform sampler2D jun_temperature_texture;
+uniform sampler2D dec_temperature_texture;
+uniform sampler2D min_daily_illumination_texture;
+uniform sampler2D max_daily_illumination_texture;
+uniform sampler2D slope_texture;
+
+uniform sampler2D jan_weighted_avg_soil_humidity_texture;
+uniform sampler2D feb_weighted_avg_soil_humidity_texture;
+uniform sampler2D mar_weighted_avg_soil_humidity_texture;
+uniform sampler2D apr_weighted_avg_soil_humidity_texture;
+uniform sampler2D may_weighted_avg_soil_humidity_texture;
+uniform sampler2D jun_weighted_avg_soil_humidity_texture;
+uniform sampler2D jul_weighted_avg_soil_humidity_texture;
+uniform sampler2D aug_weighted_avg_soil_humidity_texture;
+uniform sampler2D sep_weighted_avg_soil_humidity_texture;
+uniform sampler2D oct_weighted_avg_soil_humidity_texture;
+uniform sampler2D nov_weighted_avg_soil_humidity_texture;
+uniform sampler2D dec_weighted_avg_soil_humidity_texture;
+
+layout(binding = 0, r32ui) uniform uimage2D resulting_cluster_memberships;
+
+float calculateDistance(in uint cluster_idx,
+                        in float slope,
+                        in int jun_temp, in int dec_temp,
+                        in uint min_illumination, in uint max_illumination,
+                        float weighted_soil_humidities[12])
+{
+    float dist = 0;
+
+    // SLOPE
+    dist += abs(cluster_data_slope[cluster_idx]-slope);
+
+    // JUN TEMP
+    dist += abs(cluster_data_jun_temperatures[cluster_idx]-jun_temp);
+
+    // DEC TEMP
+    dist += abs(cluster_data_dec_temperatures[cluster_idx]-dec_temp);
+
+    // MIN ILLUMINATION
+    dist += abs(cluster_data_min_illumination[cluster_idx]-min_illumination);
+
+    // MAX ILLUMINATION
+    dist += abs(cluster_data_max_illumination[cluster_idx]-max_illumination);
+
+    // WEIGHTED SOIL HUMIDITIES
+    dist += abs(cluster_data_jan_soil_humidity[cluster_idx]-weighted_soil_humidities[0]);
+    dist += abs(cluster_data_feb_soil_humidity[cluster_idx]-weighted_soil_humidities[1]);
+    dist += abs(cluster_data_mar_soil_humidity[cluster_idx]-weighted_soil_humidities[2]);
+    dist += abs(cluster_data_apr_soil_humidity[cluster_idx]-weighted_soil_humidities[3]);
+    dist += abs(cluster_data_may_soil_humidity[cluster_idx]-weighted_soil_humidities[4]);
+    dist += abs(cluster_data_jun_soil_humidity[cluster_idx]-weighted_soil_humidities[5]);
+    dist += abs(cluster_data_jul_soil_humidity[cluster_idx]-weighted_soil_humidities[6]);
+    dist += abs(cluster_data_aug_soil_humidity[cluster_idx]-weighted_soil_humidities[7]);
+    dist += abs(cluster_data_sep_soil_humidity[cluster_idx]-weighted_soil_humidities[8]);
+    dist += abs(cluster_data_oct_soil_humidity[cluster_idx]-weighted_soil_humidities[9]);
+    dist += abs(cluster_data_nov_soil_humidity[cluster_idx]-weighted_soil_humidities[10]);
+    dist += abs(cluster_data_dec_soil_humidity[cluster_idx]-weighted_soil_humidities[11]);
+
+    return dist;
+}
+
+void main()
+{
+    uvec2 size = textureSize(jun_temperature_texture, 0);
+
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y);
+    bool valid = global_idx.x < int(size.x) && global_idx.y < int(size.y);
+
+    if(valid)
+    {
+        vec2 texture_coord = vec2(float(global_idx.x)/size.x, float(global_idx.y)/size.y);
+
+        // LOAD DATA
+        float slope = texture(slope_texture, texture_coord).r;
+        int jun_temp = int(texture(jun_temperature_texture, texture_coord).r * 127);
+        int dec_temp = int(texture(dec_temperature_texture, texture_coord).r * 127);
+        uint min_illumination = uint(texture(min_daily_illumination_texture, texture_coord).r * 255);
+        uint max_illumination = uint(texture(max_daily_illumination_texture, texture_coord).r * 255);
+        float weighted_soil_humidities[12];
+        weighted_soil_humidities[0] = texture(jan_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[1] = texture(feb_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[2] = texture(mar_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[3] = texture(apr_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[4] = texture(may_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[5] = texture(jun_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[6] = texture(jul_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[7] = texture(aug_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[8] = texture(sep_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[9] = texture(oct_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[10] = texture(nov_weighted_avg_soil_humidity_texture, texture_coord).r;
+        weighted_soil_humidities[11] = texture(dec_weighted_avg_soil_humidity_texture, texture_coord).r;
+
+        // Get closest cluster
+        float closest_distance = calculateDistance(0, slope, jun_temp, dec_temp, min_illumination, max_illumination, weighted_soil_humidities);
+        uint closest_cluster_idx = 0;
+        for(int i = 1; i < n_clusters; i++)
+        {
+            float cluster_distance = calculateDistance(i, slope, jun_temp, dec_temp, min_illumination, max_illumination, weighted_soil_humidities);
+            if(cluster_distance < closest_distance)
+            {
+                closest_cluster_idx = i;
+            }
+        }
+
+        imageStore(resulting_cluster_memberships, global_idx, uvec4(closest_cluster_idx,0,0,0));
+    }
+    memoryBarrierImage();
+}
+

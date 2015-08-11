@@ -2,7 +2,7 @@
 #include <cstring>
 
 WeightedSoilHumidityHeightmap::WeightedSoilHumidityHeightmap() :
-    TextureElement<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32)
+    TextureElement2D<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32)
 {
 
 }
@@ -31,12 +31,8 @@ WeightedSoilHumidityHeightmap& WeightedSoilHumidity::operator[](int month)
 
 void WeightedSoilHumidity::reset(int width, int depth)
 {
-    int sz(sizeof(GLfloat) * width * depth);
-
     for(WeightedSoilHumidityHeightmap & heightmap : m_weighted_soil_humidity)
     {
-        GLfloat * data = (GLfloat *) std::malloc(sz);
-        std::memset(data, 0, sz);
-        heightmap.setData(data, width, depth);
+        heightmap.reset(width, depth);
     }
 }

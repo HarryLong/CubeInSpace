@@ -2,7 +2,7 @@
 #include <cstring>
 
 PaddedTerrain::PaddedTerrain() :
-    TextureElement<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32)
+    TextureElement2D<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32)
 {
 
 }
@@ -111,5 +111,6 @@ void PaddedTerrain::refresh(Terrain & terrain)
         }
     }
 
-    setData(padded_data, padded_terrain_width, padded_terrain_depth);
+    setDimensions(padded_terrain_width, padded_terrain_depth);
+    setData(padded_data);
 }

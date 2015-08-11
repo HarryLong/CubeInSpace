@@ -6,7 +6,7 @@
  * TERRAIN SHADE *
  *****************/
 TerrainShade::TerrainShade() :
-    TextureElement<GLubyte>(QOpenGLTexture::TextureFormat::R8_UNorm, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8)
+    TextureElement2D<GLubyte>(QOpenGLTexture::TextureFormat::R8_UNorm, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8)
 {
 
 }

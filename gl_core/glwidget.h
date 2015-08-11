@@ -75,6 +75,7 @@ protected:
     void resizeEvent(QResizeEvent * event);
 
 private slots:
+    void load_terrain(TerragenFile terrain_file);
     void control_changed();
     void clear_rays();
     void overlay_changed();
@@ -105,6 +106,8 @@ private slots:
     void format_overlay_texture();
     void set_flood_fill_enabled(bool);
     bool flood_fill(const glm::ivec2 & point, TerrainWaterHeightmap & terrain_water, float & seed_height);
+    void new_terrain_is_going_to_load();
+    void refresh_overlay_texture();
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);

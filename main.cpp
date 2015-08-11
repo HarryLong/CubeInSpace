@@ -2,7 +2,7 @@
 #include <QDesktopWidget>
 
 #include "window.h"
-
+#include <QSurfaceFormat>
 #include <iostream>
 int main(int argc, char *argv[])
 {
@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     QLocale::setDefault(QLocale(QLocale::Language::English, QLocale::Country::UnitedKingdom));
 
     QSurfaceFormat format;
-    format.setVersion(4, 3);
+    format.setVersion(4, 5);
     format.setProfile(QSurfaceFormat::CoreProfile);
     QSurfaceFormat::setDefaultFormat(format);
 

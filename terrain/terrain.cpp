@@ -59,18 +59,18 @@ void Terrain::loadBaseTerrain()
 
 void Terrain::setTerrain(TerragenFile parsed_terrangen_file)
 {
+    emit newTerrainGoingToLoad(parsed_terrangen_file.m_header_data.width, parsed_terrangen_file.m_header_data.depth);
+
+    m_terrain_normals.setTerrainDim(parsed_terrangen_file.m_header_data.width, parsed_terrangen_file.m_header_data.depth);
+    m_terrain_normals.setValid(false);
+    m_sphere_acceleration_structure.build(parsed_terrangen_file);
+    m_drawable_terrain.prepareTerrainGeometry(parsed_terrangen_file);
+
     m_terragen_file = parsed_terrangen_file;
     m_terragen_file.summarize();
 
-    m_terrain_normals.setTerrainDim(m_terragen_file.m_header_data.width, m_terragen_file.m_header_data.depth);
-    m_terrain_normals.setValid(false);
-
-    m_sphere_acceleration_structure.build(m_terragen_file);
-
-    m_drawable_terrain.prepareTerrainGeometry(parsed_terrangen_file);
-
     emit normalsInvalid();
-    emit terrainDimensionsChanged(getWidth(), getDepth(), getBaseHeight(), getMaxHeight());
+    emit newTerrainLoaded(getWidth(), getDepth());
 }
 
 float Terrain::getMinHeight() const
