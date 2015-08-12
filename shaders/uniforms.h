@@ -34,12 +34,14 @@ public:
         static const char * _TEMPERATURE;
         static const char * _TEMPERATURE_JUN;
         static const char * _TEMPERATURE_DEC;
+        static const char * _DAILY_ILLUMINATION;
         static const char * _MIN_DAILY_ILLUMINATION;
         static const char * _MAX_DAILY_ILLUMINATION;
         static const char * _SOIL_INFILTRATION_RATE;
         static const char * _CLUSTER_MEMBERSHIP;
         static const char * _MONTHLY_SOIL_HUMIDITY;
         static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;
+        static const char * _OVERLAY;
         static const char * _JAN_WEIGHTED_AVG_SOIL_HUMIDITY;
         static const char * _FEB_WEIGHTED_AVG_SOIL_HUMIDITY;
         static const char * _MAR_WEIGHTED_AVG_SOIL_HUMIDITY;
@@ -57,7 +59,6 @@ public:
 
     struct Overlay{
         static const char * _ACTIVE;
-        static const char * _TEXTURE;
         static const char * _NONE;
         static const char * _SLOPE;
         static const char * _ALTITUDE;

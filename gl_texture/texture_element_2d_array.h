@@ -13,6 +13,8 @@ public:
     virtual T operator()(int layer, int x, int y) const;
     virtual void setDimensions(int width, int height, int depth = 1);
 
+    int layers() const;
+
     /***********************
      * PER LAYER FUNCTIONS *
      ***********************/
@@ -21,7 +23,7 @@ public:
     void set(int layer, T data, int x, int y);
     virtual void syncFromGPU(int layer, bool stack = false);
     virtual void pushToGPU(int layer);
-    void bind(int layer);
+    void bind_layer(int layer);
 
     /*******************************
      * AGGREGATE TEXTURE FUNCTIONS *
@@ -32,7 +34,7 @@ public:
     virtual void pushToGPU();
 
 
-    //    const T * getRawData() const;
+    const T * getRawData(int layer) const;
     void pop(int index);
     void push(int index);
 

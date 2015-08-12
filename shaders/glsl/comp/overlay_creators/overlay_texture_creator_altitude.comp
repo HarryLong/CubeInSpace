@@ -1,0 +1,40 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
+
+uniform float min_height;
+uniform float max_height;
+
+uniform sampler2D terrain_height_map_texture;
+
+vec4 altitude_to_output_color(in float altitude)
+{
+    return vec4(altitude,altitude,altitude,.7);
+}
+
+void main()
+{
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
+
+    uvec2 heightmap_size = imageSize(resulting_overlay);
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+
+    if(valid)
+    {
+        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
+
+        float height = texture(terrain_height_map_texture, texture_coord).r;
+        float altitude = (height-min_height)/(max_height-min_height);
+        vec4 resulting_color = altitude_to_output_color(altitude);
+
+        imageStore(resulting_overlay, global_idx, resulting_color);
+    }
+
+    memoryBarrierImage();
+    barrier();
+}
+

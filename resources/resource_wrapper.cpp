@@ -31,9 +31,10 @@ void ResourceWrapper::terrainChanged(int width, int depth)
 
     m_terrain_temp.setDimensions(width, depth);
 
+    m_terrain_water.setDimensions(width, depth);
+
     for(int i = 1; i < 13; i++)
     {
-        m_terrain_water[i].setDimensions(width, depth);
         m_soil_humidity[i].setDimensions(width, depth);
         m_weighted_soil_humidity[i].setDimensions(width, depth);
     }
@@ -115,7 +116,7 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
     }
     // Water
     {
-        water_height = m_terrain_water[month](pos[0], pos[1]);
+        water_height = m_terrain_water(month-1, pos[0], pos[1]);
     }
     // Shade
     if(m_shade_valid)

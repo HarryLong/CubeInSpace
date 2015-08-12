@@ -9,7 +9,6 @@
 #include "glm_wrapper.h"
 #include "actions.h"
 #include "glheader.h"
-#include "shaders/shaders.h"
 #include "lighting/lighting_manager.h"
 #include <QTimer>
 #include "terragen_file_manager/terragen_file_manager.h"
@@ -244,6 +243,7 @@ void GLWidget::initializeGL() // Override
     setMouseTracking(true);
 
     m_renderer.compileAndLinkShaders();
+    m_computer.compileAndLinkShaders();
     load_terrain(BaseTerrain());
 
     m_fps_callback_timer->start((int)(1000.0f/GLWidget::_TARGET_FPS));
@@ -267,8 +267,11 @@ void GLWidget::paintGL() // Override
     // Check if we need calculate water balance
     if(!m_resources.getTerrainWater().balanced())
     {
+        qCritical() << "Balancing!";
         balance_water();
     }
+//    else
+//        qCritical() << "All balanced!";
 
     // Update the overlay texture
     if(edit_infiltration_rate())
@@ -285,7 +288,7 @@ void GLWidget::paintGL() // Override
     if(render_terrain())
     {
         // TERRAIN
-        m_renderer.renderTerrain(m_terrain, m_resources.getTerrainWater()[month()], m_render_water.load(), transform, m_lighting_manager.getSunlightProperties(),
+        m_renderer.renderTerrain(m_terrain, m_resources.getTerrainWater()[month()-1]->textureId(), m_render_water.load(), transform, m_lighting_manager.getSunlightProperties(),
                 m_overlay_texture.textureId(), !overlay_none());
 
         // TERRAIN ELEMENTS
@@ -413,8 +416,9 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
                 std::vector<glm::ivec2> points_to_process;
                 glm::ivec2 seed_point((int)intersection_point[0], (int)intersection_point[2]);
-                TerrainWaterHeightmap & water_heightmap(m_resources.getTerrainWater()[month()]);
-                water_heightmap.push();
+                TerrainWater & terrain_water(m_resources.getTerrainWater());
+                const int m(month());
+//                water_heightmap.push();
                 float seed_height(m_terrain.getHeight(seed_point)); // to mm
 
                 append_surrounding_points(seed_point, points_to_process, m_floodfill_tracker);
@@ -425,13 +429,13 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                     points_to_process.clear();
                     for(glm::ivec2 & point : cpy_point_to_process)
                     {
-                        if(flood_fill(point, water_heightmap, seed_height))
+                        if(flood_fill(point, terrain_water, m, seed_height))
                             append_surrounding_points(point, points_to_process, m_floodfill_tracker);
                     }
                 }
 
                 makeCurrent();
-                water_heightmap.pushToGPU();
+                terrain_water.pushToGPU(m-1);
             }
             else
             {
@@ -658,13 +662,13 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
     }
     if(event->key() == Qt::Key_Z && m_ctrl_pressed.load()) // UNDO
     {
-        if(m_flood_fill_mode || m_overlay_widgets.waterControllersActive())
-        {
-            makeCurrent();
-            TerrainWaterHeightmap & twh = m_resources.getTerrainWater()[month()];
-            twh.pop();
-            twh.pushToGPU();
-        }
+//        if(m_flood_fill_mode || m_overlay_widgets.waterControllersActive())
+//        {
+//            makeCurrent();
+//            TerrainWaterHeightmap & twh = m_resources.getTerrainWater()[month()];
+//            twh.pop();
+//            twh.pushToGPU();
+//        }
         return;
     }
     if(m_navigation_enabled)
@@ -843,12 +847,15 @@ void GLWidget::overlay_changed()
 
 void GLWidget::refresh_overlay_texture()
 {
-    makeCurrent();
-    m_renderer.createOverlayTexture(m_overlay_texture.textureId(),
-                                    m_terrain,
-                                    m_resources,
-                                    m_active_overlay,
-                                    month());
+    if(!overlay_none())
+    {
+        makeCurrent();
+        m_computer.createOverlayTexture(m_overlay_texture.textureId(),
+                                        m_terrain,
+                                        m_resources,
+                                        m_active_overlay,
+                                        month());
+    }
 }
 
 void GLWidget::refresh_temperature()
@@ -886,13 +893,13 @@ void GLWidget::refresh_water()
     GLuint m_soil_infiltration_texture_id(m_resources.getSoilInfiltration().textureId());
 
     //  CALCULATE SOIL HUMIDITY AND STANDING WATER
+    TerrainWater & terrain_water(m_resources.getTerrainWater());
     for(int i = 0; i < 12; i++)
     {
         SoilHumidityHeightmap & tsh (m_resources.getSoilHumidity()[i+1]);
-        TerrainWaterHeightmap & twh(m_resources.getTerrainWater()[i+1]);
-        m_renderer.calculateSoilHumidityAndStandingWater(m_soil_infiltration_texture_id,
+        m_computer.calculateSoilHumidityAndStandingWater(m_soil_infiltration_texture_id,
                                                          m_resources.getSoilHumidity()[i+1].textureId(),
-                                                         m_resources.getTerrainWater()[i+1].textureId(),
+                                                         terrain_water[i]->textureId(),
                                                          m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(i+1),
                                                          m_dialogs.m_monthly_rainfall_edit_dlg.getRainfallIntensity(i+1),
                                                          m_terrain.getWidth(),
@@ -900,13 +907,13 @@ void GLWidget::refresh_water()
                                                          m_terrain.getScale());
 
         tsh.syncFromGPU();
-        twh.syncFromGPU();
-        twh.setBalanced(false);
     }
+    terrain_water.syncFromGPU();
+    terrain_water.setUnbalanced();
 
     //  CALCULATE WEIGHTED SOIL HUMIDITY
     WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
-    m_renderer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
+    m_computer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
 
     // Sync from GPU
     for(int i(0); i < 12; i++)
@@ -966,7 +973,7 @@ void GLWidget::refresh_normals()
     // First ensure the size is correct
     Slope & slope (m_resources.getSlope());
     slope.reset(m_terrain.getWidth(), m_terrain.getDepth());
-    m_renderer.convertNormalsToSlope(m_terrain.getNormals(), slope);
+    m_computer.convertNormalsToSlope(m_terrain.getNormals(), slope);
     slope.syncFromGPU();
 }
 
@@ -1060,26 +1067,30 @@ void GLWidget::balance_water(bool one_step)
 {
     makeCurrent();
 
+    TerrainWater & terrain_water(m_resources.getTerrainWater());
     if(one_step)
     {
-        TerrainWaterHeightmap * to_balance = &(m_resources.getTerrainWater()[month()]);
-        m_renderer.balanceWater(m_padded_terrain, to_balance, one_step);
-
-        to_balance->syncFromGPU();
+        int m(month());
+        terrain_water.incrementBalancingIteration(m, m_computer.balanceWater(m_padded_terrain, terrain_water, m));
+        terrain_water.syncFromGPU(m-1);
     }
     else
     {
-        std::vector<TerrainWaterHeightmap *> to_balance(m_resources.getTerrainWater().getUnbalanced());
-
-        for(TerrainWaterHeightmap * twh : to_balance)
-            m_renderer.balanceWater(m_padded_terrain, twh, one_step);
+        for(int m(1); m < 13; m++)
+        {
+            if(!terrain_water.balanced(m))
+            {
+                if(terrain_water.incrementBalancingIteration(m, m_computer.balanceWater(m_padded_terrain, terrain_water, m)))
+                    terrain_water.syncFromGPU(m-1);
+            }
+        }
     }
 }
 
 void GLWidget::zeroify_soil_infiltration_above_slope(int min_slope)
 {
     makeCurrent();
-    m_renderer.slopeBasedInfiltrationRateFilter(m_resources.getSlope(), m_resources.getSoilInfiltration(), min_slope);
+    m_computer.slopeBasedInfiltrationRateFilter(m_resources.getSlope(), m_resources.getSoilInfiltration(), min_slope);
 }
 
 void GLWidget::fill_infiltration_rate(int infiltration_rate)
@@ -1113,14 +1124,14 @@ void GLWidget::soil_infiltration_rate_changed(int infiltration_rate)
     m_humidity_rect->setColor(rect_color);
 }
 
-bool GLWidget::flood_fill(const glm::ivec2 & point, TerrainWaterHeightmap & terrain_water, float & seed_height)
+bool GLWidget::flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height)
 {
     float terrain_height(m_terrain.getHeight(point)); // x 1000 to convert to mm
 //    float water_height(terrain_water(point[0], point[1]));
 
     if(terrain_height < seed_height)
     {
-        terrain_water.set(seed_height-terrain_height, point.x, point.y);
+        terrain_water.set(month-1, seed_height-terrain_height, point.x, point.y);
         return true;
     }
 
@@ -1153,13 +1164,12 @@ void GLWidget::set_absolute_aggregate_height(int height)
 {
     float terrain_scale_height(height/m_terrain.getScale());
     makeCurrent();
-    TerrainWaterHeightmap & twh(m_resources.getTerrainWater()[month()]);
-    twh.push();
+//    twh.push();
 
-    m_renderer.setAbsoluteAggregateHeight(m_terrain,
-                                          twh,
+    m_computer.setAbsoluteAggregateHeight(m_terrain,
+                                          m_resources.getTerrainWater()[month()-1]->textureId(),
                                           terrain_scale_height);
-    twh.syncFromGPU(true);
+    m_resources.getTerrainWater().syncFromGPU(month()-1);
 }
 
 void GLWidget::clear_rays()

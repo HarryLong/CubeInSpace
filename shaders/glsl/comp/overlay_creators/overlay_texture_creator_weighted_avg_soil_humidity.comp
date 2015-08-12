@@ -1,0 +1,39 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
+
+uniform int month;
+
+uniform sampler2D weighted_avg_soil_humidity_texture;
+
+vec4 soil_humidity_to_color(in float soil_humidity)
+{
+    float intensity = soil_humidity/500.0; // 500 is the max
+    return vec4(0,0,intensity,.7);
+}
+
+void main()
+{
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
+
+    uvec2 heightmap_size = imageSize(resulting_overlay);
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+
+    if(valid)
+    {
+        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
+
+        float weighted_soil_humidity = texture(weighted_avg_soil_humidity_texture, texture_coord).r;
+        vec4 resulting_color = soil_humidity_to_color(weighted_soil_humidity);
+
+        imageStore(resulting_overlay, global_idx, resulting_color);
+    }
+
+    memoryBarrierImage();
+    barrier();
+}
+

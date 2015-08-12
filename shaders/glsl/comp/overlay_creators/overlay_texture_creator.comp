@@ -1,0 +1,216 @@
+#version 430
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
+const vec4 color_at_minus_fifty_degrees = vec4(0,0,1,.7);
+const vec4 color_at_plus_fifty_degrees = vec4(1,0,0,.7);
+
+struct OverlayMode
+{
+    bool slope;
+    bool altitude;
+    bool shade;
+    bool temperature;
+    bool daily_illumination_min;
+    bool daily_illumination_max;
+    bool soil_infiltration_rate;
+    bool monthly_soil_humidity;
+    bool weighted_avg_soil_humidity;
+};
+
+uniform OverlayMode overlay;
+uniform float min_height;
+uniform float max_height;
+uniform int month;
+
+uniform sampler2D terrain_height_map_texture;
+uniform sampler2D slope_texture;
+uniform sampler2D jun_temperature_texture;
+uniform sampler2D dec_temperature_texture;
+uniform sampler2D min_daily_illumination_texture;
+uniform sampler2D max_daily_illumination_texture;
+uniform usampler2D shade_texture;
+uniform usampler2D soil_infiltration_rate_texture;
+uniform usampler2D monthly_soil_humidity_texture;
+uniform sampler2D weighted_avg_soil_humidity_texture;
+
+uniform sampler2DArray temperature_texture;
+
+float mm_to_meters(in uint mm)
+{
+    return float(mm)/1000;
+}
+
+vec4 temp_to_output_color(in float temperature)
+{
+//    float intensity = temperature/10000;
+//    return vec4(intensity, intensity, intensity,1);
+//    if(temperature > 0)
+//    {
+//        return vec4(1,0,0,1);
+//    }
+//    else if(temperature == 0)
+//    {
+//        return vec4(0,1,0,1);
+//    }
+//    else
+//    {
+//        return vec4(0,0,1,1);
+//    }
+    float color_at_plus_fifty_degrees_percentage = (temperature+50)/100.0;
+    float color_at_minus_fifty_degrees_percentage = 1-color_at_plus_fifty_degrees_percentage;
+
+    return (color_at_plus_fifty_degrees_percentage * color_at_plus_fifty_degrees) +
+                (color_at_minus_fifty_degrees_percentage * color_at_minus_fifty_degrees);
+}
+
+vec4 slope_to_output_color(in float slope)
+{
+    return vec4(slope,slope,slope,.7);
+}
+
+vec4 altitude_to_output_color(in float altitude)
+{
+    return vec4(altitude,altitude,altitude,.7);
+}
+
+vec4 shade_to_output_color(in uint shade)
+{
+    if(shade > 0) // Shaded
+    {
+        return vec4(0.01, 0.01, 0.01, .7);
+    }
+    else // Not shaded
+    {
+        return vec4(0.7,0.7,0.7,.7);
+    }
+}
+
+vec4 daily_illumination_to_output_color(in uint daily_illumination)
+{
+    float intensity = float(daily_illumination)/24;
+    return vec4(intensity,intensity,intensity,.7);
+}
+
+vec4 soil_infiltration_rate_to_output_color(in uint soil_infiltration_rate)
+{
+    float intensity = float(soil_infiltration_rate)/50.0; // 50 is the max
+    return vec4(0,0,intensity,.7);
+}
+
+vec4 soil_humidity_to_color(in float soil_humidity)
+{
+//    if(soil_humidity > 500)
+//    {
+//        return vec4(1,1,1,.7);
+//    }
+//    else
+//    {
+//        return vec4(0,0,0,.7);
+//    }
+
+    float intensity = soil_humidity/500.0; // 500 is the max
+    return vec4(0,0,intensity,.7);
+}
+
+void main()
+{
+    ivec2 global_idx;
+    global_idx.x = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x); // + 1 for padding
+    global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y); // + 1 for padding
+
+    uvec2 heightmap_size = imageSize(resulting_overlay);
+    // WATER HEIGHTMAP IMAGE INDICES
+    bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
+
+    if(valid)
+    {
+        vec4 resulting_color = vec4(0,0,0,0);
+        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
+//        if(overlay.slope)
+//        {
+//            float slope = texture(slope_texture, texture_coord).x/90.0;
+//            resulting_color = slope_to_output_color(slope);
+//        }
+//        else if(overlay.altitude)
+//        {
+//            float height = texture(terrain_height_map_texture, texture_coord).r;
+//            float altitude = (height-min_height)/(max_height-min_height);
+//            resulting_color = altitude_to_output_color(altitude);
+//        }
+        if(overlay.temperature)
+        {
+            float jun_temperature = texture(temperature_texture, vec3(texture_coord,0)).r * 127;
+            float dec_temperature = texture(temperature_texture, vec3(texture_coord,1)).r * 127;
+
+//            resulting_color = temp_to_output_color(jun_temperature);
+
+//            float jun_temperature = texture(jun_temperature_texture, texture_coord).r * 127;
+
+//            float jun_temperature = texture(temperature_texture, vec3(texture_coord,0)).r * 127;
+//            float dec_temperature = texture(temperature_texture, vec3(texture_coord,1)).r * 127;
+//            if(jun_temperature > 0)
+//            {
+//                resulting_color = vec4(1,0,0,1);
+//            }
+//            else if(jun_temperature == 0)
+//            {
+//                resulting_color = vec4(0,1,0,1);
+//            }
+//            else
+//            {
+//                resulting_color = vec4(0,0,1,1);
+//            }
+
+//            float jun_temperature = texture(jun_temperature_texture, texture_coord).r * 127;
+//            float dec_temperature = texture(dec_temperature_texture, texture_coord).r * 127;
+
+
+
+            float temp_diff = jun_temperature - dec_temperature;
+            float jun_percentage = (6.0-(abs(6-month)))/6.0;
+            float temperature = dec_temperature + (jun_percentage * temp_diff);
+            resulting_color = temp_to_output_color(temperature);
+        }
+//        else if(overlay.shade)
+//        {
+//            uint shade = 0;
+//            if(texture(shade_texture, texture_coord).r > 0)
+//            {
+//                shade = 1;
+//            }
+//            resulting_color = shade_to_output_color(shade);
+//        }
+//        else if(overlay.daily_illumination_min)
+//        {
+//            uint min_daily_illumination = uint(texture(min_daily_illumination_texture, texture_coord).r * 255);
+//            resulting_color = daily_illumination_to_output_color(min_daily_illumination);
+//        }
+//        else if(overlay.daily_illumination_max)
+//        {
+//            uint max_daily_illumination = uint(texture(max_daily_illumination_texture, texture_coord).r * 255);
+//            resulting_color = daily_illumination_to_output_color(max_daily_illumination);
+//        }
+//        else if(overlay.soil_infiltration_rate)
+//        {
+//            uint soil_infiltration_rate = texture(soil_infiltration_rate_texture, texture_coord).r;
+//            resulting_color = soil_infiltration_rate_to_output_color(soil_infiltration_rate);
+//        }
+//        else if(overlay.monthly_soil_humidity)
+//        {
+//            uint soil_humidity = texture(monthly_soil_humidity_texture, texture_coord).r;
+//            resulting_color = soil_humidity_to_color(float(soil_humidity));
+//        }
+//        else if(overlay.weighted_avg_soil_humidity)
+//        {
+//            float soil_humidity = texture(weighted_avg_soil_humidity_texture, texture_coord).r;
+//            resulting_color = soil_humidity_to_color(soil_humidity);
+//        }
+        imageStore(resulting_overlay, global_idx, resulting_color);
+    }
+
+    memoryBarrierImage();
+    barrier();
+}
+

@@ -37,6 +37,7 @@ template <class T> void TextureElement2D<T>::setDimensions(int width, int height
         m_texture.setSize(m_width, m_height); CE();
         m_texture.allocateStorage(m_pixel_format, m_pixel_type); CE();
         m_texture.setWrapMode(QOpenGLTexture::WrapMode::MirroredRepeat);CE();
+        m_texture.setMinMagFilters(QOpenGLTexture::Filter::Linear, QOpenGLTexture::Filter::Linear);
 
         m_texture.release();
     }

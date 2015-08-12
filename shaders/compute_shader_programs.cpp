@@ -1,31 +1,5 @@
-#include "shader_programs.h"
+#include "compute_shader_programs.h"
 #include "../gl_core/glheader.h"
-
-/************************************
- * VERTEX & FRAGMENT SHADER PROGRAM *
- ************************************/
-ShaderProgram::ShaderProgram(const QString vertex_shader_filename, const QString fragment_shader_filename) :
-    m_vertex_shader_filename(vertex_shader_filename), m_fragment_shader_filename(fragment_shader_filename)
-{
-
-}
-
-ShaderProgram::~ShaderProgram()
-{
-
-}
-
-void ShaderProgram::compileAndLink()
-{
-    bool succ (addShaderFromSourceFile(QOpenGLShader::Vertex, m_vertex_shader_filename)); CE();
-    if (!succ) qWarning() << "Shader compile log:" << log();
-
-    succ = addShaderFromSourceFile(QOpenGLShader::Fragment, m_fragment_shader_filename); CE();
-    if (!succ) qWarning() << "Shader compile log:" << log();
-
-    succ = link();
-    if (!succ) qWarning() << "Shader compile log:" << log();
-}
 
 /**************************
  * COMPUTE SHADER PROGRAM *
@@ -48,71 +22,6 @@ void ComputeShaderProgram::compileAndLink()
 
     succ = link();
     if (!succ) qWarning() << "Shader compile log:" << log();
-}
-
-/***************
- * BASE SHADER *
- ***************/
-BaseShader::BaseShader() : ShaderProgram(":/base.vert", ":/base.frag")
-{
-
-}
-
-BaseShader::~BaseShader()
-{
-
-}
-
-/******************
- * TERRAIN SHADER *
- ******************/
-TerrainShader::TerrainShader() : ShaderProgram(":/terrain.vert", ":/terrain.frag")
-{
-
-}
-
-TerrainShader::~TerrainShader()
-{
-
-}
-
-/******************
- * OVERLAY SHADER *
- ******************/
-OverlayShader::OverlayShader() : ShaderProgram(":/overlay.vert", ":/overlay.frag")
-{
-
-}
-
-OverlayShader::~OverlayShader()
-{
-
-}
-
-/***************************
- * TERRAIN ELEMENTS SHADER *
- ***************************/
-TerrainElementsShader::TerrainElementsShader() : ShaderProgram(":/terrain_elements.vert", ":/terrain_elements.frag")
-{
-
-}
-
-TerrainElementsShader::~TerrainElementsShader()
-{
-
-}
-
-/****************************
- * NORMALS GENERATOR SHADER *
- ****************************/
-NormalsGeneratorShader::NormalsGeneratorShader() : ShaderProgram(":/normals_generator.vert", ":/normals_generator.frag")
-{
-
-}
-
-NormalsGeneratorShader::~NormalsGeneratorShader()
-{
-
 }
 
 /*******************************
@@ -183,18 +92,32 @@ SlopeBasedSoilInfiltrationShader::~SlopeBasedSoilInfiltrationShader()
 /**********************************
  * OVERLAY TEXTURE CREATOR SHADER *
  **********************************/
-const int OverlayTextureCreatorShader::_GROUP_SIZE_X = 32;
-const int OverlayTextureCreatorShader::_GROUP_SIZE_Y = 32;
-const int OverlayTextureCreatorShader::_GROUP_SIZE_Z = 1;
-OverlayTextureCreatorShader::OverlayTextureCreatorShader() : ComputeShaderProgram(":/overlay_texture_creator.comp")
-{
+const int OverlayTextureCreatorShaders::_GROUP_SIZE_X = 32;
+const int OverlayTextureCreatorShaders::_GROUP_SIZE_Y = 32;
+const int OverlayTextureCreatorShaders::_GROUP_SIZE_Z = 1;
+OverlayTextureCreatorShaders::Slope::Slope() : ComputeShaderProgram(":/overlay_texture_creator_slope.comp") {}
+OverlayTextureCreatorShaders::Slope::~Slope() {}
 
-}
+OverlayTextureCreatorShaders::Altitude::Altitude() : ComputeShaderProgram(":/overlay_texture_creator_altitude.comp") {}
+OverlayTextureCreatorShaders::Altitude::~Altitude() {}
 
-OverlayTextureCreatorShader::~OverlayTextureCreatorShader()
-{
+OverlayTextureCreatorShaders::Shade::Shade() : ComputeShaderProgram(":/overlay_texture_creator_shade.comp") {}
+OverlayTextureCreatorShaders::Shade::~Shade() {}
 
-}
+OverlayTextureCreatorShaders::Temperature::Temperature() : ComputeShaderProgram(":/overlay_texture_creator_temperature.comp") {}
+OverlayTextureCreatorShaders::Temperature::~Temperature() {}
+
+OverlayTextureCreatorShaders::DailyIllumination::DailyIllumination() : ComputeShaderProgram(":/overlay_texture_creator_daily_illumination.comp") {}
+OverlayTextureCreatorShaders::DailyIllumination::~DailyIllumination() {}
+
+OverlayTextureCreatorShaders::SoilInfiltrationRate::SoilInfiltrationRate() : ComputeShaderProgram(":/overlay_texture_creator_soil_infiltration_rate.comp") {}
+OverlayTextureCreatorShaders::SoilInfiltrationRate::~SoilInfiltrationRate() {}
+
+OverlayTextureCreatorShaders::MonthlySoilHumidity::MonthlySoilHumidity() : ComputeShaderProgram(":/overlay_texture_creator_soil_humidity.comp") {}
+OverlayTextureCreatorShaders::MonthlySoilHumidity::~MonthlySoilHumidity() {}
+
+OverlayTextureCreatorShaders::WeightedAvgSoilHumidity::WeightedAvgSoilHumidity() : ComputeShaderProgram(":/overlay_texture_creator_weighted_avg_soil_humidity.comp") {}
+OverlayTextureCreatorShaders::WeightedAvgSoilHumidity::~WeightedAvgSoilHumidity() {}
 
 /*********************************
  * AGGREGATE HEIGHT WATER SHADER *

@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "dialogs/dialogs.h"
-#include "shaders/shaders.h"
 #include "renderer.h"
+#include "computer.h"
 #include <atomic>
 #include <thread>
 #include "../gl_assets/rays.h"
@@ -105,7 +105,7 @@ private slots:
     void reset_water();
     void format_overlay_texture();
     void set_flood_fill_enabled(bool);
-    bool flood_fill(const glm::ivec2 & point, TerrainWaterHeightmap & terrain_water, float & seed_height);
+    bool flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height);
     void new_terrain_is_going_to_load();
     void refresh_overlay_texture();
 
@@ -152,6 +152,7 @@ private:
     OrientationWidget m_orientation_widget;
 
     Renderer m_renderer;
+    Computer m_computer;
     Camera m_camera;
     RayDrawer m_rays;
     MouseTracker m_mouse_position_tracker;

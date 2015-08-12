@@ -1,22 +1,7 @@
-#ifndef SHADER_PROGRAMS
-#define SHADER_PROGRAMS
+#ifndef COMPUTE_SHADER_PROGRAMS
+#define COMPUTE_SHADER_PROGRAMS
 
 #include <QOpenGLShaderProgram>
-
-/************************************
- * VERTEX & FRAGMENT SHADER PROGRAM *
- ************************************/
-class ShaderProgram : public QOpenGLShaderProgram
-{
-    Q_OBJECT
-public:
-    ShaderProgram(const QString vertex_shader_filename, const QString fragment_shader_filename);
-    ~ShaderProgram();
-    void compileAndLink();
-
-private:
-    const QString m_vertex_shader_filename, m_fragment_shader_filename;
-};
 
 /**************************
  * COMPUTE SHADER PROGRAM *
@@ -31,61 +16,6 @@ public:
 
 private:
     const QString m_compute_shader_filename;
-};
-
-
-/***************
- * BASE SHADER *
- ***************/
-class BaseShader : public ShaderProgram
-{
-public:
-    BaseShader();
-    ~BaseShader();
-};
-
-/******************
- * TERRAIN SHADER *
- ******************/
-class TerrainShader : public ShaderProgram
-{
-public:
-    TerrainShader();
-    ~TerrainShader();
-};
-
-/******************
- * OVERLAY SHADER *
- ******************/
-class OverlayShader : public ShaderProgram
-{
-public:
-    OverlayShader();
-    ~OverlayShader();
-};
-
-/***************************
- * TERRAIN ELEMENTS SHADER *
- ***************************/
-class TerrainElementsShader : public ShaderProgram
-{
-public:
-    TerrainElementsShader();
-    ~TerrainElementsShader();
-};
-
-/****************************
- * NORMALS GENERATOR SHADER *
- ****************************/
-class NormalsGeneratorShader : public ShaderProgram
-{
-public:
-    NormalsGeneratorShader();
-    ~NormalsGeneratorShader();
-
-    struct Uniforms{
-        static const char * _TERRAIN_HEIGHTMAP;
-    };
 };
 
 /*******************************
@@ -147,11 +77,57 @@ public:
 /**********************************
  * OVERLAY TEXTURE CREATOR SHADER *
  **********************************/
-class OverlayTextureCreatorShader : public ComputeShaderProgram
+class OverlayTextureCreatorShaders : public ComputeShaderProgram
 {
 public:
-    OverlayTextureCreatorShader();
-    ~OverlayTextureCreatorShader();
+    class Slope  : public ComputeShaderProgram
+    {
+    public:
+        Slope();
+        ~Slope();
+    };
+    class Altitude  : public ComputeShaderProgram
+    {
+    public:
+        Altitude();
+        ~Altitude();
+    };
+    class Shade  : public ComputeShaderProgram
+    {
+    public:
+        Shade();
+        ~Shade();
+    };
+    class Temperature  : public ComputeShaderProgram
+    {
+    public:
+        Temperature();
+        ~Temperature();
+    };
+    class DailyIllumination  : public ComputeShaderProgram
+    {
+    public:
+        DailyIllumination();
+        ~DailyIllumination();
+    };
+    class SoilInfiltrationRate  : public ComputeShaderProgram
+    {
+    public:
+        SoilInfiltrationRate();
+        ~SoilInfiltrationRate();
+    };
+    class MonthlySoilHumidity  : public ComputeShaderProgram
+    {
+    public:
+        MonthlySoilHumidity();
+        ~MonthlySoilHumidity();
+    };
+    class WeightedAvgSoilHumidity  : public ComputeShaderProgram
+    {
+    public:
+        WeightedAvgSoilHumidity();
+        ~WeightedAvgSoilHumidity();
+    };
 
     static const int _GROUP_SIZE_X;
     static const int _GROUP_SIZE_Y;
@@ -228,4 +204,4 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
-#endif //SHADER_PROGRAMS
+#endif //COMPUTE_SHADER_PROGRAMS

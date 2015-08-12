@@ -28,12 +28,14 @@ const char * Uniforms::Texture::_SHADE = "shade_texture";
 const char * Uniforms::Texture::_TEMPERATURE = "temperature_texture";
 const char * Uniforms::Texture::_TEMPERATURE_JUN = "jun_temperature_texture";
 const char * Uniforms::Texture::_TEMPERATURE_DEC = "dec_temperature_texture";
+const char * Uniforms::Texture::_DAILY_ILLUMINATION = "daily_illumination_texture";
 const char * Uniforms::Texture::_MIN_DAILY_ILLUMINATION = "min_daily_illumination_texture";
 const char * Uniforms::Texture::_MAX_DAILY_ILLUMINATION = "max_daily_illumination_texture";
 const char * Uniforms::Texture::_SOIL_INFILTRATION_RATE = "soil_infiltration_rate_texture";
 const char * Uniforms::Texture::_CLUSTER_MEMBERSHIP = "cluster_membership_texture";
 const char * Uniforms::Texture::_MONTHLY_SOIL_HUMIDITY = "monthly_soil_humidity_texture";
 const char * Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY = "weighted_avg_soil_humidity_texture";
+const char * Uniforms::Texture::_OVERLAY = "overlay_texture";
 const char * Uniforms::Texture::_JAN_WEIGHTED_AVG_SOIL_HUMIDITY = "jan_weighted_avg_soil_humidity_texture";
 const char * Uniforms::Texture::_FEB_WEIGHTED_AVG_SOIL_HUMIDITY = "feb_weighted_avg_soil_humidity_texture";
 const char * Uniforms::Texture::_MAR_WEIGHTED_AVG_SOIL_HUMIDITY = "mar_weighted_avg_soil_humidity_texture";
@@ -63,7 +65,6 @@ const char * Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITIES[12] = {
 
 // OVERLAY
 const char * Uniforms::Overlay::_ACTIVE = "overlay_active";
-const char * Uniforms::Overlay::_TEXTURE = "overlay_texture";
 const char * Uniforms::Overlay::_NONE = "overlay.none";
 const char * Uniforms::Overlay::_SLOPE = "overlay.slope";
 const char * Uniforms::Overlay::_ALTITUDE = "overlay.altitude";

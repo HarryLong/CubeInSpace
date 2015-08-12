@@ -41,15 +41,22 @@ template <class T> void TextureElement2DArray<T>::setDimensions(int width, int h
         m_texture.bind();
 
         m_texture.setFormat(m_texture_format); CE();
-        m_texture.setSize(m_width, m_height); CE();
+        m_texture.setSize(m_width, m_height, m_layers); CE();
         m_texture.setLayers(m_layers);
         m_texture.allocateStorage(m_pixel_format, m_pixel_type); CE();
+
+        m_texture.setMinMagFilters(QOpenGLTexture::Filter::Linear, QOpenGLTexture::Filter::Linear);
         m_texture.setWrapMode(QOpenGLTexture::WrapMode::MirroredRepeat);CE();
 
         m_texture.release();
 
         refresh_texture_views();
     }
+}
+
+template <class T> int TextureElement2DArray<T>::layers() const
+{
+    return m_layers;
 }
 
 template <class T> void TextureElement2DArray<T>::refresh_texture_views()
@@ -63,8 +70,6 @@ template <class T> void TextureElement2DArray<T>::refresh_texture_views()
                                                                     0,0,
                                                                     l,l);
         assert(view_texture != 0);
-
-        qCritical() << "Layer " << l << " texture view: " << view_texture->textureId();
 
         m_texture_views.push_back(view_texture);
     }
@@ -81,10 +86,15 @@ template <class T> QOpenGLTexture* TextureElement2DArray<T>::operator[](int laye
     return m_texture_views[layer];
 }
 
+template <class T> const T * TextureElement2DArray<T>::getRawData(int layer) const
+{
+    return m_raw_data[layer];
+}
+
 /***********************
  * PER LAYER FUNCTIONS *
  ***********************/
-template <class T> void TextureElement2DArray<T>::bind(int layer)
+template <class T> void TextureElement2DArray<T>::bind_layer(int layer)
 {
     m_texture_views[layer]->bind();
 }

@@ -1,24 +1,32 @@
 <RCC>
     <qresource prefix="/">
-        <file>base.frag</file>
-        <file>base.vert</file>
-        <file>normals_generator.frag</file>
-        <file>normals_generator.vert</file>
-        <file>terrain.frag</file>
-        <file>terrain.vert</file>
-        <file>overlay.vert</file>
-        <file>overlay.frag</file>
-        <file>terrain_elements.frag</file>
-        <file>terrain_elements.vert</file>
-        <file>water_flux.comp</file>
-        <file>water_heightmap_comparator.comp</file>
-        <file>soil_humidity_calculator.comp</file>
-        <file>slope_based_soil_infiltration.comp</file>
-        <file>overlay_texture_creator.comp</file>
-        <file>aggregate_height_setter.comp</file>
-        <file>border_overlap_reducer.comp</file>
-        <file>weighted_avg_calculator.comp</file>
-        <file>normals_to_slope_converter.comp</file>
-        <file>closest_cluster_finder.comp</file>
+        <!-- VERTEX AND FRAGMENT SHADERS (CORE OPEN GL PIPELINE) -->
+        <file alias="base.frag">glsl/base.frag</file>
+        <file alias="base.vert">glsl/base.vert</file>
+        <file alias="normals_generator.frag">glsl/normals_generator.frag</file>
+        <file alias="normals_generator.vert">glsl/normals_generator.vert</file>
+        <file alias="terrain.frag">glsl/terrain.frag</file>
+        <file alias="terrain.vert">glsl/terrain.vert</file>
+        <file alias="terrain_elements.frag">glsl/terrain_elements.frag</file>
+        <file alias="terrain_elements.vert">glsl/terrain_elements.vert</file>
+        <!-- COMPUTE SHADERS -->
+        <file alias="water_flux.comp">glsl/comp/water_flux.comp</file>
+        <file alias="water_heightmap_comparator.comp">glsl/comp/water_heightmap_comparator.comp</file>
+        <file alias="soil_humidity_calculator.comp">glsl/comp/soil_humidity_calculator.comp</file>
+        <file alias="slope_based_soil_infiltration.comp">glsl/comp/slope_based_soil_infiltration.comp</file>
+        <file alias="aggregate_height_setter.comp">glsl/comp/aggregate_height_setter.comp</file>
+        <file alias="border_overlap_reducer.comp">glsl/comp/border_overlap_reducer.comp</file>
+        <file alias="weighted_avg_calculator.comp">glsl/comp/weighted_avg_calculator.comp</file>
+        <file alias="normals_to_slope_converter.comp">glsl/comp/normals_to_slope_converter.comp</file>
+        <file alias="closest_cluster_finder.comp">glsl/comp/closest_cluster_finder.comp</file>
+        <!-- OVERLAY CREATOR COMPUTE SHADERS -->
+        <file alias="overlay_texture_creator_slope.comp">glsl/comp/overlay_creators/overlay_texture_creator_slope.comp</file>
+        <file alias="overlay_texture_creator_altitude.comp">glsl/comp/overlay_creators/overlay_texture_creator_altitude.comp</file>
+        <file alias="overlay_texture_creator_shade.comp">glsl/comp/overlay_creators/overlay_texture_creator_shade.comp</file>
+        <file alias="overlay_texture_creator_temperature.comp">glsl/comp/overlay_creators/overlay_texture_creator_temperature.comp</file>
+        <file alias="overlay_texture_creator_daily_illumination.comp">glsl/comp/overlay_creators/overlay_texture_creator_daily_illumination.comp</file>
+        <file alias="overlay_texture_creator_soil_infiltration_rate.comp">glsl/comp/overlay_creators/overlay_texture_creator_soil_infiltration_rate.comp</file>
+        <file alias="overlay_texture_creator_soil_humidity.comp">glsl/comp/overlay_creators/overlay_texture_creator_soil_humidity.comp</file>
+        <file alias="overlay_texture_creator_weighted_avg_soil_humidity.comp">glsl/comp/overlay_creators/overlay_texture_creator_weighted_avg_soil_humidity.comp</file>
     </qresource>
 </RCC>
