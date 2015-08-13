@@ -57,13 +57,17 @@ ComputeShaderProgram * Computer::get_overlay_creator_shader(const char * active_
         return &m_shaders.m_overlay_creator_shaders.m_temperature;
     else if(active_overlay == Uniforms::Overlay::_MIN_DAILY_ILLUMINATION ||
             active_overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION)
+    {
         return &m_shaders.m_overlay_creator_shaders.m_daily_illumination;
+    }
     else if(active_overlay == Uniforms::Overlay::_SOIL_INFILTRATION_RATE)
         return &m_shaders.m_overlay_creator_shaders.m_soil_infiltration_rate;
     else if(active_overlay == Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY)
         return &m_shaders.m_overlay_creator_shaders.m_soil_humidity;
     else if(active_overlay == Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY)
         return &m_shaders.m_overlay_creator_shaders.m_weigted_avg_soil_humidity;
+
+    qCritical() << "Returning no shader. Overlay: " << active_overlay;
 }
 
 
@@ -110,12 +114,12 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
     else if(active_overlay == Uniforms::Overlay::_MIN_DAILY_ILLUMINATION)
     {
         shader->setUniformValue(Uniforms::Texture::_DAILY_ILLUMINATION, 0); CE();
-        resources.getDailyIllumination().getMin().bind();
+        resources.getDailyIllumination()[TerrainDailyIllumination::_MIN_LAYER_IDX]->bind();
     }
     else if(active_overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION)
     {
         shader->setUniformValue(Uniforms::Texture::_DAILY_ILLUMINATION, 0); CE();
-        resources.getDailyIllumination().getMax().bind();
+        resources.getDailyIllumination()[TerrainDailyIllumination::_MAX_LAYER_IDX]->bind();
     }
     else if(active_overlay == Uniforms::Overlay::_SOIL_INFILTRATION_RATE)
     {
@@ -483,19 +487,19 @@ void Computer::findClosestCluster(Clusters & clusters, ResourceWrapper & resourc
 //        texture_unit++;
 //    }
     // Min illumination
-    {
-        f->glActiveTexture(texture_unit);CE();
-        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_MIN_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-        resources.getDailyIllumination().getMin().bind();CE();
-        texture_unit++;
-    }
-    // Max illumination
-    {
-        f->glActiveTexture(texture_unit);CE();
-        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_MAX_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-        resources.getDailyIllumination().getMax().bind();CE();
-        texture_unit++;
-    }
+//    {
+//        f->glActiveTexture(texture_unit);CE();
+//        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_MIN_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
+//        resources.getDailyIllumination().getMin().bind();CE();
+//        texture_unit++;
+//    }
+//    // Max illumination
+//    {
+//        f->glActiveTexture(texture_unit);CE();
+//        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_MAX_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
+//        resources.getDailyIllumination().getMax().bind();CE();
+//        texture_unit++;
+//    }
     // Slope
     {
         f->glActiveTexture(texture_unit);CE();

@@ -5,13 +5,6 @@
 #include "glm/common.hpp"
 #include <QObject>
 
-//class WeightedSoilHumidityHeightmap : public TextureElement2D<GLfloat>
-//{
-//public:
-//    WeightedSoilHumidityHeightmap();
-//    ~WeightedSoilHumidityHeightmap();
-//};
-
 class WeightedSoilHumidity : public TextureElement2DArray<GLfloat>
 {
 public:

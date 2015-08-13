@@ -26,8 +26,7 @@ void ResourceWrapper::terrainChanged(int width, int depth)
 {
     m_terrain_shade.setDimensions(width, depth);
 
-    m_terrain_daily_illumination.getMin().setDimensions(width, depth);
-    m_terrain_daily_illumination.getMax().setDimensions(width, depth);
+    m_terrain_daily_illumination.setDimensions(width, depth);
 
     m_terrain_temp.setDimensions(width, depth);
 
@@ -122,8 +121,8 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
     // Daily illumination
     if(m_daily_illumination_valid)
     {
-        min_illumination = (int) m_terrain_daily_illumination.getMin()(pos[0], pos[1]);
-        max_illumination = (int) m_terrain_daily_illumination.getMax()(pos[0], pos[1]);
+        min_illumination = (int) m_terrain_daily_illumination(TerrainDailyIllumination::_MIN_LAYER_IDX, pos[0], pos[1]);
+        max_illumination = (int) m_terrain_daily_illumination(TerrainDailyIllumination::_MAX_LAYER_IDX, pos[0], pos[1]);
     }
     // Temperature
     if(m_temp_valid)
@@ -172,7 +171,7 @@ GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_po
     GLubyte * shade_data = NULL;
 
     // Generate the data
-    shade_data = (GLubyte *) malloc(sizeof(GLubyte) * terrain_width * terrain_depth);
+    shade_data = new GLubyte[terrain_width * terrain_depth];
 
     if(sun_position[1] <= terrain.getMinHeight()) // Optimization - the sun is set. There will be no light
     {
@@ -227,9 +226,9 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     int terrain_depth(terrain.getDepth());
     int n_elements(terrain_width*terrain_depth);
 
-    GLubyte * intermediary_illumination_data = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
-    GLubyte * aggregated_min = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
-    GLubyte * aggregated_max = (GLubyte*) malloc(sizeof(GLubyte)*n_elements);
+    GLubyte * intermediary_illumination_data = new GLubyte[n_elements];
+    GLubyte * aggregated_min = new GLubyte[n_elements];
+    GLubyte * aggregated_max = new GLubyte[n_elements];
 
     float n_iterations (24 * 12);
     int iteration(0);
@@ -238,8 +237,9 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
 
     for(int month = 1; month < 13; month++)
     {
+        memset(intermediary_illumination_data, 0, n_elements);
+
         lighting_manager.setMonth(month);
-        memset(intermediary_illumination_data, 0x00, n_elements);
 
         for(int hour = 0; hour < 24; hour++, iteration++)
         {
@@ -260,7 +260,7 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
                     intermediary_illumination_data[index] += (shade_data[index] > 0 ? 0 : 1);
                 }
             }
-            free(shade_data);
+            delete shade_data;
         }
         // Now check if it is the minimum/maximum
         if(month > 1)
@@ -281,13 +281,14 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
         }
         else
         {
-            std::memcpy(aggregated_min, intermediary_illumination_data, n_elements);
-            std::memcpy(aggregated_max, intermediary_illumination_data, n_elements);
+            std::memcpy(aggregated_min, intermediary_illumination_data, n_elements*sizeof(GLubyte));
+            std::memcpy(aggregated_max, intermediary_illumination_data, n_elements*sizeof(GLubyte));
         }
     }
-    free(intermediary_illumination_data);
-    m_terrain_daily_illumination.getMin().setData(aggregated_min);
-    m_terrain_daily_illumination.getMax().setData(aggregated_max);
+    delete intermediary_illumination_data;
+
+    m_terrain_daily_illumination.setData(TerrainDailyIllumination::_MIN_LAYER_IDX, aggregated_min);
+    m_terrain_daily_illumination.setData(TerrainDailyIllumination::_MAX_LAYER_IDX, aggregated_max);
 
     // Restore time and date
     lighting_manager.setMonth(current_month);

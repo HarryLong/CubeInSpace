@@ -130,8 +130,8 @@ void GLWidget::establish_connections()
     connect(&m_terrain, SIGNAL(normalsInvalid()), this, SLOT(refresh_normals()));
 
     // TERRAIN DIMENSTIONS CHANGED
-    connect(&m_terrain, SIGNAL(newTerrainGoingToLoad(int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int)));
     connect(&m_terrain, SIGNAL(newTerrainGoingToLoad(int,int)), this, SLOT(new_terrain_is_going_to_load()));
+    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int)));
     connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), &m_resources, SLOT(terrainChanged(int,int)));
     connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(refresh_water()));
     connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(format_overlay_texture()));
@@ -946,8 +946,6 @@ void GLWidget::reset_water()
     m_resources.getWeightedSoilHumidity().reset(m_terrain.getWidth(), m_terrain.getDepth());
     // RESET TERRAIN WATER
     m_resources.getTerrainWater().reset(m_terrain.getWidth(), m_terrain.getDepth());
-
-    refresh_overlay_texture();
 }
 
 void GLWidget::refresh_shade()
@@ -958,8 +956,6 @@ void GLWidget::refresh_shade()
     m_resources.refreshShade(m_terrain, m_lighting_manager.getSunlightProperties().getPosition());
 
     m_fps_callback_timer->start();
-
-    refresh_overlay_texture();
 }
 
 void GLWidget::refresh_normals()
@@ -1010,7 +1006,10 @@ void GLWidget::soil_infiltration_controllers_state_changed(bool active)
     if(!active) // Water refresh required
         refresh_water();
     else
+    {
         reset_water();
+        refresh_overlay_texture();
+    }
 }
 
 void GLWidget::water_controllers_state_changed(bool active)

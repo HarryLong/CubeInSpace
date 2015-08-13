@@ -1,31 +1,16 @@
 #ifndef TERRAIN_DAILY_ILLUMINATION_H
 #define TERRAIN_DAILY_ILLUMINATION_H
 
-#include "../gl_texture/texture_element_2d.h"
+#include "../gl_texture/texture_element_2d_array.h"
 
-class TerrainDailyIlluminationTexture : public TextureElement2D<GLubyte>
+class TerrainDailyIllumination : public TextureElement2DArray<GLubyte>
 {
 public:
-    TerrainDailyIlluminationTexture();
-    ~TerrainDailyIlluminationTexture();
-};
+    static const int _MIN_LAYER_IDX = 0;
+    static const int _MAX_LAYER_IDX = 1;
 
-class TerrainDailyIllumination
-{
-public:
     TerrainDailyIllumination();
     ~TerrainDailyIllumination();
-
-    TerrainDailyIlluminationTexture & getMin();
-    TerrainDailyIlluminationTexture & getMax();
-
-//    void setData(GLubyte * min_data, GLubyte * max_data, int width, int height);
-
-//    void getIlluminationData(int x, int z, GLubyte & min, GLubyte & max);
-
-private:
-    TerrainDailyIlluminationTexture m_min_illumination;
-    TerrainDailyIlluminationTexture m_max_illumination;
 };
 
 
