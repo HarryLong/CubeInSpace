@@ -41,7 +41,7 @@ template <class T> void TextureElement2DArray<T>::setDimensions(int width, int h
         m_texture.bind();
 
         m_texture.setFormat(m_texture_format); CE();
-        m_texture.setSize(m_width, m_height, m_layers); CE();
+        m_texture.setSize(m_width, m_height); CE();
         m_texture.setLayers(m_layers);
         m_texture.allocateStorage(m_pixel_format, m_pixel_type); CE();
 
@@ -69,6 +69,8 @@ template <class T> void TextureElement2DArray<T>::refresh_texture_views()
                                                                     m_texture_format,
                                                                     0,0,
                                                                     l,l);
+        view_texture->setMinMagFilters(QOpenGLTexture::Filter::Linear, QOpenGLTexture::Filter::Linear);
+        view_texture->setWrapMode(QOpenGLTexture::WrapMode::MirroredRepeat);
         assert(view_texture != 0);
 
         m_texture_views.push_back(view_texture);
