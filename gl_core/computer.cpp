@@ -130,7 +130,7 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
     else if(active_overlay == Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY)
     {
         shader->setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY, 0); CE();
-        resources.getWeightedSoilHumidity()[month].bind();
+        resources.getWeightedSoilHumidity()[month-1]->bind();
     }
 
     f->glBindImageTexture(0, overlay_texture_id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);  CE();
@@ -337,7 +337,7 @@ void Computer::calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
         f->glBindImageTexture(1, soil_humdities[((i+11) % 12)]->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
         f->glBindImageTexture(2, soil_humdities[((i+10) % 12)]->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
 
-        f->glBindImageTexture(3, weighted_soil_humidities[i+1].textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE(); // Resulting weighted soil humidity
+        f->glBindImageTexture(3, weighted_soil_humidities[i]->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE(); // Resulting weighted soil humidity
 
         f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
         f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
@@ -505,13 +505,13 @@ void Computer::findClosestCluster(Clusters & clusters, ResourceWrapper & resourc
     }
     // WEIGHTED SOIL ILLUMINATION
     {
-        for(int i (0); i < 12; i++)
-        {
-            f->glActiveTexture(texture_unit);CE();
-            m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITIES[i], texture_unit-GL_TEXTURE0); CE();
-            resources.getWeightedSoilHumidity()[i+1].bind();
-            texture_unit++;
-        }
+//        for(int i (0); i < 12; i++)
+//        {
+//            f->glActiveTexture(texture_unit);CE();
+//            m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITIES[i], texture_unit-GL_TEXTURE0); CE();
+//            resources.getWeightedSoilHumidity()[i+1].bind();
+//            texture_unit++;
+//        }
     }
 
     // The resulting cluster membership

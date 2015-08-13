@@ -916,12 +916,7 @@ void GLWidget::refresh_water()
     //  CALCULATE WEIGHTED SOIL HUMIDITY
     WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
     m_computer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
-
-    // Sync from GPU
-    for(int i(0); i < 12; i++)
-    {
-        wsh[i+1].syncFromGPU();
-    }
+    wsh.syncFromGPU();
 
     refresh_overlay_texture();
     // Disable fps callback temporarily

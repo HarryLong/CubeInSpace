@@ -32,12 +32,10 @@ void ResourceWrapper::terrainChanged(int width, int depth)
     m_terrain_temp.setDimensions(width, depth);
 
     m_terrain_water.setDimensions(width, depth);
+
     m_soil_humidity.setDimensions(width, depth);
 
-    for(int i = 1; i < 13; i++)
-    {
-        m_weighted_soil_humidity[i].setDimensions(width, depth);
-    }
+    m_weighted_soil_humidity.setDimensions(width, depth);
 
     m_soil_infiltration.reset(width, depth);
 
@@ -148,7 +146,7 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
     }
     // Weighted soil Humidity
     {
-        weighted_soil_humidity = m_weighted_soil_humidity[month](pos[0], pos[1]);
+        weighted_soil_humidity = m_weighted_soil_humidity(month-1, pos[0], pos[1]);
     }
 }
 

@@ -5,13 +5,6 @@
 #include "glm/common.hpp"
 #include <QObject>
 
-//class SoilHumidityHeightmap : public TextureElement2D<GLuint>
-//{
-//public:
-//    SoilHumidityHeightmap();
-//    ~SoilHumidityHeightmap();
-//};
-
 class SoilHumidity : public TextureElement2DArray<GLuint>
 {
 public:
