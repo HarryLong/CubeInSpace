@@ -10,6 +10,7 @@ public:
     virtual ~TextureElement2D();
     // Terrain shade functions
     virtual void setData(T * data, bool stack = false);
+    virtual void reset(bool stack = false);
     virtual void reset(int width, int height);
     virtual T operator()(int x, int y) const;
     void set(T data, int x, int y);
@@ -20,11 +21,11 @@ public:
     const T * getRawData() const;
 
     void pop();
-    void push();
 
 protected:
 
 private:
+    void push();
     T * m_raw_data;
 
     FixedSizeStack<T> m_stack;

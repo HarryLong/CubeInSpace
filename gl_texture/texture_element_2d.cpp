@@ -60,13 +60,17 @@ template <class T> T TextureElement2D<T>::operator()(int x, int y) const
     return m_raw_data[get_index(x,y)];
 }
 
+template <class T> void TextureElement2D<T>::reset(bool stack)
+{
+    T * data = new T[m_width*m_height*m_color_element_count];
+    std::memset(data, 0, m_width*m_height*m_color_element_count*sizeof(T));
+    setData(data, stack);
+}
+
 template <class T> void TextureElement2D<T>::reset(int w, int h)
 {
     setDimensions(w,h);    // First set the dimensions
-
-    T * data = new T[w*h*m_color_element_count];
-    std::memset(data, 0, w*h*m_color_element_count*sizeof(T));
-    setData(data);
+    reset();
 }
 
 template <class T> const T * TextureElement2D<T>::getRawData() const
@@ -95,7 +99,6 @@ template <class T> void TextureElement2D<T>::set(T data, int x, int y)
 {
     m_raw_data[get_index(x,y)] = data;
 }
-
 
 template <class T> void TextureElement2D<T>::pop()
 {

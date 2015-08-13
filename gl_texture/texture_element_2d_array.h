@@ -19,7 +19,7 @@ public:
      * PER LAYER FUNCTIONS *
      ***********************/
     virtual void setData(int layer, T * data, bool stack = false);
-    virtual void reset(int layer);
+    virtual void reset(int layer, bool stack = false);
     void set(int layer, T data, int x, int y);
     virtual void syncFromGPU(int layer, bool stack = false);
     virtual void pushToGPU(int layer);
@@ -29,22 +29,27 @@ public:
      * AGGREGATE TEXTURE FUNCTIONS *
      *******************************/
     virtual void setData(T * data, bool stack = false);
+    virtual void reset(bool stack = false);
     virtual void reset(int w, int h);
     virtual void syncFromGPU(bool stack = false);
     virtual void pushToGPU();
 
-
     const T * getRawData(int layer) const;
-    void pop(int index);
-    void push(int index);
+
+    void push();
+    void push(int layer);
+    void pop(int layer);
+    void pop();
 
 protected:
 
 private:
     void refresh_texture_views();
     void individualize_raw_data(T * raw_data);
+    void push_all_layers();
+    void pop_all_layers();
 
-    void clear_stack();
+    void clear_stacks();
     void clear_texture_views();
     void clear_raw_data();
     std::vector<QOpenGLTexture*> m_texture_views;

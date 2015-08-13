@@ -308,16 +308,10 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     emit processing("Calculating Temperature...");
     int iteration_counter(0);
 
-//    GLbyte * temp_data = new GLbyte[terrain_width * terrain_depth * 2];
     GLbyte * jun_temp_data = new GLbyte[terrain_width * terrain_depth];
     GLbyte * dec_temp_data = new GLbyte[terrain_width * terrain_depth];
-
-////    std::memset(temp_data, 0, sizeof(GLbyte)*terrain_width * terrain_depth * 2);
-
-//    int dec_start_idx(terrain_width * terrain_depth);
-
-//    GLbyte * data = new GLbyte[terrain_width * terrain_depth * 2];
-//    std::memset(data, 0, terrain_width * terrain_depth * 2 * sizeof(GLbyte));
+//    GLbyte * temp_data = new GLbyte[terrain_width * terrain_depth * 2];
+//    int dec_start_idx_offset(terrain_width*terrain_depth);
 
     // June temperatures
     {
@@ -336,6 +330,7 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 
                 float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
 
+//                temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
                 jun_temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
             }
         }
@@ -353,22 +348,22 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 #pragma omp parallel for
             for(int x = 0; x < terrain_width; x++)
             {
-                int index((z*terrain_width+x));
+                int index(z*terrain_width+x);
 
                 float altitude( terrain.getAltitude(glm::vec2(x,z)) );
 
                 float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
+
+//                temp_data[dec_start_idx_offset+index] = std::min(50.0f,std::max(-50.0f, temp));
+
                 dec_temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
             }
         }
     }
 
-//    m_terrain_temp.setData(temp_data, terrain_width, terrain_depth, 2);
+//    m_terrain_temp.setData(temp_data);
     m_terrain_temp.setData(TerrainTemperature::_JUN_LAYER_IDX,jun_temp_data);
     m_terrain_temp.setData(TerrainTemperature::_DEC_LAYER_IDX,dec_temp_data);
-//    m_terrain_temp.getDec().setData(dec_temp_data);
-
-//    m_terrain_temp.setData(data);
 
     emit processingComplete();
     m_temp_valid = true;

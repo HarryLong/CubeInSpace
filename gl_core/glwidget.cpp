@@ -418,11 +418,9 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 glm::ivec2 seed_point((int)intersection_point[0], (int)intersection_point[2]);
                 TerrainWater & terrain_water(m_resources.getTerrainWater());
                 const int m(month());
-//                water_heightmap.push();
+                terrain_water.push(m-1);
                 float seed_height(m_terrain.getHeight(seed_point)); // to mm
-
                 append_surrounding_points(seed_point, points_to_process, m_floodfill_tracker);
-
                 while(!points_to_process.empty())
                 {
                     std::vector<glm::ivec2> cpy_point_to_process(points_to_process.begin(), points_to_process.end());
@@ -662,13 +660,11 @@ void GLWidget::keyPressEvent ( QKeyEvent * event )
     }
     if(event->key() == Qt::Key_Z && m_ctrl_pressed.load()) // UNDO
     {
-//        if(m_flood_fill_mode || m_overlay_widgets.waterControllersActive())
-//        {
-//            makeCurrent();
-//            TerrainWaterHeightmap & twh = m_resources.getTerrainWater()[month()];
-//            twh.pop();
-//            twh.pushToGPU();
-//        }
+        if(m_flood_fill_mode || m_overlay_widgets.waterControllersActive())
+        {
+            makeCurrent();
+            m_resources.getTerrainWater().pop(month()-1);
+        }
         return;
     }
     if(m_navigation_enabled)
@@ -1159,13 +1155,13 @@ void GLWidget::new_terrain_is_going_to_load()
 void GLWidget::set_absolute_aggregate_height(int height)
 {
     float terrain_scale_height(height/m_terrain.getScale());
+    TerrainWater & terrain_water(m_resources.getTerrainWater());
     makeCurrent();
-//    twh.push();
 
     m_computer.setAbsoluteAggregateHeight(m_terrain,
-                                          m_resources.getTerrainWater()[month()-1]->textureId(),
+                                          terrain_water[month()-1]->textureId(),
                                           terrain_scale_height);
-    m_resources.getTerrainWater().syncFromGPU(month()-1);
+    terrain_water.syncFromGPU(month()-1, true);
 }
 
 void GLWidget::clear_rays()

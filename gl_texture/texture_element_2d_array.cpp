@@ -21,14 +21,14 @@ template <class T> TextureElement2DArray<T>::~TextureElement2DArray()
 {
     clear_texture_views();
     clear_raw_data();
-    clear_stack();
+    clear_stacks();
 }
 
 template <class T> void TextureElement2DArray<T>::setDimensions(int width, int height, int depth)
 {
     if(m_width != width || m_height != height || m_depth != depth)
     {
-        clear_stack();
+        clear_stacks();
         clear_raw_data();
 
         m_width = width;
@@ -103,8 +103,8 @@ template <class T> void TextureElement2DArray<T>::bind_layer(int layer)
 
 template <class T> void TextureElement2DArray<T>::setData(int layer, T * data, bool stack)
 {
-//    if(stack)
-//        push(layer);
+    if(stack)
+        push(layer);
     if(m_raw_data[layer])
         delete m_raw_data[layer];
 
@@ -113,11 +113,11 @@ template <class T> void TextureElement2DArray<T>::setData(int layer, T * data, b
     pushToGPU(layer);
 }
 
-template <class T> void TextureElement2DArray<T>::reset(int layer)
+template <class T> void TextureElement2DArray<T>::reset(int layer, bool stack)
 {
     T * data = new T[m_width*m_height*m_color_element_count];
     std::memset(data, 0, m_width*m_height*m_color_element_count*sizeof(T));
-    setData(layer, data);
+    setData(layer, data, stack);
 }
 
 template <class T> void TextureElement2DArray<T>::syncFromGPU(int layer, bool stack)
@@ -127,8 +127,8 @@ template <class T> void TextureElement2DArray<T>::syncFromGPU(int layer, bool st
         qCritical() << "Could not obtain required OpenGL context version";
     f->initializeOpenGLFunctions();
 
-//    if(stack)
-//        push(layer);
+    if(stack)
+        push(layer);
     m_texture_views[layer]->bind();
     f->glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer] ); CE();
 }
@@ -137,11 +137,7 @@ template <class T> void TextureElement2DArray<T>::pushToGPU(int layer)
 {
     assert(m_raw_data[layer] != nullptr && width() != 0 && height() != 0 && depth() != 0);
 
-
-    m_texture.setData(0,layer, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer]); CE();
-//    m_texture_views[layer]->bind(); CE();
-//    m_texture_views[layer]->setData(m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer]); CE();
-//    m_texture_views[layer]->release(); CE();
+    m_texture.setData(0, layer, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer]); CE();
 }
 
 template <class T> void TextureElement2DArray<T>::set(int layer, T data, int x, int y)
@@ -154,8 +150,9 @@ template <class T> void TextureElement2DArray<T>::set(int layer, T data, int x, 
  *******************************/
 template <class T> void TextureElement2DArray<T>::setData(T * data, bool stack)
 {
-//    if(stack)
-//        push(layer);
+    if(stack)
+        push_all_layers();
+
     clear_raw_data();
 
     individualize_raw_data(data);
@@ -178,13 +175,17 @@ template <class T> void TextureElement2DArray<T>::individualize_raw_data(T * raw
     delete raw_data;
 }
 
+template <class T> void TextureElement2DArray<T>::reset(bool stack)
+{
+    T * data = new T[m_width*m_height*m_color_element_count*m_layers];
+    std::memset(data, 0, m_width*m_height*m_color_element_count*sizeof(T)*m_layers);
+    setData(data, stack);
+}
+
 template <class T> void TextureElement2DArray<T>::reset(int w, int h)
 {
     setDimensions(w, h);
-
-    T * data = new T[w*h*m_color_element_count*m_layers];
-    std::memset(data, 0, w*h*m_color_element_count*sizeof(T)*m_layers);
-    setData(data);
+    reset();
 }
 
 template <class T> void TextureElement2DArray<T>::syncFromGPU(bool stack)
@@ -193,6 +194,9 @@ template <class T> void TextureElement2DArray<T>::syncFromGPU(bool stack)
     if(!f)
         qCritical() << "Could not obtain required OpenGL context version";
     f->initializeOpenGLFunctions();
+
+    if(stack)
+        push_all_layers();
 
     T * data = new T[m_width*m_height*m_color_element_count*m_layers];
 
@@ -204,27 +208,8 @@ template <class T> void TextureElement2DArray<T>::syncFromGPU(bool stack)
 
 template <class T> void TextureElement2DArray<T>::pushToGPU()
 {
-    T * data = new T[m_width*m_height*m_color_element_count*m_layers];
-    int per_layer_elements(m_width*m_height*m_color_element_count);
-    int per_layer_sz(per_layer_elements*sizeof(T));
-
-    for(int l(0); l < m_layers; l++)
-    {
-        T * sub_data = m_raw_data[l];
-        std::memcpy(&data[per_layer_elements*l], sub_data, per_layer_sz);
-    }
-
-    m_texture.bind();
-    m_texture.setData(m_pixel_format, m_pixel_type, (GLvoid*) data); CE();
-    m_texture.release();
-
-    delete data;
-}
-
-template <class T> void TextureElement2DArray<T>::clear_stack()
-{
-    for(FixedSizeStack<T> & stack : m_stack)
-        stack.clear();
+    for(int l(0); l < layers(); l++)
+        pushToGPU(l);
 }
 
 template <class T> void TextureElement2DArray<T>::clear_texture_views()
@@ -250,22 +235,50 @@ template <class T> void TextureElement2DArray<T>::clear_raw_data()
     m_raw_data.clear();
 }
 
+template <class T> void TextureElement2DArray<T>::clear_stacks()
+{
+    for(FixedSizeStack<T> & stack : m_stack)
+        stack.clear();
+}
+
+template <class T> void TextureElement2DArray<T>::pop_all_layers()
+{
+    for(int l(0); l < layers(); l++)
+        pop(l);
+}
+
+template <class T> void TextureElement2DArray<T>::pop()
+{
+    pop_all_layers();
+}
+
 template <class T> void TextureElement2DArray<T>::pop(int layer)
 {
-//    if(!m_stack[layer].empty())
-//    {
-//        setData(layer, m_stack.pop());
-//    }
+    if(!m_stack[layer].empty())
+    {
+        setData(layer, m_stack[layer].pop());
+    }
+}
+
+template <class T> void TextureElement2DArray<T>::push()
+{
+    push_all_layers();
 }
 
 template <class T> void TextureElement2DArray<T>::push(int layer)
 {
-//    if(m_raw_data[layer])
-//    {
-//        T * cpy = new T[m_width*m_height];
-//        std::memcpy(cpy, m_raw_data, sizeof(T)*m_width*m_height);
-//        m_stack[layer].push(cpy);
-//    }
+    if(m_raw_data[layer])
+    {
+        T * cpy = new T[m_width*m_height];
+        std::memcpy(cpy, m_raw_data[layer], sizeof(T)*m_width*m_height);
+        m_stack[layer].push(cpy);
+    }
+}
+
+template <class T> void TextureElement2DArray<T>::push_all_layers()
+{
+    for(int l(0); l < layers(); l++)
+        push(l);
 }
 
 template class TextureElement2DArray<GLubyte>;
