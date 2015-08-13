@@ -3,7 +3,7 @@
 #include <QWindow>
 #include <cstring>
 #include <assert.h>
-#include <QOpenGLFunctions_4_5_Core>
+#include <QOpenGLFunctions_4_3_Core>
 
 template <class T> TextureElement2DArray<T>::TextureElement2DArray(int layers, QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format,
                                                      QOpenGLTexture::PixelType pixel_type) :
@@ -122,10 +122,15 @@ template <class T> void TextureElement2DArray<T>::reset(int layer)
 
 template <class T> void TextureElement2DArray<T>::syncFromGPU(int layer, bool stack)
 {
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
 //    if(stack)
 //        push(layer);
     m_texture_views[layer]->bind();
-    glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer] ); CE();
+    f->glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer] ); CE();
 }
 
 template <class T> void TextureElement2DArray<T>::pushToGPU(int layer)
@@ -160,6 +165,7 @@ template <class T> void TextureElement2DArray<T>::setData(T * data, bool stack)
 
 template <class T> void TextureElement2DArray<T>::individualize_raw_data(T * raw_data)
 {
+    clear_raw_data();
     int per_layer_elements(m_width*m_height*m_color_element_count);
     int per_layer_sz(per_layer_elements*sizeof(T));
     for(int l (0); l < m_layers ; l++)
@@ -183,10 +189,15 @@ template <class T> void TextureElement2DArray<T>::reset(int w, int h)
 
 template <class T> void TextureElement2DArray<T>::syncFromGPU(bool stack)
 {
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
     T * data = new T[m_width*m_height*m_color_element_count*m_layers];
 
     m_texture.bind();
-    glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, m_pixel_format, m_pixel_type, (GLvoid*) data ); CE();
+    f->glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, m_pixel_format, m_pixel_type, (GLvoid*) data ); CE();
 
     individualize_raw_data(data);
 }

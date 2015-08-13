@@ -125,7 +125,7 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
     else if(active_overlay == Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY)
     {
         shader->setUniformValue(Uniforms::Texture::_MONTHLY_SOIL_HUMIDITY, 0); CE();
-        resources.getSoilHumidity()[month].bind();
+        resources.getSoilHumidity()[month-1]->bind();
     }
     else if(active_overlay == Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY)
     {
@@ -324,7 +324,7 @@ void Computer::calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
         qCritical() << "Could not obtain required OpenGL context version";
     f->initializeOpenGLFunctions();
 
-    glm::uvec3 group_count (calculateGroupCount(soil_humdities[1].width(), soil_humdities[1].height(), 1,
+    glm::uvec3 group_count (calculateGroupCount(soil_humdities.width(), soil_humdities.height(), 1,
                                                 WeightedAverageCalculator::_GROUP_SIZE_X,
                                                 WeightedAverageCalculator::_GROUP_SIZE_Y,
                                                 WeightedAverageCalculator::_GROUP_SIZE_Z));
@@ -333,9 +333,9 @@ void Computer::calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
 
     for(int i(0); i < 12; i++)
     {
-        f->glBindImageTexture(0, soil_humdities[i+1].textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
-        f->glBindImageTexture(1, soil_humdities[((i+11) % 12)+1 ].textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
-        f->glBindImageTexture(2, soil_humdities[((i+10) % 12)+1].textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
+        f->glBindImageTexture(0, soil_humdities[i]->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
+        f->glBindImageTexture(1, soil_humdities[((i+11) % 12)]->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
+        f->glBindImageTexture(2, soil_humdities[((i+10) % 12)]->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE(); // Soil humidity
 
         f->glBindImageTexture(3, weighted_soil_humidities[i+1].textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE(); // Resulting weighted soil humidity
 

@@ -53,18 +53,14 @@ void main()
 
     // Fetch the y coordinate from the heightmap texture
     world_space_pos = vec3(vPos.x, texture(terrain_height_map_texture, texture_coord).r, vPos.z);
-    float water_height = 0;
-    if(render_water)
+    float water_height = texture(water_heightmap, texture_coord).r;
+    if(!render_water || water_height*terrain_scale*1000 < 10) // Don't render if under 1 cm
     {
-        water_height = texture(water_heightmap, texture_coord).r;
-        if(water_height > 1e-5)
-        {
-            world_space_pos.y += water_height;
-        }
-        else
-        {
-            water_height = 0;
-        }
+        water_height = 0;
+    }
+    else
+    {
+        world_space_pos.y += water_height;
     }
 
     vec4 camera_space_pos = transform.viewMat * vec4(world_space_pos, 1.0);

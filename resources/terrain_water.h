@@ -6,31 +6,6 @@
 #include <atomic>
 #include <mutex>
 
-/***************************
- * TERRAIN WATER HEIGHTMAP *
- ***************************/
-//class TerrainWaterHeightmap : public TextureElement2D<GLfloat> // TODO: And GL Drawable to actually draw the water bruuuu
-//{
-//public:
-//    TerrainWaterHeightmap();
-//    ~TerrainWaterHeightmap();
-
-//    void incrementBalancingIteration(int changes);
-//    bool balanced();
-//    bool isBalancing();
-//    void setBalancing(bool balancing);
-//    void setBalanced(bool balanced);
-
-//private:
-//    void perform_balancing_check();
-
-//    std::atomic<bool> m_balanced;
-//    std::atomic<bool> m_balancing;
-//    int m_balancing_iterations;
-//    std::vector<int> m_balance_iterations_changes;
-//    int m_balance_iterations_changes_total;
-//};
-
 /*******************
  * BALANCE CHECKER *
  *******************/

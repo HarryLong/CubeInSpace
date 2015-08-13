@@ -28,6 +28,7 @@ bool BalanceChecker::isBalanced()
     {
         return true;
     }
+
     return false;
 }
 
@@ -38,69 +39,6 @@ bool BalanceChecker::incrementBalancingIteration(int changes)
 
     return isBalanced();
 }
-
-///***************************
-// * TERRAIN WATER HEIGHTMAP *
-// ***************************/
-//TerrainWaterHeightmap::TerrainWaterHeightmap() :
-//    TextureElement2D<GLfloat>(QOpenGLTexture::TextureFormat::R32F, QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::Float32),
-//    m_balanced(true), m_balancing(false), m_balancing_iterations(0)
-//{
-
-//}
-
-//TerrainWaterHeightmap::~TerrainWaterHeightmap()
-//{
-
-//}
-
-//bool TerrainWaterHeightmap::balanced()
-//{
-//    return m_balanced.load();
-//}
-
-//bool TerrainWaterHeightmap::isBalancing()
-//{
-//    return m_balancing.load();
-//}
-
-//void TerrainWaterHeightmap::setBalancing(bool balancing)
-//{
-//    m_balancing.store(balancing);
-//}
-
-//void TerrainWaterHeightmap::setBalanced(bool balanced)
-//{
-//    if(!balanced)
-//    {
-//        m_balancing_iterations = 0;
-//        m_balance_iterations_changes_total = 0;
-//        m_balance_iterations_changes.clear();
-//    }
-//    else
-//    {
-//        syncFromGPU();
-//    }
-//    m_balanced = balanced;
-//}
-
-//void TerrainWaterHeightmap::incrementBalancingIteration(int changes)
-//{
-//    m_balancing_iterations++;
-//    m_balance_iterations_changes.push_back(changes);
-//    m_balance_iterations_changes_total += changes;
-//    perform_balancing_check();
-//}
-
-//void TerrainWaterHeightmap::perform_balancing_check()
-//{
-//    int iteration_idx(m_balance_iterations_changes.size()-1);
-
-//    if(m_balance_iterations_changes.at(iteration_idx) <= (m_balance_iterations_changes_total/500.0f))
-//    {
-//        setBalanced(true);
-//    }
-//}
 
 /*****************
  * TERRAIN WATER *

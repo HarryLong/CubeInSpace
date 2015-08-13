@@ -267,7 +267,7 @@ void GLWidget::paintGL() // Override
     // Check if we need calculate water balance
     if(!m_resources.getTerrainWater().balanced())
     {
-        qCritical() << "Balancing!";
+//        qCritical() << "Balancing!";
         balance_water();
     }
 //    else
@@ -787,6 +787,8 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
 
         // Convert water height to mm
         water_height = water_height * m_terrain.getScale() * 1000;
+        if(water_height < 1) // ignore if less than a mm of water
+            water_height = 0;
 
         m_dialogs.m_pointer_info_dlg.update(intersecion_point_2d,
                                             altitude, slope, water_height, soil_infiltration_rate, soil_humidity, weighted_soil_humidity,
@@ -894,22 +896,22 @@ void GLWidget::refresh_water()
 
     //  CALCULATE SOIL HUMIDITY AND STANDING WATER
     TerrainWater & terrain_water(m_resources.getTerrainWater());
+    SoilHumidity & soil_humidity(m_resources.getSoilHumidity());
     for(int i = 0; i < 12; i++)
     {
-        SoilHumidityHeightmap & tsh (m_resources.getSoilHumidity()[i+1]);
         m_computer.calculateSoilHumidityAndStandingWater(m_soil_infiltration_texture_id,
-                                                         m_resources.getSoilHumidity()[i+1].textureId(),
+                                                         soil_humidity[i]->textureId(),
                                                          terrain_water[i]->textureId(),
                                                          m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(i+1),
                                                          m_dialogs.m_monthly_rainfall_edit_dlg.getRainfallIntensity(i+1),
                                                          m_terrain.getWidth(),
                                                          m_terrain.getDepth(),
                                                          m_terrain.getScale());
-
-        tsh.syncFromGPU();
     }
     terrain_water.syncFromGPU();
     terrain_water.setUnbalanced();
+
+    soil_humidity.syncFromGPU();
 
     //  CALCULATE WEIGHTED SOIL HUMIDITY
     WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
@@ -1080,8 +1082,8 @@ void GLWidget::balance_water(bool one_step)
         {
             if(!terrain_water.balanced(m))
             {
-                if(terrain_water.incrementBalancingIteration(m, m_computer.balanceWater(m_padded_terrain, terrain_water, m)))
-                    terrain_water.syncFromGPU(m-1);
+                terrain_water.incrementBalancingIteration(m, m_computer.balanceWater(m_padded_terrain, terrain_water, m));
+                terrain_water.syncFromGPU(m-1);
             }
         }
     }
