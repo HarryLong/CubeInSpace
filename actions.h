@@ -93,6 +93,7 @@ public:
     const static QString _SOIL_INFILTRATION_RATE;
     const static QString _MONTHLY_SOIL_HUMIDITY;
     const static QString _WEIGHTED_AVG_SOIL_HUMIDITY;
+    const static QString _CLUSTERS;
     OverlayActionFamily();
     ~OverlayActionFamily();
 
@@ -127,6 +128,7 @@ public:
     const static QString _SOIL_INFILTRATION_RATE;
     const static QString _FLOOD_FILL;
     const static QString _ABSOLUTE_AGGREGATE_HEIGHT;
+    const static QString _CLUSTERING;
 
     EditActionFamily();
     ~EditActionFamily();

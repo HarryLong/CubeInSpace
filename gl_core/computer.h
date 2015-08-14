@@ -35,7 +35,12 @@ public:
     ~Computer();
     void compileAndLinkShaders();
 
-    void createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain, ResourceWrapper & resources, const char * active_overlay, int month);
+    void createOverlayTexture(GLuint overlay_texture_id,
+                              Terrain & terrain,
+                              ResourceWrapper & resources,
+                              ClusterMembershipTexture & cluster_membership_texture,
+                              const char * active_overlay,
+                              int month);
 
     void calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_texture_id,
                                                GLuint resulting_soil_humidity_texture_id,

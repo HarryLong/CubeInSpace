@@ -127,6 +127,7 @@ const QString OverlayActionFamily::_MAX_DAILY_ILLUMINATION = "Max. Daily Illumin
 const QString OverlayActionFamily::_SOIL_INFILTRATION_RATE = "Soil Infiltration Rate";
 const QString OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY = "Monthly";
 const QString OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY = "Weighted average";
+const QString OverlayActionFamily::_CLUSTERS = "Clusters";
 OverlayActionFamily::OverlayActionFamily() : ActionFamily(false, true)
 {
     init_actions();
@@ -152,6 +153,7 @@ void OverlayActionFamily::init_actions()
     m_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE] = new QAction(OverlayActionFamily::_SOIL_INFILTRATION_RATE, NULL);
     m_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY] = new QAction(OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY, NULL);
     m_actions[OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY] = new QAction(OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY, NULL);
+    m_actions[OverlayActionFamily::_CLUSTERS] = new QAction(OverlayActionFamily::_CLUSTERS, NULL);
 }
 
 /****************
@@ -188,6 +190,7 @@ const QString EditActionFamily::_MONTHLY_RAINFALL = "Monthly Rainfall";
 const QString EditActionFamily::_SOIL_INFILTRATION_RATE = "Soil Infiltration Rate";
 const QString EditActionFamily::_FLOOD_FILL = "Flood fill";
 const QString EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT = "Absolute Aggregate Height";
+const QString EditActionFamily::_CLUSTERING = "Clustering";
 EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 {
     init_actions();
@@ -212,4 +215,5 @@ void EditActionFamily::init_actions()
     m_actions[EditActionFamily::_SOIL_INFILTRATION_RATE] = new QAction(EditActionFamily::_SOIL_INFILTRATION_RATE, NULL);
     m_actions[EditActionFamily::_FLOOD_FILL] = new QAction(EditActionFamily::_FLOOD_FILL, NULL);
     m_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT] = new QAction(EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT, NULL);
+    m_actions[EditActionFamily::_CLUSTERING] = new QAction(EditActionFamily::_CLUSTERING, NULL);
 }

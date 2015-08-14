@@ -4,8 +4,6 @@ layout (local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
 
-uniform int month;
-
 uniform sampler2D weighted_avg_soil_humidity_texture;
 
 vec4 soil_humidity_to_color(in float soil_humidity)
@@ -25,7 +23,7 @@ void main()
 
     if(valid)
     {
-        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
+        vec2 texture_coord = vec2(float(global_idx.x)/(heightmap_size.x-1), float(global_idx.y)/(heightmap_size.y-1));
 
         float weighted_soil_humidity = texture(weighted_avg_soil_humidity_texture, texture_coord).r;
         vec4 resulting_color = soil_humidity_to_color(weighted_soil_humidity);
@@ -36,4 +34,3 @@ void main()
     memoryBarrierImage();
     barrier();
 }
-

@@ -32,4 +32,5 @@ void ComputeShaders::compileAndLink()
     m_overlay_creator_shaders.m_soil_infiltration_rate.compileAndLink();
     m_overlay_creator_shaders.m_soil_humidity.compileAndLink();
     m_overlay_creator_shaders.m_weigted_avg_soil_humidity.compileAndLink();
+    m_overlay_creator_shaders.m_clusters.compileAndLink();
 }

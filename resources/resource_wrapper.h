@@ -40,7 +40,10 @@ signals:
     void processingUpdate(int percent_complete);
     void processingComplete();
     void processDescriptionUpdate(QString description);
+    void tempInvalidated();
+    void dailyIlluminationInvalidated();
     void resourceInvalidated();
+    void tempAndDailyIlluminationValid();
 
 public slots:
     void terrainChanged(int width, int depth);
@@ -49,6 +52,10 @@ public slots:
 
 private:
     GLubyte * get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates = true);
+    void check_if_all_resources_valid();
+    void setTempValid(bool valid);
+    void setDailyIlluminationValid(bool valid);
+    void setShadeValid(bool valid);
 
     bool m_temp_valid;
     bool m_daily_illumination_valid;

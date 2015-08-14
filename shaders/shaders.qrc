@@ -28,5 +28,6 @@
         <file alias="overlay_texture_creator_soil_infiltration_rate.comp">glsl/comp/overlay_creators/overlay_texture_creator_soil_infiltration_rate.comp</file>
         <file alias="overlay_texture_creator_soil_humidity.comp">glsl/comp/overlay_creators/overlay_texture_creator_soil_humidity.comp</file>
         <file alias="overlay_texture_creator_weighted_avg_soil_humidity.comp">glsl/comp/overlay_creators/overlay_texture_creator_weighted_avg_soil_humidity.comp</file>
+        <file alias="overlay_texture_creator_cluster.comp">glsl/comp/overlay_creators/overlay_texture_creator_cluster.comp</file>
     </qresource>
 </RCC>

@@ -26,42 +26,12 @@ const char * Uniforms::Texture::_NORMALS = "normals_texture";
 const char * Uniforms::Texture::_SLOPE = "slope_texture";
 const char * Uniforms::Texture::_SHADE = "shade_texture";
 const char * Uniforms::Texture::_TEMPERATURE = "temperature_texture";
-const char * Uniforms::Texture::_TEMPERATURE_JUN = "jun_temperature_texture";
-const char * Uniforms::Texture::_TEMPERATURE_DEC = "dec_temperature_texture";
 const char * Uniforms::Texture::_DAILY_ILLUMINATION = "daily_illumination_texture";
-const char * Uniforms::Texture::_MIN_DAILY_ILLUMINATION = "min_daily_illumination_texture";
-const char * Uniforms::Texture::_MAX_DAILY_ILLUMINATION = "max_daily_illumination_texture";
 const char * Uniforms::Texture::_SOIL_INFILTRATION_RATE = "soil_infiltration_rate_texture";
 const char * Uniforms::Texture::_CLUSTER_MEMBERSHIP = "cluster_membership_texture";
 const char * Uniforms::Texture::_MONTHLY_SOIL_HUMIDITY = "monthly_soil_humidity_texture";
 const char * Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY = "weighted_avg_soil_humidity_texture";
 const char * Uniforms::Texture::_OVERLAY = "overlay_texture";
-const char * Uniforms::Texture::_JAN_WEIGHTED_AVG_SOIL_HUMIDITY = "jan_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_FEB_WEIGHTED_AVG_SOIL_HUMIDITY = "feb_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_MAR_WEIGHTED_AVG_SOIL_HUMIDITY = "mar_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_APR_WEIGHTED_AVG_SOIL_HUMIDITY = "apr_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_MAY_WEIGHTED_AVG_SOIL_HUMIDITY = "may_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_JUN_WEIGHTED_AVG_SOIL_HUMIDITY = "jun_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_JUL_WEIGHTED_AVG_SOIL_HUMIDITY = "jul_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_AUG_WEIGHTED_AVG_SOIL_HUMIDITY = "aug_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_SEP_WEIGHTED_AVG_SOIL_HUMIDITY = "sep_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_OCT_WEIGHTED_AVG_SOIL_HUMIDITY = "oct_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_NOV_WEIGHTED_AVG_SOIL_HUMIDITY = "nov_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_DEC_WEIGHTED_AVG_SOIL_HUMIDITY = "dec_weighted_avg_soil_humidity_texture";
-const char * Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITIES[12] = {
-    Uniforms::Texture::_JAN_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_FEB_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_MAR_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_APR_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_MAY_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_JUN_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_JUL_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_AUG_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_SEP_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_OCT_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_NOV_WEIGHTED_AVG_SOIL_HUMIDITY,
-    Uniforms::Texture::_DEC_WEIGHTED_AVG_SOIL_HUMIDITY,
-};
 
 // OVERLAY
 const char * Uniforms::Overlay::_ACTIVE = "overlay_active";
@@ -75,40 +45,14 @@ const char * Uniforms::Overlay::_MAX_DAILY_ILLUMINATION = "overlay.daily_illumin
 const char * Uniforms::Overlay::_SOIL_INFILTRATION_RATE = "overlay.soil_infiltration_rate";
 const char * Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY = "overlay.monthly_soil_humidity";
 const char * Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY = "overlay.weighted_avg_soil_humidity";
+const char * Uniforms::Overlay::_CLUSTERS = "overlay.clusters";
 
 // CLUSTERING
 const char * Uniforms::Clustering::_N_CLUSTERS = "n_clusters";
-const char * Uniforms::Clustering::_JUN_TEMPERATURES = "cluster_data_jun_temperatures";
-const char * Uniforms::Clustering::_DEC_TEMPERATURES = "cluster_data_dec_temperatures";
-const char * Uniforms::Clustering::_MIN_ILLUMINATION = "cluster_data_min_illumination";
-const char * Uniforms::Clustering::_MAX_ILLUMINATION = "cluster_data_max_illumination";
-const char * Uniforms::Clustering::_SLOPE = "cluster_data_slope";
-const char * Uniforms::Clustering::_JAN_SOIL_HUMIDITY = "cluster_data_jan_soil_humidity";
-const char * Uniforms::Clustering::_FEB_SOIL_HUMIDITY = "cluster_data_feb_soil_humidity";
-const char * Uniforms::Clustering::_MAR_SOIL_HUMIDITY = "cluster_data_mar_soil_humidity";
-const char * Uniforms::Clustering::_APR_SOIL_HUMIDITY = "cluster_data_apr_soil_humidity";
-const char * Uniforms::Clustering::_MAY_SOIL_HUMIDITY = "cluster_data_may_soil_humidity";
-const char * Uniforms::Clustering::_JUN_SOIL_HUMIDITY = "cluster_data_jun_soil_humidity";
-const char * Uniforms::Clustering::_JUL_SOIL_HUMIDITY = "cluster_data_jul_soil_humidity";
-const char * Uniforms::Clustering::_AUG_SOIL_HUMIDITY = "cluster_data_aug_soil_humidity";
-const char * Uniforms::Clustering::_SEP_SOIL_HUMIDITY = "cluster_data_sep_soil_humidity";
-const char * Uniforms::Clustering::_OCT_SOIL_HUMIDITY = "cluster_data_oct_soil_humidity";
-const char * Uniforms::Clustering::_NOV_SOIL_HUMIDITY = "cluster_data_nov_soil_humidity";
-const char * Uniforms::Clustering::_DEC_SOIL_HUMIDITY = "cluster_data_dec_soil_humidity";
-const char * Uniforms::Clustering::_SOIL_HUMIDITIES[12] = {
-    Uniforms::Clustering::_JAN_SOIL_HUMIDITY,
-    Uniforms::Clustering::_FEB_SOIL_HUMIDITY,
-    Uniforms::Clustering::_MAR_SOIL_HUMIDITY,
-    Uniforms::Clustering::_APR_SOIL_HUMIDITY,
-    Uniforms::Clustering::_MAY_SOIL_HUMIDITY,
-    Uniforms::Clustering::_JUN_SOIL_HUMIDITY,
-    Uniforms::Clustering::_JUL_SOIL_HUMIDITY,
-    Uniforms::Clustering::_AUG_SOIL_HUMIDITY,
-    Uniforms::Clustering::_SEP_SOIL_HUMIDITY,
-    Uniforms::Clustering::_OCT_SOIL_HUMIDITY,
-    Uniforms::Clustering::_NOV_SOIL_HUMIDITY,
-    Uniforms::Clustering::_DEC_SOIL_HUMIDITY,
-};
+const char * Uniforms::Clustering::_SLOPE_CLUSTER_DATA = "slope_cluster_data_texture";
+const char * Uniforms::Clustering::_TEMPERATURE_CLUSTER_DATA = "temperature_cluster_data_texture";
+const char * Uniforms::Clustering::_DAILY_ILLUMINATION_CLUSTER_DATA = "daily_illumination_cluster_data_texture";
+const char * Uniforms::Clustering::_WEIGHTED_AVG_SOIL_HUMIDITY_CLUSTER_DATA = "weighted_avg_soil_humidity_cluster_data_texture";
 
 // LIGHTING
 const char * Uniforms::Lighting::_POSITION = "light_position";

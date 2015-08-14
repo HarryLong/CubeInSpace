@@ -25,7 +25,7 @@ void main()
 
     if(valid)
     {
-        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
+        vec2 texture_coord = vec2(float(global_idx.x)/(heightmap_size.x-1), float(global_idx.y)/(heightmap_size.y-1));
 
         uint soil_humidity = texture(monthly_soil_humidity_texture, texture_coord).r;
         vec4 resulting_color = soil_humidity_to_color(float(soil_humidity));

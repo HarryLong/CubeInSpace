@@ -15,6 +15,7 @@ public:
         OverlayTextureCreatorShaders::SoilInfiltrationRate m_soil_infiltration_rate;
         OverlayTextureCreatorShaders::MonthlySoilHumidity m_soil_humidity;
         OverlayTextureCreatorShaders::WeightedAvgSoilHumidity m_weigted_avg_soil_humidity;
+        OverlayTextureCreatorShaders::Clusters m_clusters;
     };
 
     ComputeShaders();

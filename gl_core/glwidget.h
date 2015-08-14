@@ -92,6 +92,7 @@ private slots:
     void latitude_controllers_state_changed(bool active);
     void soil_infiltration_controllers_state_changed(bool active);
     void water_controllers_state_changed(bool active);
+    void clustering_controllers_state_changed(bool active);
     void disable_all_overlay_widget_actions();
     void soil_infiltration_rate_changed(int);
     void orientation_controllers_state_changed(bool active);
@@ -108,6 +109,10 @@ private slots:
     bool flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height);
     void new_terrain_is_going_to_load();
     void refresh_overlay_texture();
+    void refresh_clusters();
+    void enable_clustering_actions(bool enable);
+    void enable_clustering();
+    void disable_clustering();
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -136,6 +141,7 @@ private:
     bool overlay_soil_infiltration();
     bool overlay_monthly_soil_humidity();
     bool overlay_weighted_avg_soil_humidity();
+    bool overlay_clusters();
     bool edit_infiltration_rate();
     bool fps();
     bool softimage();
@@ -186,6 +192,7 @@ private:
     GLTerrainRect * m_selection_rect;
     GLTerrainRect * m_humidity_rect;
     OverlayTexture m_overlay_texture;
+    ClusterMembershipTexture m_cluster_membership_texture;
 
     const char * m_active_overlay;
 };

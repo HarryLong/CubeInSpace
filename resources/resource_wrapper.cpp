@@ -42,24 +42,24 @@ void ResourceWrapper::terrainChanged(int width, int depth)
 
     m_terrain_shade.setDimensions(width, depth);
 
-    m_temp_valid = false;
-    m_daily_illumination_valid = false;
-    m_shade_valid = false;
+    setTempValid(false);
+    setDailyIlluminationValid(false);
+    setShadeValid(false);
 
     emit resourceInvalidated();
 }
 
 void ResourceWrapper::latitudeChanged()
 {
-    m_shade_valid = false;
-    m_daily_illumination_valid = false;
+    setShadeValid(false);
+    setDailyIlluminationValid(false);
 
     emit resourceInvalidated();
 }
 
 void ResourceWrapper::sunPositionChanged()
 {
-    m_shade_valid = false;
+    setShadeValid(false);
 
     emit resourceInvalidated();
 }
@@ -297,6 +297,7 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     emit processingComplete();
 
     m_daily_illumination_valid = true;
+    check_if_all_resources_valid();
 }
 
 void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec)
@@ -367,4 +368,40 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 
     emit processingComplete();
     m_temp_valid = true;
+    check_if_all_resources_valid();
+}
+
+void ResourceWrapper::check_if_all_resources_valid()
+{
+    if(m_temp_valid && m_daily_illumination_valid)
+        emit tempAndDailyIlluminationValid();
+}
+
+void ResourceWrapper::setTempValid(bool valid)
+{
+    m_temp_valid = valid;
+
+    if(valid)
+    {
+        check_if_all_resources_valid();
+    }
+    else
+        emit tempInvalidated();
+}
+
+void ResourceWrapper::setDailyIlluminationValid(bool valid)
+{
+    m_daily_illumination_valid = valid;
+
+    if(valid)
+    {
+        check_if_all_resources_valid();
+    }
+    else
+        emit dailyIlluminationInvalidated();
+}
+
+void ResourceWrapper::setShadeValid(bool valid)
+{
+    m_shade_valid = valid;
 }

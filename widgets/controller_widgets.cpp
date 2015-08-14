@@ -5,6 +5,7 @@
 #include "soil_infiltration_shortcuts_widget.h"
 #include "time_controller.h"
 #include "water_shortcuts_controller.h"
+#include "clustering_controller.h"
 #include <QBoxLayout>
 #include <QDebug>
 #include <QPainter>
@@ -19,7 +20,8 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
     m_latitude_widget(new LatitudeControllerWidget(Qt::AlignRight, parent)),
     m_soil_infiltration_widget(new SoilInfiltrationControllerWidget(Qt::AlignRight, parent)),
     m_soil_infiltration_shortcut_widget(new SoilInfiltrationShortcutWidget(Qt::AlignLeft, parent)),
-    m_water_shortcut_widget(new WaterShortcutWidget(Qt::AlignLeft, parent))
+    m_water_shortcut_widget(new WaterShortcutWidget(Qt::AlignLeft, parent)),
+    m_clustering_controller_widget(new ClusteringControllerWidget(Qt::AlignRight, parent))
 {
     m_alignment_sorted_widgets[Qt::AlignTop] = std::vector<QWidget*>();
     m_alignment_sorted_widgets[Qt::AlignRight] = std::vector<QWidget*>();
@@ -67,6 +69,14 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
         m_alignment_sorted_widgets[m_water_shortcut_widget->alignment()].push_back(m_water_shortcut_widget);
     }
 
+    // CLUSTERING
+    {
+        connect(m_clustering_controller_widget->getSlider(), SIGNAL(valueChanged(int)) ,this, SLOT(emit_clustering_sensitivity_changed(int)));
+
+        m_raw_widgets.push_back(m_clustering_controller_widget);
+        m_alignment_sorted_widgets[m_clustering_controller_widget->alignment()].push_back(m_clustering_controller_widget);
+    }
+
     hideAll();
 }
 
@@ -101,6 +111,11 @@ int OverlayWidgets::getSoilInfiltrationZeroOverSlope()
     return m_soil_infiltration_shortcut_widget->getSoilInfiltrationZeroOverSlope();
 }
 
+int OverlayWidgets::getClusteringSensitivity()
+{
+    return m_clustering_controller_widget->value();
+}
+
 bool OverlayWidgets::timeControllersActive()
 {
     return m_time_widget->isVisible();
@@ -119,6 +134,11 @@ bool OverlayWidgets::soilInfiltrationControllersActive()
 bool OverlayWidgets::waterControllersActive()
 {
     return m_water_shortcut_widget->isVisible();
+}
+
+bool OverlayWidgets::clusteringSensitivityControllersActive()
+{
+    return m_clustering_controller_widget->isVisible();
 }
 
 void OverlayWidgets::hideAll()
@@ -191,6 +211,21 @@ void OverlayWidgets::trigger_water_controllers(bool show)
     emit waterControllersStateChanged(show);
 }
 
+void OverlayWidgets::trigger_clustering_controllers(bool show)
+{
+    hideAll();
+    if(show)
+    {
+        m_clustering_controller_widget->show();
+    }
+    else
+    {
+        m_clustering_controller_widget->hide();
+    }
+
+    emit clusteringControllersStateChanged(show);
+}
+
 void OverlayWidgets::resize(int container_width, int container_height)
 {
     for(QWidget * w : m_alignment_sorted_widgets[Qt::AlignRight])
@@ -235,3 +270,7 @@ void OverlayWidgets::emit_absolute_height_changed(int height)
     emit absoluteHeightChanged(height);
 }
 
+void OverlayWidgets::emit_clustering_sensitivity_changed(int clustering_sensitivity)
+{
+    emit clusteringSensitivityChanged(clustering_sensitivity);
+}

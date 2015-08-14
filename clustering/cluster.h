@@ -3,29 +3,36 @@
 
 #include <gl3.h>
 
+#include "../resources/terrain_temperature.h"
+#include "../resources/slope.h"
+#include "../resources/weighted_soil_humidity.h"
+#include "../resources/terrain_daily_illumination.h"
+
 class Clusters {
 public:
+    struct ClusterData{
+        GLfloat slope;
+        GLint temperatures[2];
+        GLuint illumination[2];
+        GLfloat soil_humidities[12];
+    };
+
     Clusters(int n_clusters);
     ~Clusters();
 
     int clusterCount();
 
-    void set(int cluster, GLint jun_temperature, GLint dec_temperature, GLuint min_illumination, GLuint max_illumination,
-              GLfloat slope, GLfloat soil_humidities[12]);
+    void set(int cluster_idx, ClusterData cluster_data);
 
-    static const int _MAX_CLUSTERS = 50;
-
-    GLint m_jun_temperature[Clusters::_MAX_CLUSTERS];
-    GLint m_dec_temperature[Clusters::_MAX_CLUSTERS];
-
-    GLuint m_min_illuminations[Clusters::_MAX_CLUSTERS];
-    GLuint m_max_illuminations[Clusters::_MAX_CLUSTERS];
-
-    GLfloat m_slopes[Clusters::_MAX_CLUSTERS];
-
-    GLfloat m_soil_humidities[12][Clusters::_MAX_CLUSTERS];
+    void clusters_finalised();
 
 private:
+    friend class Computer;
+    TerrainTemperature m_temperature_cluster_data;
+    Slope m_slope_cluster_data;
+    WeightedSoilHumidity m_weighted_soil_humidity_cluster_data;
+    TerrainDailyIllumination m_daily_illumination_cluster_data;
+
     int m_n_clusters;
 };
 

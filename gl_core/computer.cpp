@@ -66,12 +66,19 @@ ComputeShaderProgram * Computer::get_overlay_creator_shader(const char * active_
         return &m_shaders.m_overlay_creator_shaders.m_soil_humidity;
     else if(active_overlay == Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY)
         return &m_shaders.m_overlay_creator_shaders.m_weigted_avg_soil_humidity;
+    else if(active_overlay == Uniforms::Overlay::_CLUSTERS)
+        return &m_shaders.m_overlay_creator_shaders.m_clusters;
 
     qCritical() << "Returning no shader. Overlay: " << active_overlay;
 }
 
 
-void Computer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain, ResourceWrapper & resources, const char * active_overlay, int month)
+void Computer::createOverlayTexture(GLuint overlay_texture_id,
+                                    Terrain & terrain,
+                                    ResourceWrapper & resources,
+                                    ClusterMembershipTexture & cluster_membership_texture,
+                                    const char * active_overlay,
+                                    int month)
 {
     QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
     if(!f)
@@ -135,6 +142,11 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id, Terrain & terrain
     {
         shader->setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY, 0); CE();
         resources.getWeightedSoilHumidity()[month-1]->bind();
+    }
+    else if(active_overlay == Uniforms::Texture::_CLUSTER_MEMBERSHIP)
+    {
+        shader->setUniformValue(Uniforms::Texture::_CLUSTER_MEMBERSHIP, 0); CE();
+        cluster_membership_texture.bind();
     }
 
     f->glBindImageTexture(0, overlay_texture_id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);  CE();
@@ -448,74 +460,69 @@ void Computer::findClosestCluster(Clusters & clusters, ResourceWrapper & resourc
 
     m_shaders.m_closest_cluster_finder.bind();
 
-    /****************
-     * SET UNIFORMS *
-     ****************/
-    // # clusters
-    m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_N_CLUSTERS, clusters.clusterCount());
-    // Temp
-    m_shaders.m_closest_cluster_finder.setUniformValueArray(Uniforms::Clustering::_JUN_TEMPERATURES, clusters.m_jun_temperature, Clusters::_MAX_CLUSTERS);
-    m_shaders.m_closest_cluster_finder.setUniformValueArray(Uniforms::Clustering::_DEC_TEMPERATURES, clusters.m_dec_temperature, Clusters::_MAX_CLUSTERS);
-    // Illumination
-    m_shaders.m_closest_cluster_finder.setUniformValueArray(Uniforms::Clustering::_MIN_ILLUMINATION, clusters.m_min_illuminations, Clusters::_MAX_CLUSTERS);
-    m_shaders.m_closest_cluster_finder.setUniformValueArray(Uniforms::Clustering::_MAX_ILLUMINATION, clusters.m_max_illuminations, Clusters::_MAX_CLUSTERS);
-    // Slope
-    m_shaders.m_closest_cluster_finder.setUniformValueArray(Uniforms::Clustering::_SLOPE, clusters.m_slopes, Clusters::_MAX_CLUSTERS, 1);
-    // Soil humidity
-    for(int i (0); i < 12; i++)
-    {
-        m_shaders.m_closest_cluster_finder.setUniformValueArray(Uniforms::Clustering::_SOIL_HUMIDITIES[i], clusters.m_soil_humidities[i],
-                                                                Clusters::_MAX_CLUSTERS, 1);
-    }
-
-    /****************
-     * SET TEXTURES *
-     ****************/
-    int texture_unit(GL_TEXTURE0); // TEXTURE_0 reserved for the heightmap
-//    // June temperature
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_TEMPERATURE_JUN, texture_unit-GL_TEXTURE0); CE();
-//        resources.getTerrainTemp().getJun().bind(); CE();
-//        texture_unit++;
-//    }
-//    // December Temp
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_TEMPERATURE_DEC, texture_unit-GL_TEXTURE0); CE();
-//        resources.getTerrainTemp().getDec().bind(); CE();
-//        texture_unit++;
-//    }
-    // Min illumination
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_MIN_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-//        resources.getDailyIllumination().getMin().bind();CE();
-//        texture_unit++;
-//    }
-//    // Max illumination
-//    {
-//        f->glActiveTexture(texture_unit);CE();
-//        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_MAX_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
-//        resources.getDailyIllumination().getMax().bind();CE();
-//        texture_unit++;
-//    }
+    int texture_unit(GL_TEXTURE0);
+    /*****************************
+     * SET CLUSTER DATA TEXTURES *
+     *****************************/
     // Slope
     {
-        f->glActiveTexture(texture_unit);CE();
-        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_SLOPE, texture_unit-GL_TEXTURE0); CE();
-        resources.getSlope().bind();
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_SLOPE_CLUSTER_DATA, texture_unit-GL_TEXTURE0); CE();
+        clusters.m_slope_cluster_data.bind() ;CE();
         texture_unit++;
     }
-    // WEIGHTED SOIL ILLUMINATION
+    // Temperature
     {
-//        for(int i (0); i < 12; i++)
-//        {
-//            f->glActiveTexture(texture_unit);CE();
-//            m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITIES[i], texture_unit-GL_TEXTURE0); CE();
-//            resources.getWeightedSoilHumidity()[i+1].bind();
-//            texture_unit++;
-//        }
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_TEMPERATURE_CLUSTER_DATA, texture_unit-GL_TEXTURE0); CE();
+        clusters.m_temperature_cluster_data.bind() ;CE();
+        texture_unit++;
+    }
+    // Daily illumination
+    {
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_DAILY_ILLUMINATION_CLUSTER_DATA, texture_unit-GL_TEXTURE0); CE();
+        clusters.m_daily_illumination_cluster_data.bind() ;CE();
+        texture_unit++;
+    }
+    // Weighted soil humidity
+    {
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_WEIGHTED_AVG_SOIL_HUMIDITY_CLUSTER_DATA, texture_unit-GL_TEXTURE0); CE();
+        clusters.m_weighted_soil_humidity_cluster_data.bind() ;CE();
+        texture_unit++;
+    }
+
+    /*************************
+     * SET RESOURCE TEXTURES *
+     *************************/
+    // Slope
+    {
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_SLOPE, texture_unit-GL_TEXTURE0); CE();
+        resources.getSlope().bind() ;CE();
+        texture_unit++;
+    }
+    // Temperature
+    {
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_TEMPERATURE, texture_unit-GL_TEXTURE0); CE();
+        resources.getTerrainTemp().bind() ;CE();
+        texture_unit++;
+    }
+    // Daily illumination
+    {
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_DAILY_ILLUMINATION, texture_unit-GL_TEXTURE0); CE();
+        resources.getDailyIllumination().bind() ;CE();
+        texture_unit++;
+    }
+    // Weighted soil humidity
+    {
+        f->glActiveTexture(texture_unit); CE();
+        m_shaders.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_WEIGHTED_AVG_SOIL_HUMIDITY, texture_unit-GL_TEXTURE0); CE();
+        resources.getWeightedSoilHumidity().bind() ;CE();
+        texture_unit++;
     }
 
     // The resulting cluster membership

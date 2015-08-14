@@ -128,7 +128,12 @@ public:
         WeightedAvgSoilHumidity();
         ~WeightedAvgSoilHumidity();
     };
-
+    class Clusters : public ComputeShaderProgram
+    {
+    public:
+        Clusters();
+        ~Clusters();
+    };
     static const int _GROUP_SIZE_X;
     static const int _GROUP_SIZE_Y;
     static const int _GROUP_SIZE_Z;

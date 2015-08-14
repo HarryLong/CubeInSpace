@@ -32,29 +32,12 @@ public:
         static const char * _SLOPE;
         static const char * _SHADE;
         static const char * _TEMPERATURE;
-        static const char * _TEMPERATURE_JUN;
-        static const char * _TEMPERATURE_DEC;
         static const char * _DAILY_ILLUMINATION;
-        static const char * _MIN_DAILY_ILLUMINATION;
-        static const char * _MAX_DAILY_ILLUMINATION;
         static const char * _SOIL_INFILTRATION_RATE;
         static const char * _CLUSTER_MEMBERSHIP;
         static const char * _MONTHLY_SOIL_HUMIDITY;
         static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;
         static const char * _OVERLAY;
-        static const char * _JAN_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _FEB_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _MAR_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _APR_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _MAY_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _JUN_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _JUL_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _AUG_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _SEP_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _OCT_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _NOV_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _DEC_WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _WEIGHTED_AVG_SOIL_HUMIDITIES[12];
     };
 
     struct Overlay{
@@ -69,28 +52,15 @@ public:
         static const char * _SOIL_INFILTRATION_RATE;
         static const char * _MONTHLY_SOIL_HUMIDITY;
         static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;
+        static const char * _CLUSTERS;
     };
 
     struct Clustering{
         static const char * _N_CLUSTERS;
-        static const char * _JUN_TEMPERATURES;
-        static const char * _DEC_TEMPERATURES;
-        static const char * _MIN_ILLUMINATION;
-        static const char * _MAX_ILLUMINATION;
-        static const char * _SLOPE;
-        static const char * _JAN_SOIL_HUMIDITY;
-        static const char * _FEB_SOIL_HUMIDITY;
-        static const char * _MAR_SOIL_HUMIDITY;
-        static const char * _APR_SOIL_HUMIDITY;
-        static const char * _MAY_SOIL_HUMIDITY;
-        static const char * _JUN_SOIL_HUMIDITY;
-        static const char * _JUL_SOIL_HUMIDITY;
-        static const char * _AUG_SOIL_HUMIDITY;
-        static const char * _SEP_SOIL_HUMIDITY;
-        static const char * _OCT_SOIL_HUMIDITY;
-        static const char * _NOV_SOIL_HUMIDITY;
-        static const char * _DEC_SOIL_HUMIDITY;
-        static const char * _SOIL_HUMIDITIES[12];
+        static const char * _SLOPE_CLUSTER_DATA;
+        static const char * _TEMPERATURE_CLUSTER_DATA;
+        static const char * _DAILY_ILLUMINATION_CLUSTER_DATA;
+        static const char * _WEIGHTED_AVG_SOIL_HUMIDITY_CLUSTER_DATA;
     };
 
     struct Lighting{

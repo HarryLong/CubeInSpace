@@ -30,7 +30,7 @@ void main()
     if(valid)
     {
         vec4 resulting_color = vec4(0,0,0,0);
-        vec2 texture_coord = vec2(float(global_idx.x)/heightmap_size.x, float(global_idx.y)/heightmap_size.y);
+        vec2 texture_coord = vec2(float(global_idx.x)/(heightmap_size.x-1), float(global_idx.y)/(heightmap_size.y-1));
 
         float jun_temperature = texture(temperature_texture, vec3(texture_coord,0)).r * 127;
         float dec_temperature = texture(temperature_texture, vec3(texture_coord,1)).r * 127;

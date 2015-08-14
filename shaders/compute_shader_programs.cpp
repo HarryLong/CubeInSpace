@@ -119,6 +119,9 @@ OverlayTextureCreatorShaders::MonthlySoilHumidity::~MonthlySoilHumidity() {}
 OverlayTextureCreatorShaders::WeightedAvgSoilHumidity::WeightedAvgSoilHumidity() : ComputeShaderProgram(":/overlay_texture_creator_weighted_avg_soil_humidity.comp") {}
 OverlayTextureCreatorShaders::WeightedAvgSoilHumidity::~WeightedAvgSoilHumidity() {}
 
+OverlayTextureCreatorShaders::Clusters::Clusters() : ComputeShaderProgram(":/overlay_texture_creator_cluster.comp") {}
+OverlayTextureCreatorShaders::Clusters::~Clusters() {}
+
 /*********************************
  * AGGREGATE HEIGHT WATER SHADER *
  *********************************/

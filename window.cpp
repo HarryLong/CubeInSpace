@@ -65,6 +65,7 @@ void MainWindow::init_menu()
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]);
+        m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
 
         m_illumination_submenu = m_overlay_menu->addMenu("Illumination");
         m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]);
@@ -94,6 +95,7 @@ void MainWindow::init_menu()
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL]);
         m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]);
+        m_edit_menu->addAction(m_actions->m_edit_actions[EditActionFamily::_CLUSTERING]);
     }
 }
 
