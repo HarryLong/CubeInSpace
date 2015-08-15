@@ -45,23 +45,17 @@ void ResourceWrapper::terrainChanged(int width, int depth)
     setTempValid(false);
     setDailyIlluminationValid(false);
     setShadeValid(false);
-
-    emit resourceInvalidated();
 }
 
 void ResourceWrapper::latitudeChanged()
 {
     setShadeValid(false);
     setDailyIlluminationValid(false);
-
-    emit resourceInvalidated();
 }
 
 void ResourceWrapper::sunPositionChanged()
 {
     setShadeValid(false);
-
-    emit resourceInvalidated();
 }
 
 TerrainWater & ResourceWrapper::getTerrainWater()
@@ -152,7 +146,7 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
 void ResourceWrapper::refreshShade(Terrain & terrain, const glm::vec3 & sun_position)
 {
     m_terrain_shade.setData(get_shade(terrain, sun_position));
-    m_shade_valid = true;
+    setShadeValid(true);
 }
 
 GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates)
@@ -296,8 +290,7 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
 
     emit processingComplete();
 
-    m_daily_illumination_valid = true;
-    check_if_all_resources_valid();
+    setDailyIlluminationValid(true);
 }
 
 void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec)
@@ -367,8 +360,7 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     m_terrain_temp.setData(TerrainTemperature::_DEC_LAYER_IDX,dec_temp_data);
 
     emit processingComplete();
-    m_temp_valid = true;
-    check_if_all_resources_valid();
+    setTempValid(true);
 }
 
 void ResourceWrapper::check_if_all_resources_valid()
@@ -404,4 +396,7 @@ void ResourceWrapper::setDailyIlluminationValid(bool valid)
 void ResourceWrapper::setShadeValid(bool valid)
 {
     m_shade_valid = valid;
+
+    if(!valid)
+        emit shadeInvalidated();
 }

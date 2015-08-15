@@ -19,6 +19,7 @@ public:
 
     QActionGroup * getActionGroup();
     QAction * operator[](QString key);
+    std::vector<QAction*> allActions();
 
 protected:
     void finalise();
@@ -28,6 +29,7 @@ private:
     virtual void init_actions() = 0;
 
     QActionGroup * m_action_group;
+    std::vector<QAction*> m_all_actions;
     bool m_multiselect;
     bool m_checkable;
 };

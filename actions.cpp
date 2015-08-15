@@ -19,6 +19,11 @@ QAction * ActionFamily::operator[](QString key)
     return m_actions[key];
 }
 
+std::vector<QAction*> ActionFamily::allActions()
+{
+    return m_all_actions;
+}
+
 QActionGroup * ActionFamily::getActionGroup()
 {
     return m_action_group;
@@ -33,6 +38,7 @@ void ActionFamily::finalise()
     {
         a->setActionGroup(m_action_group);
         a->setCheckable(m_checkable);
+        m_all_actions.push_back(a);
     }
 }
 

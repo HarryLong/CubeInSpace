@@ -42,7 +42,7 @@ signals:
     void processDescriptionUpdate(QString description);
     void tempInvalidated();
     void dailyIlluminationInvalidated();
-    void resourceInvalidated();
+    void shadeInvalidated();
     void tempAndDailyIlluminationValid();
 
 public slots:

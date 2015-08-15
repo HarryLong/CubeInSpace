@@ -149,9 +149,9 @@ void OverlayWidgets::hideAll()
 
 void OverlayWidgets::trigger_time_controllers(bool show)
 {
-    hideAll();
     if(show)
     {
+        hideAll();
         m_time_widget->show();
         m_month_widget->show();
     }
@@ -166,9 +166,9 @@ void OverlayWidgets::trigger_time_controllers(bool show)
 
 void OverlayWidgets::trigger_latitude_controllers(bool show)
 {
-    hideAll();
     if(show)
     {
+        hideAll();
         m_latitude_widget->show();
     }
     else
@@ -181,9 +181,9 @@ void OverlayWidgets::trigger_latitude_controllers(bool show)
 
 void OverlayWidgets::trigger_soil_infiltration_controllers(bool show)
 {
-    hideAll();
     if(show)
     {
+        hideAll();
         m_soil_infiltration_widget->show();
         m_soil_infiltration_shortcut_widget->show();
     }
@@ -198,9 +198,9 @@ void OverlayWidgets::trigger_soil_infiltration_controllers(bool show)
 
 void OverlayWidgets::trigger_water_controllers(bool show)
 {
-    hideAll();
     if(show)
     {
+        hideAll();
         m_water_shortcut_widget->show();
     }
     else
@@ -213,9 +213,9 @@ void OverlayWidgets::trigger_water_controllers(bool show)
 
 void OverlayWidgets::trigger_clustering_controllers(bool show)
 {
-    hideAll();
     if(show)
     {
+        hideAll();
         m_clustering_controller_widget->show();
     }
     else

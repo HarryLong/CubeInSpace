@@ -33,12 +33,10 @@ public slots:
     void setCameraDirection(float camera_direction_x, float camera_direction_y, float camera_direction_z);
     void saveOrientation();
     void rotateNorth(Orientation orientation);
+    void toggle_edit_mode(bool checked);
 
 protected:
     virtual void paintEvent(QPaintEvent * event);
-
-private slots:
-    void toggle_edit_mode(bool checked);
 
 private:
     void init_pens();

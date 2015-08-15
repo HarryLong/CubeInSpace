@@ -46,7 +46,6 @@ private:
     std::atomic<float> end_point_x, end_point_y, end_point_z;
 };
 
-
 class QTimer;
 class ActionFamily;
 class AllActions;
@@ -78,27 +77,33 @@ private slots:
     void load_terrain(TerragenFile terrain_file);
     void control_changed();
     void clear_rays();
-    void overlay_changed();
     void sunPositionChanged(float,float,float);
     void load_terrain_file();
-    void refresh_temperature();
+
+    void refresh_temperature(bool refresh_overlay = true);
+    void refresh_illumination(bool refresh_overlay = true);
+    void refresh_shade(bool refresh_overlay = true);
     void refresh_water();
     void reset_soil_infiltration_rate();
-    void reset_edit_actions();
-    void refresh_illumination();
-    void refresh_shade();
+
     void reset_overlay();
-    void time_controllers_state_changed(bool active);
-    void latitude_controllers_state_changed(bool active);
-    void soil_infiltration_controllers_state_changed(bool active);
-    void water_controllers_state_changed(bool active);
-    void clustering_controllers_state_changed(bool active);
-    void disable_all_overlay_widget_actions();
+    void set_overlay(QAction * active_overlay_action);
+
+    void edit(QAction * triggered_action);
+    void reset_edit();
+
+    void set_overlays_active(bool active);
+    void set_edit_actions_active(bool active);
+
     void soil_infiltration_rate_changed(int);
-    void orientation_controllers_state_changed(bool active);
-    void enablePositionDependentOverlays(bool enable);
-    void enableAllOverlays(bool enable);
-    void refresh_normals();
+    void refresh_normals();//    void disable_all_overlay_widget_actions();
+
+    void temp_invalidated();
+    void shade_invalidated();
+    void daily_illumination_invalidated();
+
+    void monthChanged();
+
     void update_soil_infiltration_rate(const glm::vec3 & intersection_point);
     void zeroify_soil_infiltration_above_slope(int slope);
     void fill_infiltration_rate(int infiltration_rate);
@@ -138,6 +143,7 @@ private:
     bool overlay_temperature();
     bool overlay_min_illumination();
     bool overlay_max_illumination();
+    bool overlay_illumination();
     bool overlay_soil_infiltration();
     bool overlay_monthly_soil_humidity();
     bool overlay_weighted_avg_soil_humidity();
@@ -173,9 +179,12 @@ private:
     std::atomic<bool> m_ctrl_pressed;
     std::atomic<bool> m_render_water;
 
+    std::map<QAction *, const char *> m_overlay_action_to_overlay_uniform;
+
     bool m_navigation_enabled;
     bool m_authorise_navigation_mode_switch;
     bool m_flood_fill_mode;
+    bool m_clustering_enabled;
 
     QTimer * m_fps_callback_timer;
 

@@ -82,7 +82,8 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
   m_active_overlay(Uniforms::Overlay::_NONE),
   m_selection_rect(ShapeFactory::getTerrainRectangle()),
   m_humidity_rect(ShapeFactory::getTerrainRectangle()),
-  m_flood_fill_mode(false)
+  m_flood_fill_mode(false),
+  m_clustering_enabled(false)
 {
     m_humidity_rect->resize(5,5); // Temporary
 
@@ -97,6 +98,25 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
     m_lighting_manager.setLatitude(m_overlay_widgets.getLatitude());
     m_lighting_manager.setMonth(m_overlay_widgets.getMonth());
     m_lighting_manager.setTime(m_overlay_widgets.getTime());
+
+    // Set up mapping of overlay actions to overlay uniforms
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_NONE]] = Uniforms::Overlay::_NONE;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_SLOPE]] = Uniforms::Overlay::_SLOPE;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_ALTITUDE]] = Uniforms::Overlay::_ALTITUDE;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]] = Uniforms::Overlay::_SHADE;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]] = Uniforms::Overlay::_TEMPERATURE;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]] =
+            Uniforms::Overlay::_MIN_DAILY_ILLUMINATION;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]] =
+            Uniforms::Overlay::_MAX_DAILY_ILLUMINATION;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]] =
+            Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY]] =
+            Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY]] =
+            Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]] =
+            Uniforms::Overlay::_CLUSTERS;
 
     m_mouse_tracking_thread_run.store(true);
     m_ctrl_pressed.store(false);
@@ -122,14 +142,7 @@ void GLWidget::establish_connections()
     connect(m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN], SIGNAL(triggered(bool)), this, SLOT(load_terrain_file()));
 
     // OVERLAY WIDGETS
-    connect(m_actions->m_edit_actions[EditActionFamily::_TIME], SIGNAL(triggered(bool)), &m_overlay_widgets, SLOT(trigger_time_controllers(bool)));
-    connect(m_actions->m_edit_actions[EditActionFamily::_LATITUDE], SIGNAL(triggered(bool)), &m_overlay_widgets, SLOT(trigger_latitude_controllers(bool)));
-    connect(m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE], SIGNAL(triggered(bool)), &m_overlay_widgets,
-            SLOT(trigger_soil_infiltration_controllers(bool)));
-    connect(m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT], SIGNAL(triggered(bool)), &m_overlay_widgets,
-            SLOT(trigger_water_controllers(bool)));
-    connect(m_actions->m_edit_actions[EditActionFamily::_CLUSTERING], SIGNAL(triggered(bool)), &m_overlay_widgets,
-            SLOT(trigger_clustering_controllers(bool)));
+    connect(m_actions->m_edit_actions.getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(edit(QAction*)));
 
     // NORMALS NEED RECALCULATING
     connect(&m_terrain, SIGNAL(normalsInvalid()), this, SLOT(refresh_normals()));
@@ -140,6 +153,7 @@ void GLWidget::establish_connections()
     connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), &m_resources, SLOT(terrainChanged(int,int)));
     connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(refresh_water()));
     connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(format_overlay_texture()));
+    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(reset_edit()));
 
     // CAMERA ORIENTATION CHANGE
     connect(&m_camera, SIGNAL(cameraDirectionChanged(float,float,float)), &m_orientation_widget, SLOT(setCameraDirection(float,float,float)));
@@ -150,9 +164,6 @@ void GLWidget::establish_connections()
     // DISPLAY DIALOGS
     connect(m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(triggerPointerInfoDialog(bool)));
     connect(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showSettingsDialog()));
-    connect(m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showTempDialog()));
-    connect(m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showMonthlyRainfallDialog()));
-    connect(m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL], SIGNAL(triggered(bool)), this, SLOT(set_flood_fill_enabled(bool)));
 
     // UPDATE PROGRESS BAR
     connect(&m_resources, SIGNAL(processing(QString)), &m_progress_bar_widget, SLOT(processing(QString)));
@@ -164,14 +175,9 @@ void GLWidget::establish_connections()
     connect(m_actions->m_render_actions[RenderActionFamily::_RAYS], SIGNAL(triggered(bool)), this, SLOT(clear_rays()));
 
     // When overlay is changed
-    connect(m_actions->m_overlay_actions.getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(overlay_changed()));
+    connect(m_actions->m_overlay_actions.getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(set_overlay(QAction*)));
 
     // When controller widgets are activated
-    connect(&m_overlay_widgets, SIGNAL(latitudeControllersStateChanged(bool)), this, SLOT(latitude_controllers_state_changed(bool)));
-    connect(&m_overlay_widgets, SIGNAL(timeControllersStateChanged(bool)), this, SLOT(time_controllers_state_changed(bool)));
-    connect(&m_overlay_widgets, SIGNAL(soilInfiltrationControllersStateChanged(bool)), this, SLOT(soil_infiltration_controllers_state_changed(bool)));
-    connect(&m_overlay_widgets, SIGNAL(waterControllersStateChanged(bool)), this, SLOT(water_controllers_state_changed(bool)));
-    connect(&m_overlay_widgets, SIGNAL(clusteringControllersStateChanged(bool)), this, SLOT(clustering_controllers_state_changed(bool)));
     connect(&m_overlay_widgets, SIGNAL(soilInfiltrationRateChanged(int)), this, SLOT(soil_infiltration_rate_changed(int)));
     connect(&m_overlay_widgets, SIGNAL(absoluteHeightChanged(int)), this, SLOT(set_absolute_aggregate_height(int)));
     connect(&m_overlay_widgets, SIGNAL(clusteringSensitivityChanged(int)), this, SLOT(refresh_clusters()));
@@ -186,6 +192,7 @@ void GLWidget::establish_connections()
 
     // MONTH CHANGE
     connect(&m_overlay_widgets, SIGNAL(monthChanged(int)), &m_lighting_manager, SLOT(setMonth(int)));
+    connect(&m_overlay_widgets, SIGNAL(monthChanged(int)), this, SLOT(monthChanged()));
 
     // TIME CHANGE
     connect(&m_overlay_widgets, SIGNAL(timeChanged(int)), &m_lighting_manager, SLOT(setTime(int)));
@@ -198,8 +205,6 @@ void GLWidget::establish_connections()
     connect(&m_orientation_widget, SIGNAL(northOrientationChanged(float,float,float)), &m_lighting_manager, SLOT(setNorthOrientation(float,float,float)));
 
     // ORIENTATION EDIT
-    connect(m_actions->m_edit_actions[EditActionFamily::_ORIENTATION], SIGNAL(triggered(bool)), &m_orientation_widget, SLOT(toggle_edit_mode(bool)));
-    connect(m_actions->m_edit_actions[EditActionFamily::_ORIENTATION], SIGNAL(triggered(bool)), this, SLOT(orientation_controllers_state_changed(bool)));
 
     // CAMERA SENSITIVITY
     connect(&m_dialogs.m_settings_dlg, SIGNAL(rotationSensitivityChanged(float)), &m_camera, SLOT(setRotationSensitivity(float)));
@@ -215,9 +220,9 @@ void GLWidget::establish_connections()
     connect(m_fps_callback_timer, SIGNAL(timeout()), this, SLOT(update()));
 
     // WHEN A RESOUCE IS INVALIDATED CHECK REFRESH IT IF NECESSARY
-    connect(&m_resources, SIGNAL(resourceInvalidated()), this, SLOT(overlay_changed()));    
-    connect(&m_resources, SIGNAL(tempInvalidated()), this, SLOT(disable_clustering()));
-    connect(&m_resources, SIGNAL(dailyIlluminationInvalidated()), this, SLOT(disable_clustering()));
+    connect(&m_resources, SIGNAL(shadeInvalidated()), this, SLOT(shade_invalidated()));
+    connect(&m_resources, SIGNAL(tempInvalidated()), this, SLOT(temp_invalidated()));
+    connect(&m_resources, SIGNAL(dailyIlluminationInvalidated()), this, SLOT(daily_illumination_invalidated()));
     connect(&m_resources, SIGNAL(tempAndDailyIlluminationValid()), this, SLOT(enable_clustering()));
 }
 
@@ -805,74 +810,22 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
     else
         m_dialogs.m_pointer_info_dlg.invalidPoint();
 }
-void GLWidget::overlay_changed()
+void GLWidget::set_overlay(QAction * active_overlay_action)
 {
+    active_overlay_action->setChecked(true); // In case it was called to set the overlay
+
     bool shade_valid, temp_valid, illumination_valid;
     m_resources.valid(shade_valid,illumination_valid,temp_valid);
+    m_active_overlay = m_overlay_action_to_overlay_uniform[active_overlay_action];
 
-    if(overlay_none())
-        m_active_overlay = Uniforms::Overlay::_NONE;
-    else if(overlay_slope())
-    {
-        m_active_overlay = Uniforms::Overlay::_SLOPE;
-        refresh_overlay_texture();
-    }
-    else if(overlay_altitude())
-    {
-        m_active_overlay = Uniforms::Overlay::_ALTITUDE;
-        refresh_overlay_texture();
-    }
-    else if(overlay_soil_infiltration())
-    {
-        m_active_overlay = Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
-        refresh_overlay_texture();
-    }
-    else if(overlay_monthly_soil_humidity())
-    {
-        m_active_overlay = Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY;
-        refresh_overlay_texture();
-    }
-    else if(overlay_weighted_avg_soil_humidity())
-    {
-        m_active_overlay = Uniforms::Overlay::_WEIGHTED_AVG_SOIL_HUMIDITY;
-        refresh_overlay_texture();
-    }
-    else if(overlay_clusters())
-    {
-        m_active_overlay = Uniforms::Overlay::_CLUSTERS;
-        refresh_overlay_texture();
-    }
-    else if(overlay_shade())
-    {
-        m_active_overlay = Uniforms::Overlay::_SHADE;
-        if(!shade_valid)
-            refresh_shade();
-        refresh_overlay_texture();
-    }
-    else if(overlay_temperature())
-    {
-        m_active_overlay = Uniforms::Overlay::_TEMPERATURE;
-        if(!temp_valid)
-            refresh_temperature();
-        else
-            refresh_overlay_texture();
-    }
-    else if(overlay_min_illumination())
-    {
-        m_active_overlay = Uniforms::Overlay::_MIN_DAILY_ILLUMINATION;
-        if(!illumination_valid)
-            refresh_illumination();
-        else
-            refresh_overlay_texture();
-    }
-    else if(overlay_max_illumination())
-    {
-        m_active_overlay = Uniforms::Overlay::_MAX_DAILY_ILLUMINATION;
-        if(!illumination_valid)
-            refresh_illumination();
-        else
-            refresh_overlay_texture();
-    }
+    if(overlay_shade() && !shade_valid)
+        refresh_shade(false);
+    else if(overlay_temperature() && !temp_valid)
+        refresh_temperature(false);
+    else if(overlay_illumination() && !illumination_valid)
+        refresh_illumination(false);
+
+    refresh_overlay_texture();
 }
 
 void GLWidget::refresh_overlay_texture()
@@ -905,7 +858,7 @@ void GLWidget::refresh_clusters()
 //                                        closest_cluster_function);
 }
 
-void GLWidget::refresh_temperature()
+void GLWidget::refresh_temperature(bool refresh_overlay)
 {
     // Disable fps callback temporarily
     m_fps_callback_timer->stop();
@@ -915,9 +868,11 @@ void GLWidget::refresh_temperature()
     m_resources.refreshTemperature(m_terrain, jun_temp_attributes.temperature_at_zero_meters, jun_temp_attributes.lapse_rate,
                                               dec_temp_attributes.temperature_at_zero_meters, dec_temp_attributes.lapse_rate);
 
-    refresh_overlay_texture();
     // Disable fps callback temporarily
     m_fps_callback_timer->start();
+
+   if(refresh_overlay)
+       refresh_overlay_texture();
 }
 
 void GLWidget::reset_soil_infiltration_rate()
@@ -968,7 +923,7 @@ void GLWidget::refresh_water()
     m_fps_callback_timer->start();
 }
 
-void GLWidget::refresh_illumination()
+void GLWidget::refresh_illumination(bool refresh_overlay)
 {
     // Disable fps callback temporarily
     m_fps_callback_timer->stop();
@@ -978,8 +933,23 @@ void GLWidget::refresh_illumination()
     m_resources.refreshDailyIllumination(m_lighting_manager, m_terrain);
     m_lighting_manager.signal_sun_position_change(true); // re-enable signaling
 
-    refresh_overlay_texture();
     m_fps_callback_timer->start();
+
+    if(refresh_overlay)
+        refresh_overlay_texture();
+}
+
+void GLWidget::refresh_shade(bool refresh_overlay)
+{
+    // Disable fps callback temporarily
+    m_fps_callback_timer->stop();
+
+    m_resources.refreshShade(m_terrain, m_lighting_manager.getSunlightProperties().getPosition());
+
+    m_fps_callback_timer->start();
+
+    if(refresh_overlay)
+        refresh_overlay_texture();
 }
 
 void GLWidget::reset_water()
@@ -991,16 +961,6 @@ void GLWidget::reset_water()
     m_resources.getWeightedSoilHumidity().reset(m_terrain.getWidth(), m_terrain.getDepth());
     // RESET TERRAIN WATER
     m_resources.getTerrainWater().reset(m_terrain.getWidth(), m_terrain.getDepth());
-}
-
-void GLWidget::refresh_shade()
-{
-    // Disable fps callback temporarily
-    m_fps_callback_timer->stop();
-
-    m_resources.refreshShade(m_terrain, m_lighting_manager.getSunlightProperties().getPosition());
-
-    m_fps_callback_timer->start();
 }
 
 void GLWidget::refresh_normals()
@@ -1021,113 +981,23 @@ void GLWidget::sunPositionChanged(float pos_x, float pos_y, float pos_z)
     m_sun.setTranformation(transform);
 }
 
-void GLWidget::time_controllers_state_changed(bool active)
+void GLWidget::set_overlays_active(bool active)
 {
-    disable_all_overlay_widget_actions();
-    enableAllOverlays(true);
-    enablePositionDependentOverlays(!active);
-    m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(active);
-}
+    for(QAction * action : m_actions->m_overlay_actions.allActions())
+        action->setEnabled(active);
 
-void GLWidget::latitude_controllers_state_changed(bool active)
-{
-    disable_all_overlay_widget_actions();
-    enableAllOverlays(true);
-    enablePositionDependentOverlays(!active);
-    m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(active);
-}
+    m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]->setEnabled(active && m_clustering_enabled);
 
-void GLWidget::soil_infiltration_controllers_state_changed(bool active)
-{
-    disable_all_overlay_widget_actions();
-    m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(active);
-
-    enableAllOverlays(!active);
-
-    if(!active) // Water refresh required
+    if(!active)
     {
-        reset_overlay();
-        refresh_water();
+        set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_NONE]);
     }
-    else
-    {
-        soil_infiltration_rate_changed(m_overlay_widgets.getSoilInfiltrationRate());
-        m_active_overlay = Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
-        m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(true);
-        reset_water();
-    }
-    refresh_overlay_texture();
 }
 
-void GLWidget::water_controllers_state_changed(bool active)
+void GLWidget::set_edit_actions_active(bool active)
 {
-    disable_all_overlay_widget_actions();
-    m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]->setChecked(active);
-}
-
-void GLWidget::clustering_controllers_state_changed(bool active)
-{
-    disable_all_overlay_widget_actions();
-    m_actions->m_edit_actions[EditActionFamily::_CLUSTERING]->setChecked(active);
-
-    enableAllOverlays(!active);
-
-    if(!active) // Water refresh required
-    {
-        reset_overlay();
-    }
-    else
-    {
-        m_active_overlay = Uniforms::Overlay::_CLUSTERS;
-        m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]->setChecked(true);
-        overlay_changed();
-    }
-    refresh_overlay_texture();
-}
-
-
-void GLWidget::disable_all_overlay_widget_actions()
-{
-    m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_CLUSTERING]->setChecked(false);
-}
-
-void GLWidget::orientation_controllers_state_changed(bool active)
-{
-    enablePositionDependentOverlays(!active);
-}
-
-void GLWidget::enablePositionDependentOverlays(bool enable)
-{
-    if(!enable &&
-            (m_active_overlay == Uniforms::Overlay::_MIN_DAILY_ILLUMINATION ||
-             m_active_overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION ||
-             m_active_overlay == Uniforms::Overlay::_SHADE))
-    {
-        reset_overlay();
-    }
-
-    m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->setEnabled(enable);
-}
-
-void GLWidget::enableAllOverlays(bool enable)
-{
-    m_actions->m_overlay_actions[OverlayActionFamily::_NONE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_SLOPE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_ALTITUDE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_WEIGHTED_AVG_SOIL_HUMIDITY]->setEnabled(enable);
-    m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]->setEnabled(enable);
+    for(QAction * action : m_actions->m_edit_actions.allActions())
+        action->setEnabled(active);
 }
 
 void GLWidget::balance_water(bool one_step)
@@ -1224,7 +1094,7 @@ void GLWidget::new_terrain_is_going_to_load()
     m_dialogs.m_monthly_rainfall_edit_dlg.reset();
     m_overlay_widgets.hideAll();
     reset_overlay();
-    reset_edit_actions();
+    set_overlays_active(true);
 }
 
 void GLWidget::set_absolute_aggregate_height(int height)
@@ -1246,24 +1116,103 @@ void GLWidget::clear_rays()
 
 void GLWidget::reset_overlay()
 {
-    m_actions->m_overlay_actions[OverlayActionFamily::_NONE]->setChecked(true);
-    overlay_changed();
-    enableAllOverlays(true);
+    set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_NONE]);
 }
 
-void GLWidget::reset_edit_actions()
+void GLWidget::reset_edit()
 {
-    m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_ORIENTATION]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_TIME]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_LATITUDE]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL]->setChecked(false);
-    m_actions->m_edit_actions[EditActionFamily::_CLUSTERING]->setChecked(false);
+    for(QAction * action : m_actions->m_edit_actions.allActions())
+        action->setChecked(false);
 
+    m_orientation_widget.toggle_edit_mode(false);
     set_flood_fill_enabled(false);
+}
+
+void GLWidget::edit(QAction * triggered_action)
+{
+    // Enable all overlays & edit actions
+    set_overlays_active(true);
+    m_overlay_widgets.hideAll();
+    bool checked(triggered_action->isChecked());
+    reset_edit();
+    triggered_action->setChecked(checked);
+    // If it's to trigger a dialog
+    if(triggered_action == m_actions->m_edit_actions[EditActionFamily::_TEMPERATURE])
+        m_dialogs.showTempDialog();
+    else if(triggered_action == m_actions->m_edit_actions[EditActionFamily::_MONTHLY_RAINFALL])
+        m_dialogs.showMonthlyRainfallDialog();
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_ORIENTATION])
+    {
+        if(checked)
+        {
+            m_orientation_widget.toggle_edit_mode(true);
+//            set_overlays_active(false);
+        }
+        else
+            m_orientation_widget.toggle_edit_mode(false);
+    }
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_TIME])
+    {
+        if(checked)
+        {
+            m_overlay_widgets.trigger_time_controllers(true);
+//            set_overlays_active(false);
+        }
+    }
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_LATITUDE])
+    {
+        if(checked)
+        {
+            m_overlay_widgets.trigger_latitude_controllers(true);
+//            set_overlays_active(false);
+        }
+    }
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE])
+    {
+        if(checked)
+        {
+            set_overlays_active(false);
+
+            m_overlay_widgets.trigger_soil_infiltration_controllers(true);
+            reset_water();
+            soil_infiltration_rate_changed(m_overlay_widgets.getSoilInfiltrationRate());
+            set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]);
+            refresh_overlay_texture();
+        }
+        else
+        {
+            refresh_water();
+            reset_overlay();
+        }
+    }
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT])
+    {
+        if(checked)
+        {
+            m_overlay_widgets.trigger_water_controllers(true);
+//            set_overlays_active(false);
+        }
+    }
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL])
+    {
+        set_flood_fill_enabled(checked);
+        if(checked)
+        {
+//            set_overlays_active(false);
+        }
+    }
+    else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_CLUSTERING])
+    {
+        if(checked)
+        {
+            set_overlays_active(false);
+            m_overlay_widgets.trigger_clustering_controllers(true);
+            set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
+            refresh_overlay_texture();
+        }
+        else
+            reset_overlay();
+    }
 }
 
 void GLWidget::format_overlay_texture()
@@ -1325,6 +1274,11 @@ bool GLWidget::overlay_min_illumination()
 bool GLWidget::overlay_max_illumination()
 {
     return m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->isChecked();
+}
+
+bool GLWidget::overlay_illumination()
+{
+    return overlay_min_illumination() || overlay_max_illumination();
 }
 
 bool GLWidget::overlay_soil_infiltration()
@@ -1390,19 +1344,20 @@ void GLWidget::enable_clustering()
 {
     enable_clustering_actions(true);
     refresh_clusters();
+
+    m_clustering_enabled = true;
 }
 
 void GLWidget::disable_clustering()
 {
     if(m_active_overlay == Uniforms::Overlay::_CLUSTERS)
-    {
-        m_active_overlay = Uniforms::Overlay::_NONE;
-        refresh_overlay_texture();
-    }
+        reset_overlay();
+
     enable_clustering_actions(false);
 
-    if(m_overlay_widgets.clusteringSensitivityControllersActive())
-        m_overlay_widgets.trigger_clustering_controllers(false);
+    m_overlay_widgets.trigger_clustering_controllers(false);
+
+    m_clustering_enabled = false;
 }
 
 void GLWidget::enable_clustering_actions(bool enable)
@@ -1414,6 +1369,34 @@ void GLWidget::enable_clustering_actions(bool enable)
     }
     m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]->setEnabled(enable);
     m_actions->m_edit_actions[EditActionFamily::_CLUSTERING]->setEnabled(enable);
+}
+
+void GLWidget::temp_invalidated()
+{
+    if(overlay_temperature())
+        reset_overlay();
+
+    disable_clustering();
+}
+
+void GLWidget::shade_invalidated()
+{
+    if(overlay_shade())
+        reset_overlay();
+}
+
+void GLWidget::daily_illumination_invalidated()
+{
+    if(overlay_illumination())
+        reset_overlay();
+
+    disable_clustering();
+}
+
+void GLWidget::monthChanged()
+{
+    if(overlay_temperature() || overlay_monthly_soil_humidity() || overlay_weighted_avg_soil_humidity())
+        refresh_overlay_texture();
 }
 
 // THREAD
