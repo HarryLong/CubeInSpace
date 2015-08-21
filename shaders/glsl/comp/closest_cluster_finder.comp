@@ -1,28 +1,35 @@
 #version 430
 
-layout (local_size_x = 32, local_size_y = 32) in;
+layout (local_size_x = 16, local_size_y = 16) in;
 
-uniform uint n_clusters;
+layout(binding = 0, r32ui) uniform uimage2D resulting_cluster_memberships;
+
+uniform int n_clusters;
+
+uniform bool final_clustering_iteration;
+//uniform const int clustering_iterations = 100;
 
 // CLUSTER DATA
-uniform sampler2D slope_cluster_data_texture;
-uniform sampler2DArray temperature_cluster_data_texture;
-uniform sampler2DArray daily_illumination_cluster_data_texture;
-uniform sampler2DArray weighted_avg_soil_humidity_cluster_data_texture;
+layout(binding = 1, r32f) uniform coherent image2D slope_cluster_data;
+layout(binding = 2, r8_snorm) uniform coherent image2D temperature_cluster_data;
+layout(binding = 3, r8) uniform coherent image2DArray daily_illumination_cluster_data;
+layout(binding = 4, r32f) uniform coherent image2DArray weighted_avg_soil_humidity_cluster_data;
+
+layout(binding = 5, r32f) uniform coherent image2DArray slope_and_humidity_reducer;
+layout(binding = 6, r32f) uniform coherent image2DArray temperature_reducer;
+layout(binding = 7, r32f) uniform coherent image2DArray daily_illumination_reducer;
 
 // RESOURCE DATA
 uniform sampler2D slope_texture;
-uniform sampler2DArray temperature_texture;
+uniform sampler2D temperature_texture;
 uniform sampler2DArray daily_illumination_texture;
 uniform sampler2DArray weighted_avg_soil_humidity_texture;
-
-layout(binding = 0, r32ui) uniform uimage2D resulting_cluster_memberships;
 
 struct ClusteringEntities
 {
     float slope;
-    float temp[2];
-    uint illumination[2];
+    float temp;
+    float illumination[2];
     float soil_humidities[12];
 };
 
@@ -33,15 +40,44 @@ float calculateDistance(in ClusteringEntities cluster_one, in ClusteringEntities
     // SLOPE
     dist += abs(cluster_one.slope-cluster_two.slope);
 
+    dist += (10 * abs(cluster_one.temp-cluster_two.temp)); // TEMPERATURE
+
     for(int i = 0; i < 2; i++)
     {
-        dist += abs(cluster_one.temp[i]-cluster_two.temp[i]); // TEMPERATURE
         dist += abs(cluster_one.illumination[i]-cluster_two.illumination[i]); // ILLUMINATION
+    }
+
+    // SOIL HUMIDITY
+    for(int i = 0; i < 12; i++)
+    {
+        dist += abs(cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i]); // TEMPERATURE
     }
 
     return dist;
 }
 
+int i_unnormalize(in float normalized)
+{
+     return int(-128 + (((normalized+1)/2.0) * 256));
+}
+
+float i_normalize(in int normalized)
+{
+     return (float(normalized + 128)/128.0)-1;
+}
+
+uint ui_unnormalize(in float normalized)
+{
+     return uint(normalized*255.0);
+}
+
+float ui_normalize(in uint normalized)
+{
+     return float(normalized)/255.0;
+}
+
+shared ClusteringEntities[gl_WorkGroupSize.x][gl_WorkGroupSize.y] work_group_resource_entities;
+shared uint[gl_WorkGroupSize.x][gl_WorkGroupSize.y] workgroup_memberships;
 void main()
 {
     uvec2 size = textureSize(slope_texture, 0);
@@ -51,65 +87,164 @@ void main()
     global_idx.y = int(gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y);
     bool valid = global_idx.x < int(size.x) && global_idx.y < int(size.y);
 
+    uint mean_calculator_cluster_idx = (gl_WorkGroupSize.x * gl_LocalInvocationID.y) + gl_LocalInvocationID.x;
+    bool mean_calculator = valid && mean_calculator_cluster_idx < n_clusters;
+
+    ClusteringEntities resource_entities;
+    ClusteringEntities cluster_entities;
+
     if(valid)
     {
-        vec2 resource_texture_coord = vec2(float(global_idx.x)/(size.x-1), float(global_idx.y)/(size.y-1));
-        ClusteringEntities resource_entities;
-        ClusteringEntities cluster_entities;
-
         /**********************
          * LOAD RESOURCE DATA *
          **********************/
+        vec2 resource_texture_coord = vec2(float(global_idx.x)/(size.x-1), float(global_idx.y)/(size.y-1));
+
         // Slope
         resource_entities.slope = texture(slope_texture, resource_texture_coord).r;
         // Temperature
-        resource_entities.temp[0] = texture(temperature_texture, vec3(resource_texture_coord,0)).r * 127; // JUN
-        resource_entities.temp[1] = texture(temperature_texture, vec3(resource_texture_coord,1)).r * 127; // DEC
-        // Min illumination
-        resource_entities.illumination[0] = uint(texture(daily_illumination_texture, vec3(resource_texture_coord,0)).r * 255); // MIN
-        resource_entities.illumination[1] = uint(texture(daily_illumination_texture, vec3(resource_texture_coord,1)).r * 255); // MAX
+        resource_entities.temp = float(i_unnormalize(texture(temperature_texture, resource_texture_coord).r));
+        // Illumination
+        for(int i = 0; i < 2; i++)
+        {
+            resource_entities.illumination[i] = float(ui_unnormalize(texture(daily_illumination_texture, vec3(resource_texture_coord,i)).r));
+        }
         // Soil humidity
         for(int month = 0; month < 12; month++)
         {
             resource_entities.soil_humidities[month] = texture(weighted_avg_soil_humidity_texture, vec3(resource_texture_coord, month)).r;
         }
 
+        work_group_resource_entities[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = resource_entities;
+    }
+
+    if(valid)
+    {
         /************************
-         * FIND CLOSEST CLUSTER *
-         ************************/
+        * FIND CLOSEST CLUSTER *
+        ************************/
         float closest_distance = 0;
         uint closest_cluster_idx = 0;
         for(uint cluster_idx = 0; cluster_idx < n_clusters; cluster_idx++)
         {
-            vec2 cluster_texture_coord = vec2(float(cluster_idx)/(n_clusters-1),0);
+            ivec2 cluster_coord = ivec2(cluster_idx,0);
 
             /*********************
-             * LOAD CLUSTER DATA *
-             *********************/
+            * LOAD CLUSTER DATA *
+            *********************/
             // Slope
-            cluster_entities.slope = texture(slope_cluster_data_texture, cluster_texture_coord).r;
+            cluster_entities.slope = imageLoad(slope_cluster_data, cluster_coord).x;
             // Temperature
-            cluster_entities.temp[0] = texture(temperature_cluster_data_texture, vec3(cluster_texture_coord,0)).r * 127;
-            cluster_entities.temp[1] = texture(temperature_cluster_data_texture, vec3(cluster_texture_coord,1)).r * 127;
-            // Min illumination
-            cluster_entities.illumination[0] = uint(texture(daily_illumination_cluster_data_texture, vec3(cluster_texture_coord,0)).r * 255);
-            cluster_entities.illumination[1] = uint(texture(daily_illumination_cluster_data_texture, vec3(cluster_texture_coord,1)).r * 255);
+            cluster_entities.temp = float(i_unnormalize(imageLoad(temperature_cluster_data, cluster_coord).x));
+            // Illumination
+            for(int i = 0; i < 2; i++)
+            {
+                cluster_entities.illumination[i] = float(ui_unnormalize(imageLoad(daily_illumination_cluster_data, ivec3(cluster_coord, i)).x));
+            }
             // Soil humidity
             for(int month = 0; month < 12; month++)
             {
-                resource_entities.soil_humidities[month] = texture(weighted_avg_soil_humidity_texture, vec3(cluster_texture_coord, month)).r;
+                cluster_entities.soil_humidities[month] = imageLoad(weighted_avg_soil_humidity_cluster_data, ivec3(cluster_coord, month)).r;
             }
-
             float cluster_distance = calculateDistance(resource_entities, cluster_entities);
-
             if(cluster_idx == 0 || cluster_distance < closest_distance)
             {
                 closest_distance = cluster_distance;
                 closest_cluster_idx = cluster_idx;
             }
         }
-        imageStore(resulting_cluster_memberships, global_idx, uvec4(closest_cluster_idx,0,0,0));
+        workgroup_memberships[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = closest_cluster_idx;
+    }
+    memoryBarrierShared();
+    barrier();
+    // Recalculate cluster means for this work group
+    if(mean_calculator)
+    {
+        int member_count = 0;
+        ClusteringEntities new_cluster_mean;
+        new_cluster_mean.slope = 0.0;
+        new_cluster_mean.temp = 0.0;
+        for(int i = 0; i < 2; i++)
+        {
+            new_cluster_mean.illumination[i] = 0.0;
+        }
+        for(int i = 0; i < 12; i++)
+        {
+            new_cluster_mean.soil_humidities[i] = 0.0;
+        }
+
+        // AGGREGATE
+        for(int membership_idx_x = 0; membership_idx_x < gl_WorkGroupSize.x; membership_idx_x++)
+        {
+            for(int membership_idx_y = 0; membership_idx_y < gl_WorkGroupSize.y; membership_idx_y++)
+            {
+                uint membership_id = workgroup_memberships[membership_idx_x][membership_idx_y];
+                if(membership_id == mean_calculator_cluster_idx)
+                {
+                    member_count++;
+                    // Slope
+                    new_cluster_mean.slope += work_group_resource_entities[membership_idx_x][membership_idx_y].slope;
+                    new_cluster_mean.temp += work_group_resource_entities[membership_idx_x][membership_idx_y].temp;
+                    for(int i = 0; i < 2; i++)
+                    {
+                        new_cluster_mean.illumination[i] += work_group_resource_entities[membership_idx_x][membership_idx_y].illumination[i];
+                    }
+                    // Soil humidity
+                    for(int month = 0; month < 12; month++)
+                    {
+                        new_cluster_mean.soil_humidities[month] += work_group_resource_entities[membership_idx_x][membership_idx_y].soil_humidities[month];
+                    }
+                }
+            }
+        }
+        // AVERAGE OUT
+        if(member_count > 0)
+        {
+            new_cluster_mean.slope /= member_count;
+            new_cluster_mean.temp /= member_count;
+            for(int i = 0; i < 2; i++)
+            {
+                new_cluster_mean.illumination[i] /= member_count;
+            }
+            for(int month = 0; month < 12; month++)
+            {
+                new_cluster_mean.soil_humidities[month] /= member_count;
+            }
+        }
+        // Write cluster data for this workgroup
+        {
+            uint index_y = gl_WorkGroupID.y;
+            // SLOPE & HUMIDITY
+            {
+                uint index_x = gl_WorkGroupID.x * 13;
+                //  Slope first
+                imageStore(slope_and_humidity_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.slope,0,0,0));
+                index_x++;
+                for(int month = 0; month < 12; month++, index_x++)
+                {
+                    imageStore(slope_and_humidity_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.soil_humidities[month],0,0,0));
+                }
+            }
+            // TEMPERATURE
+            {
+                uint index_x = gl_WorkGroupID.x*2;
+                imageStore(temperature_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(member_count,0,0,0));
+                imageStore(temperature_reducer, ivec3(index_x+1, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.temp,0,0,0));
+            }
+            // ILLUMINATION
+            {
+                uint index_x = gl_WorkGroupID.x * 2;
+                imageStore(daily_illumination_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.illumination[0],0,0,0));
+                imageStore(daily_illumination_reducer, ivec3(index_x+1, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.illumination[1],0,0,0));
+            }
+        }
+    }
+
+    if(final_clustering_iteration && valid) // Write final memberships
+    {
+        imageStore(resulting_cluster_memberships, global_idx, uvec4(workgroup_memberships[gl_LocalInvocationID.x][gl_LocalInvocationID.y],0,0,0));
     }
     memoryBarrierImage();
+    barrier();
 }
 

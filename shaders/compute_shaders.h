@@ -17,6 +17,10 @@ public:
         OverlayTextureCreatorShaders::WeightedAvgSoilHumidity m_weigted_avg_soil_humidity;
         OverlayTextureCreatorShaders::Clusters m_clusters;
     };
+    struct KMeansClusteringShaders{
+        KMeansClustererShaders::ClosestClusterFinder m_closest_cluster_finder;
+        KMeansClustererShaders::MeansRecalculator m_means_recalculator;
+    };
 
     ComputeShaders();
     ~ComputeShaders();
@@ -30,7 +34,7 @@ public:
     BorderOverlapReducer m_border_overlap_reducer;
     WeightedAverageCalculator m_weighted_avg_calculator;
     NormalsToSlopeConverter m_normals_to_slope_converter;
-    ClosestClusterFinder m_closest_cluster_finder;
+    KMeansClusteringShaders m_k_means_clusterer;
     OverlayCreatorShaders m_overlay_creator_shaders;
 };
 

@@ -12,6 +12,16 @@ vec4 daily_illumination_to_output_color(in uint daily_illumination)
     return vec4(intensity,intensity,intensity,.7);
 }
 
+uint ui_unnormalize(in float normalized)
+{
+     return uint(normalized*255.0);
+}
+
+float ui_normalize(in uint normalized)
+{
+     return float(normalized)/255.0;
+}
+
 void main()
 {
     ivec2 global_idx;
@@ -25,7 +35,7 @@ void main()
     {
         vec2 texture_coord = vec2(float(global_idx.x)/(heightmap_size.x-1), float(global_idx.y)/(heightmap_size.y-1));
 
-        uint daily_illumination = uint(texture(daily_illumination_texture, texture_coord).r * 255);
+        uint daily_illumination = ui_unnormalize(texture(daily_illumination_texture, texture_coord).r);
         vec4 resulting_color = daily_illumination_to_output_color(daily_illumination);
 
         imageStore(resulting_overlay, global_idx, resulting_color);

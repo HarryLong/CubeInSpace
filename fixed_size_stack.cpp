@@ -60,3 +60,4 @@ template class FixedSizeStack<GLubyte>;
 template class FixedSizeStack<GLbyte>;
 template class FixedSizeStack<GLfloat>;
 template class FixedSizeStack<GLuint>;
+template class FixedSizeStack<GLint>;

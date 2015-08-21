@@ -22,7 +22,9 @@ void ComputeShaders::compileAndLink()
     m_border_overlap_reducer.compileAndLink();
     m_weighted_avg_calculator.compileAndLink();
     m_normals_to_slope_converter.compileAndLink();
-    m_closest_cluster_finder.compileAndLink();
+
+    m_k_means_clusterer.m_closest_cluster_finder.compileAndLink();
+    m_k_means_clusterer.m_means_recalculator.compileAndLink();
 
     m_overlay_creator_shaders.m_slope.compileAndLink();
     m_overlay_creator_shaders.m_altitude.compileAndLink();

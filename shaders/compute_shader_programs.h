@@ -195,18 +195,31 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
-/**************************
- * CLOSEST CLUSTER FINDER *
- **************************/
-class ClosestClusterFinder : public ComputeShaderProgram
+/*********************
+ * K-MEANS CLUSTERER *
+ *********************/
+class KMeansClustererShaders
 {
 public:
-    ClosestClusterFinder();
-    ~ClosestClusterFinder();
+    class ClosestClusterFinder : public ComputeShaderProgram
+    {
+    public:
+        ClosestClusterFinder();
+        ~ClosestClusterFinder();
+        static const int _GROUP_SIZE_X;
+        static const int _GROUP_SIZE_Y;
+        static const int _GROUP_SIZE_Z;
+    };
 
-    static const int _GROUP_SIZE_X;
-    static const int _GROUP_SIZE_Y;
-    static const int _GROUP_SIZE_Z;
+    class MeansRecalculator : public ComputeShaderProgram
+    {
+    public:
+        MeansRecalculator();
+        ~MeansRecalculator();
+        static const int _GROUP_SIZE_X;
+        static const int _GROUP_SIZE_Y;
+        static const int _GROUP_SIZE_Z;
+    };
 };
 
 #endif //COMPUTE_SHADER_PROGRAMS

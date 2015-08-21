@@ -7,6 +7,8 @@ ShortcutRow::ShortcutRow(QString label, int min, int max, QWidget * parent) :
     m_input(new QIntLineEdit(min, max, min, this)),
     m_ok_btn(new QPushButton("OK", this))
 {
+    m_ok_btn->setFocusPolicy(Qt::NoFocus);
+
     QPalette palette;
     palette.setColor(QPalette::Foreground,Qt::white);
     palette.setColor(QPalette::Text,Qt::white);

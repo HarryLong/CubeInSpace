@@ -11,10 +11,12 @@
 class Clusters {
 public:
     struct ClusterData{
+    public:
         GLfloat slope;
-        GLint temperatures[2];
+        GLint temperatures;
         GLuint illumination[2];
         GLfloat soil_humidities[12];
+        bool operator==(const ClusterData & other);
     };
 
     Clusters(int n_clusters);
@@ -24,7 +26,10 @@ public:
 
     void set(int cluster_idx, ClusterData cluster_data);
 
-    void clusters_finalised();
+    void push_to_gpu();
+    void sync_from_gpu();
+
+    void summarize();
 
 private:
     friend class Computer;

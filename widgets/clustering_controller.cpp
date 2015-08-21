@@ -1,26 +1,28 @@
 #include "clustering_controller.h"
+#include <QBoxLayout>
 
 /********************************
  * CLUSTERING CONTROLLER WIDGET *
  ********************************/
 #define DEFAULT_SENSITIVITY 10
-ClusteringSlider::ClusteringSlider(QWidget * parent) : QSlider(Qt::Vertical, parent)
-{
-    setRange(1,50);
-    setTickInterval(5);
-    setValue(DEFAULT_SENSITIVITY);
-}
-
-ClusteringSlider::~ClusteringSlider()
+ClusteringSensitivityRow::ClusteringSensitivityRow(QWidget * parent) :
+    ShortcutRow("Sensitivity: ", 1, 50, parent)
 {
 
 }
 
-ClusteringControllerWidget::ClusteringControllerWidget(int alignment, QWidget * parent, Qt::WindowFlags f) :
-    BaseSliderControllerWidget(new ClusteringSlider, "SENSITIVITY", alignment, parent, f)
+ClusteringSensitivityRow::~ClusteringSensitivityRow()
 {
-    connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_label(int)));
-    refresh_label(m_slider->value());
+
+}
+
+ClusteringControllerWidget::ClusteringControllerWidget(int alignment, QWidget * parent, Qt::WindowFlags f) : QWidget(parent),
+    m_clustering_sensitivity_shortcut(new ClusteringSensitivityRow(parent)),
+    m_alignment(alignment)
+{
+    setFixedWidth(250);
+    connect(m_clustering_sensitivity_shortcut->m_ok_btn, SIGNAL(clicked(bool)), this, SLOT(emit_clustering_sensitivity_changed()));
+    init_layout();
 }
 
 ClusteringControllerWidget::~ClusteringControllerWidget()
@@ -28,12 +30,27 @@ ClusteringControllerWidget::~ClusteringControllerWidget()
 
 }
 
-int ClusteringControllerWidget::getSensitivity() const
+int ClusteringControllerWidget::getClusteringSensitivity() const
 {
-    return value();
+    return m_clustering_sensitivity_shortcut->value();
 }
 
-void ClusteringControllerWidget::refresh_label(int value)
+int ClusteringControllerWidget::alignment()
 {
-    m_value_label->setText(QString::number(value));
+    return m_alignment;
+}
+
+void ClusteringControllerWidget::init_layout()
+{
+    QVBoxLayout * layout = new QVBoxLayout;
+
+    layout->addWidget(m_clustering_sensitivity_shortcut,0);
+    layout->addWidget(new QLabel(this),1); // PADDING
+
+    setLayout(layout);
+}
+
+void ClusteringControllerWidget::emit_clustering_sensitivity_changed()
+{
+    emit clusteringSensitivityChanged(getClusteringSensitivity());
 }

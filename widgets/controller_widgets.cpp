@@ -71,7 +71,7 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
 
     // CLUSTERING
     {
-        connect(m_clustering_controller_widget->getSlider(), SIGNAL(valueChanged(int)) ,this, SLOT(emit_clustering_sensitivity_changed(int)));
+        connect(m_clustering_controller_widget, SIGNAL(clusteringSensitivityChanged(int)) ,this, SLOT(emit_clustering_sensitivity_changed(int)));
 
         m_raw_widgets.push_back(m_clustering_controller_widget);
         m_alignment_sorted_widgets[m_clustering_controller_widget->alignment()].push_back(m_clustering_controller_widget);
@@ -113,7 +113,7 @@ int OverlayWidgets::getSoilInfiltrationZeroOverSlope()
 
 int OverlayWidgets::getClusteringSensitivity()
 {
-    return m_clustering_controller_widget->value();
+    return m_clustering_controller_widget->getClusteringSensitivity();
 }
 
 bool OverlayWidgets::timeControllersActive()

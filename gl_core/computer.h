@@ -30,6 +30,21 @@ public:
         WaterHeightmapBorderReductionTexture();
         ~WaterHeightmapBorderReductionTexture();
     };
+    class SlopeAndHumidityClusterReductionTexture : public TextureElement2DArray<GLfloat> {
+    public:
+        SlopeAndHumidityClusterReductionTexture();
+        ~SlopeAndHumidityClusterReductionTexture();
+    };
+    class TemperatureClusterReductionTexture : public TextureElement2DArray<GLfloat> {
+    public:
+        TemperatureClusterReductionTexture();
+        ~TemperatureClusterReductionTexture();
+    };
+    class DailyIlluminationClusterReductionTexture : public TextureElement2DArray<GLfloat> {
+    public:
+        DailyIlluminationClusterReductionTexture();
+        ~DailyIlluminationClusterReductionTexture();
+    };
 
     Computer();
     ~Computer();
@@ -68,7 +83,7 @@ public:
 
     void convertNormalsToSlope(TerrainNormals & terrain_normals, Slope & slope);
 
-    void findClosestCluster(Clusters & clusters, ResourceWrapper & resources, ClusterMembershipTexture & cluster_memberships);
+    void kMeansCluster(Clusters & clusters, ResourceWrapper & resources, ClusterMembershipTexture & cluster_memberships, int clustering_iterations);
 
 private:
     ComputeShaderProgram * get_overlay_creator_shader(const char * active_overlay);
@@ -79,6 +94,9 @@ private:
     WaterHeightmapBorderReductionTexture m_horizontal_overlaps;
     WaterHeightmapBorderReductionTexture m_vertical_overlaps;
     WaterHeightmapBorderReductionTexture m_corner_overlaps;
+    SlopeAndHumidityClusterReductionTexture m_slope_and_humidity_cluster_reduction;
+    TemperatureClusterReductionTexture m_temperature_cluster_reduction;
+    DailyIlluminationClusterReductionTexture m_daily_illumination_cluster_reduction;
     ComputeShaders m_shaders;
 };
 

@@ -25,6 +25,7 @@
 #include "../actions.h"
 #include "../gl_texture/overlay_texture.h"
 #include "../resources/flood_fill_tracker.h"
+#include "clustering/k_means_clusterer.h"
 
 class QProgressDialog;
 class QMouseEvent;
@@ -114,7 +115,7 @@ private slots:
     bool flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height);
     void new_terrain_is_going_to_load();
     void refresh_overlay_texture();
-    void refresh_clusters();
+    void refresh_clusters(int);
     void enable_clustering_actions(bool enable);
     void enable_clustering();
     void disable_clustering();
@@ -201,7 +202,9 @@ private:
     GLTerrainRect * m_selection_rect;
     GLTerrainRect * m_humidity_rect;
     OverlayTexture m_overlay_texture;
+
     ClusterMembershipTexture m_cluster_membership_texture;
+    KMeansClusterer m_clusterer;
 
     const char * m_active_overlay;
 };

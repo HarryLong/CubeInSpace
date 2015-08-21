@@ -28,6 +28,8 @@ template <class T> void TextureElement2D<T>::setDimensions(int width, int height
         m_height = height;
         m_depth = depth;
 
+        m_raw_data = new T[width*depth];
+
         delete_texture();
         m_texture.create(); CE();
 

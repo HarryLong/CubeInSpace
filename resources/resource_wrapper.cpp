@@ -365,7 +365,7 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 
 void ResourceWrapper::check_if_all_resources_valid()
 {
-    if(m_temp_valid && m_daily_illumination_valid)
+    if(m_temp_valid /*&& m_daily_illumination_valid*/)
         emit tempAndDailyIlluminationValid();
 }
 

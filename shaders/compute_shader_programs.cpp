@@ -186,18 +186,17 @@ NormalsToSlopeConverter::~NormalsToSlopeConverter()
 
 }
 
-/**************************
- * CLOSEST CLUSTER FINDER *
- **************************/
-const int ClosestClusterFinder::_GROUP_SIZE_X = 32;
-const int ClosestClusterFinder::_GROUP_SIZE_Y = 32;
-const int ClosestClusterFinder::_GROUP_SIZE_Z = 1;
-ClosestClusterFinder::ClosestClusterFinder() : ComputeShaderProgram(":/closest_cluster_finder.comp")
-{
+/*********************
+ * K-MEANS CLUSTERER *
+ *********************/
+const int KMeansClustererShaders::ClosestClusterFinder::_GROUP_SIZE_X = 16;
+const int KMeansClustererShaders::ClosestClusterFinder::_GROUP_SIZE_Y = 16;
+const int KMeansClustererShaders::ClosestClusterFinder::_GROUP_SIZE_Z = 1;
+KMeansClustererShaders::ClosestClusterFinder::ClosestClusterFinder() : ComputeShaderProgram(":/closest_cluster_finder.comp") { }
+KMeansClustererShaders::ClosestClusterFinder::~ClosestClusterFinder() { }
 
-}
-
-ClosestClusterFinder::~ClosestClusterFinder()
-{
-
-}
+const int KMeansClustererShaders::MeansRecalculator::_GROUP_SIZE_X = 32;
+const int KMeansClustererShaders::MeansRecalculator::_GROUP_SIZE_Y = 1;
+const int KMeansClustererShaders::MeansRecalculator::_GROUP_SIZE_Z = 1;
+KMeansClustererShaders::MeansRecalculator::MeansRecalculator() : ComputeShaderProgram(":/means_recalculator.comp") {}
+KMeansClustererShaders::MeansRecalculator::~MeansRecalculator() {}

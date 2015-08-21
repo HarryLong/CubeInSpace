@@ -57,6 +57,7 @@ public:
 
     struct Clustering{
         static const char * _N_CLUSTERS;
+        static const char * _FINAL_CLUSTERING_ITERATION;
         static const char * _SLOPE_CLUSTER_DATA;
         static const char * _TEMPERATURE_CLUSTER_DATA;
         static const char * _DAILY_ILLUMINATION_CLUSTER_DATA;

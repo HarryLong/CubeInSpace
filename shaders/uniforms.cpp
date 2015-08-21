@@ -49,6 +49,7 @@ const char * Uniforms::Overlay::_CLUSTERS = "overlay.clusters";
 
 // CLUSTERING
 const char * Uniforms::Clustering::_N_CLUSTERS = "n_clusters";
+const char * Uniforms::Clustering::_FINAL_CLUSTERING_ITERATION = "final_clustering_iteration";
 const char * Uniforms::Clustering::_SLOPE_CLUSTER_DATA = "slope_cluster_data_texture";
 const char * Uniforms::Clustering::_TEMPERATURE_CLUSTER_DATA = "temperature_cluster_data_texture";
 const char * Uniforms::Clustering::_DAILY_ILLUMINATION_CLUSTER_DATA = "daily_illumination_cluster_data_texture";

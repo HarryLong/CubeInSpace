@@ -7,12 +7,15 @@
 template <class T> class TextureElement2DArray : public TextureElement{
 public:
     TextureElement2DArray(int layers, QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format, QOpenGLTexture::PixelType pixel_type);
+    TextureElement2DArray(QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format, QOpenGLTexture::PixelType pixel_type);
     virtual ~TextureElement2DArray();
 
     QOpenGLTexture* operator[](int layer);
     virtual T operator()(int layer, int x, int y) const;
-    virtual void setDimensions(int width, int height, int depth = 1);
+    virtual void setDimensions(int layers, int width, int height);
+    virtual void setDimensions(int width, int height);
 
+    void setLayers(int layers);
     int layers() const;
 
     /***********************
@@ -48,6 +51,7 @@ private:
     void individualize_raw_data(T * raw_data);
     void push_all_layers();
     void pop_all_layers();
+    void init_raw_data();
 
     void clear_stacks();
     void clear_texture_views();

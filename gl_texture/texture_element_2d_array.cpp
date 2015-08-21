@@ -3,18 +3,20 @@
 #include <QWindow>
 #include <cstring>
 #include <assert.h>
-#include <QOpenGLFunctions_4_3_Core>
+#include <QOpenGLFunctions_4_5_Core>
 
 template <class T> TextureElement2DArray<T>::TextureElement2DArray(int layers, QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format,
                                                      QOpenGLTexture::PixelType pixel_type) :
-    TextureElement(QOpenGLTexture::Target::Target2DArray, texture_format, pixel_format, pixel_type),
-    m_layers(layers)
+    TextureElement(QOpenGLTexture::Target::Target2DArray, texture_format, pixel_format, pixel_type)
 {
-    for(int l(0); l < layers; l++)
-    {
-        m_raw_data.push_back(nullptr);
-        m_stack.push_back(FixedSizeStack<T>(10));
-    }
+    setLayers(layers);
+}
+
+template <class T> TextureElement2DArray<T>::TextureElement2DArray(QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format,
+                                                     QOpenGLTexture::PixelType pixel_type) :
+    TextureElement(QOpenGLTexture::Target::Target2DArray, texture_format, pixel_format, pixel_type)
+{
+
 }
 
 template <class T> TextureElement2DArray<T>::~TextureElement2DArray()
@@ -24,16 +26,37 @@ template <class T> TextureElement2DArray<T>::~TextureElement2DArray()
     clear_stacks();
 }
 
-template <class T> void TextureElement2DArray<T>::setDimensions(int width, int height, int depth)
+template <class T> void TextureElement2DArray<T>::init_raw_data()
 {
-    if(m_width != width || m_height != height || m_depth != depth)
+    assert(m_width > 0 && m_height > 0);
+    for(int l(0); l < m_layers; l++)
     {
-        clear_stacks();
-        clear_raw_data();
+        m_raw_data.push_back(new T[m_width*m_height]);
+    }
+}
 
+
+template <class T> void TextureElement2DArray<T>::setLayers(int layers)
+{
+    m_layers = layers;
+    clear_texture_views();
+    clear_raw_data();
+    clear_stacks();
+    for(int l(0); l < layers; l++)
+    {
+        m_stack.push_back(FixedSizeStack<T>(10));
+    }
+}
+
+template <class T> void TextureElement2DArray<T>::setDimensions(int layers, int width, int height)
+{
+    if(m_layers != layers || m_width != width || m_height != height)
+    {
         m_width = width;
         m_height = height;
-        m_depth = depth;
+        setLayers(layers);
+
+        init_raw_data();
 
         delete_texture();
         m_texture.create(); CE();
@@ -52,6 +75,11 @@ template <class T> void TextureElement2DArray<T>::setDimensions(int width, int h
 
         refresh_texture_views();
     }
+}
+
+template <class T> void TextureElement2DArray<T>::setDimensions(int width, int height)
+{
+    setDimensions(m_layers, width, height);
 }
 
 template <class T> int TextureElement2DArray<T>::layers() const
@@ -122,15 +150,25 @@ template <class T> void TextureElement2DArray<T>::reset(int layer, bool stack)
 
 template <class T> void TextureElement2DArray<T>::syncFromGPU(int layer, bool stack)
 {
-    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    QOpenGLFunctions_4_5_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_5_Core>();
     if(!f)
         qCritical() << "Could not obtain required OpenGL context version";
     f->initializeOpenGLFunctions();
 
     if(stack)
         push(layer);
-    m_texture_views[layer]->bind();
-    f->glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer] ); CE();
+
+//    m_texture_views[layer]->textureID
+    // HACK ! == IT HAS TO BE A MINIMUM OF 4 BYTES
+    GLsizei sz(std::max(4,(int) (m_width*m_height*m_color_element_count*m_layers*sizeof(T)))); CE();
+//    qCritical() << "Size: " << sz;
+//    if(sz % 4 != 0) // Needs to be a multiple of 4 bytes
+//        sz += (sz%4);
+    f->glGetTextureSubImage(textureId(), 0, 0, 0, layer, width(), height(), 1, m_pixel_format, m_pixel_type, sz, (GLvoid*) m_raw_data[layer]);CE();
+
+//    syncFromGPU();
+//    m_texture_views[layer]->bind();
+//    f->glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer] ); CE();
 }
 
 template <class T> void TextureElement2DArray<T>::pushToGPU(int layer)
@@ -190,20 +228,27 @@ template <class T> void TextureElement2DArray<T>::reset(int w, int h)
 
 template <class T> void TextureElement2DArray<T>::syncFromGPU(bool stack)
 {
-    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
-    if(!f)
-        qCritical() << "Could not obtain required OpenGL context version";
-    f->initializeOpenGLFunctions();
+    for(int l(0); l < layers(); l++)
+        syncFromGPU(l);
+//    QOpenGLFunctions_4_5_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_5_Core>();
+//    if(!f)
+//        qCritical() << "Could not obtain required OpenGL context version";
+//    f->initializeOpenGLFunctions();
 
-    if(stack)
-        push_all_layers();
+//    if(stack)
+//        push_all_layers();
 
-    T * data = new T[m_width*m_height*m_color_element_count*m_layers];
+//    T * data = new T[m_width*m_height*m_color_element_count*m_layers+5];
 
-    m_texture.bind();
-    f->glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, m_pixel_format, m_pixel_type, (GLvoid*) data ); CE();
+//    m_texture.bind();
+//    f->glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, m_pixel_format, m_pixel_type, (GLvoid*) data ); CE();
 
-    individualize_raw_data(data);
+//    for(int i = 0 ; i < m_width*m_height*m_color_element_count*m_layers+5; i++)
+//    {
+//        qCritical() << data[i];
+//    }
+
+//    individualize_raw_data(data);
 }
 
 template <class T> void TextureElement2DArray<T>::pushToGPU()
@@ -285,3 +330,4 @@ template class TextureElement2DArray<GLubyte>;
 template class TextureElement2DArray<GLbyte>;
 template class TextureElement2DArray<GLfloat>;
 template class TextureElement2DArray<GLuint>;
+template class TextureElement2DArray<GLint>;

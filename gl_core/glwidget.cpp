@@ -18,7 +18,6 @@
 #include <cstring>
 #include "../widgets/soil_infiltration_controller.h"
 #include <algorithm>
-#include "clustering/k_means_clusterer.h"
 #include <functional>
 
 /*****************
@@ -180,7 +179,7 @@ void GLWidget::establish_connections()
     // When controller widgets are activated
     connect(&m_overlay_widgets, SIGNAL(soilInfiltrationRateChanged(int)), this, SLOT(soil_infiltration_rate_changed(int)));
     connect(&m_overlay_widgets, SIGNAL(absoluteHeightChanged(int)), this, SLOT(set_absolute_aggregate_height(int)));
-    connect(&m_overlay_widgets, SIGNAL(clusteringSensitivityChanged(int)), this, SLOT(refresh_clusters()));
+    connect(&m_overlay_widgets, SIGNAL(clusteringSensitivityChanged(int)), this, SLOT(refresh_clusters(int)));
 
     // When sun position changed
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
@@ -224,6 +223,11 @@ void GLWidget::establish_connections()
     connect(&m_resources, SIGNAL(tempInvalidated()), this, SLOT(temp_invalidated()));
     connect(&m_resources, SIGNAL(dailyIlluminationInvalidated()), this, SLOT(daily_illumination_invalidated()));
     connect(&m_resources, SIGNAL(tempAndDailyIlluminationValid()), this, SLOT(enable_clustering()));
+
+    // CLUSTERING
+//    connect(&m_clusterer, SIGNAL(clustering_start(QString)), this, SLOT(show_progress_bar(QString)));
+//    connect(&m_clusterer, SIGNAL(clustering_update(int)), &m_progress_bar_widget, SLOT(updateProgress(int)));
+//    connect(&m_clusterer, SIGNAL(clustering_complete()), this, SLOT(hide_progress_bar()));
 }
 
 void GLWidget::control_changed()
@@ -818,7 +822,12 @@ void GLWidget::set_overlay(QAction * active_overlay_action)
     m_resources.valid(shade_valid,illumination_valid,temp_valid);
     m_active_overlay = m_overlay_action_to_overlay_uniform[active_overlay_action];
 
-    if(overlay_shade() && !shade_valid)
+    if(overlay_clusters() && (m_cluster_membership_texture.width() != m_terrain.getWidth() ||
+                              m_cluster_membership_texture.height() != m_terrain.getDepth()))
+    {
+        m_cluster_membership_texture.reset(m_terrain.getWidth(), m_terrain.getDepth());
+    }
+    else if(overlay_shade() && !shade_valid)
         refresh_shade(false);
     else if(overlay_temperature() && !temp_valid)
         refresh_temperature(false);
@@ -842,20 +851,33 @@ void GLWidget::refresh_overlay_texture()
     }
 }
 
-void GLWidget::refresh_clusters()
+void GLWidget::refresh_clusters(int k)
 {
-    int k (m_overlay_widgets.getClusteringSensitivity());
-    qCritical() << "Cluster sensitivity: " << k;
-//    Clusters resulting_clusters(k);
-//    std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &)> closest_cluster_function =
-//            std::bind(&Computer::findClosestCluster, m_computer, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    m_fps_callback_timer->stop();
+
+    makeCurrent();
+    if(m_cluster_membership_texture.width() != m_terrain.getWidth() ||
+            m_cluster_membership_texture.height() != m_terrain.getDepth())
+    {
+        m_cluster_membership_texture.setDimensions(m_terrain.getWidth(), m_terrain.getDepth());
+        m_cluster_membership_texture.reset();
+    }
+
+    Clusters resulting_clusters(k);
+    std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &,int)> clustering_function =
+            std::bind(&Computer::kMeansCluster, &m_computer, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 
 
-//    KMeansClusterer::perform_clustering(k,
-//                                        m_resources,
-//                                        resulting_clusters,
-//                                        m_cluster_membership_texture,
-//                                        closest_cluster_function);
+    m_clusterer.perform_clustering(k,
+                                   m_resources,
+                                   resulting_clusters,
+                                   m_cluster_membership_texture,
+                                   clustering_function); CE();
+
+
+    refresh_overlay_texture();
+
+    m_fps_callback_timer->start();
 }
 
 void GLWidget::refresh_temperature(bool refresh_overlay)
@@ -868,11 +890,12 @@ void GLWidget::refresh_temperature(bool refresh_overlay)
     m_resources.refreshTemperature(m_terrain, jun_temp_attributes.temperature_at_zero_meters, jun_temp_attributes.lapse_rate,
                                               dec_temp_attributes.temperature_at_zero_meters, dec_temp_attributes.lapse_rate);
 
-    // Disable fps callback temporarily
-    m_fps_callback_timer->start();
 
    if(refresh_overlay)
        refresh_overlay_texture();
+
+   // Disable fps callback temporarily
+   m_fps_callback_timer->start();
 }
 
 void GLWidget::reset_soil_infiltration_rate()
@@ -1093,6 +1116,7 @@ void GLWidget::new_terrain_is_going_to_load()
     m_selection_rect->clear();
     m_dialogs.m_monthly_rainfall_edit_dlg.reset();
     m_overlay_widgets.hideAll();
+//    grabKeyboard();
     reset_overlay();
     set_overlays_active(true);
 }
@@ -1205,6 +1229,12 @@ void GLWidget::edit(QAction * triggered_action)
     {
         if(checked)
         {
+            if(m_cluster_membership_texture.width() != m_terrain.getWidth() ||
+                    m_cluster_membership_texture.height() != m_terrain.getDepth())
+            {
+                makeCurrent();
+                m_cluster_membership_texture.reset(m_terrain.getWidth(), m_terrain.getDepth());
+            }
             set_overlays_active(false);
             m_overlay_widgets.trigger_clustering_controllers(true);
             set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
@@ -1343,7 +1373,6 @@ int GLWidget::month()
 void GLWidget::enable_clustering()
 {
     enable_clustering_actions(true);
-    refresh_clusters();
 
     m_clustering_enabled = true;
 }

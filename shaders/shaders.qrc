@@ -19,6 +19,7 @@
         <file alias="weighted_avg_calculator.comp">glsl/comp/weighted_avg_calculator.comp</file>
         <file alias="normals_to_slope_converter.comp">glsl/comp/normals_to_slope_converter.comp</file>
         <file alias="closest_cluster_finder.comp">glsl/comp/closest_cluster_finder.comp</file>
+        <file alias="means_recalculator.comp">glsl/comp/means_recalculator.comp</file>
         <!-- OVERLAY CREATOR COMPUTE SHADERS -->
         <file alias="overlay_texture_creator_slope.comp">glsl/comp/overlay_creators/overlay_texture_creator_slope.comp</file>
         <file alias="overlay_texture_creator_altitude.comp">glsl/comp/overlay_creators/overlay_texture_creator_altitude.comp</file>
