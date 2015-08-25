@@ -44,7 +44,7 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
     qCritical() << "Avg temp: " << avg_temp;
     // First generate k random clusters
     {
-        std::vector<Clusters::ClusterData> all_clusters;
+        std::vector<ClusterData> all_clusters;
         int min_side(std::min(width, height));
         float diagonal_length (std::sqrt(2*min_side*min_side));
         float diagonal_increments(diagonal_length/k);
@@ -53,10 +53,10 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         qCritical() << "Increments: " << x_y_increments;
         int x_y (0);
         do{
-            Clusters::ClusterData cluster_data;
-            cluster_data.temperatures = (GLint) temp_data(0,x_y,x_y);
+            ClusterData cluster_data;
             for(int i = 0; i < 2; i++)
             {
+                cluster_data.temperatures[i] = (GLint) temp_data(i,x_y,x_y);
                 cluster_data.illumination[i] = (GLuint) illumination_data(i, x_y, x_y);
             }
             cluster_data.slope = slope_data(x_y,x_y) ;
@@ -70,17 +70,17 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
             {
                 qCritical() << "Contains cluster!";
                 int multiplier(all_clusters.size() % 2 == 0 ? 1 : -1);
-                cluster_data.temperatures += (multiplier * increment);
-                cluster_data.temperatures = std::max(0, cluster_data.temperatures);
 
                 cluster_data.slope += (multiplier * increment);
-                cluster_data.slope = std::min(90, std::max(0, cluster_data.temperatures));
+                cluster_data.slope = std::min(90.f, std::max(0.f, cluster_data.slope));
 
-//                for(int i = 0; i < 2; i++)
-//                {
-//                    int tmp_illumination = std::min(24, std::max(0, ((int)cluster_data.illumination[i]) + (multiplier * increment)));
-//                    cluster_data.illumination[i] = (GLuint)tmp_illumination;
-//                }
+                for(int i = 0; i < 2; i++)
+                {
+                    int tmp_illumination = std::min(24, std::max(0, ((int)cluster_data.illumination[i]) + (multiplier * increment)));
+                    cluster_data.illumination[i] = (GLuint)tmp_illumination;
+
+                    cluster_data.temperatures[i] = std::max(0, cluster_data.temperatures[i] + (multiplier*increment));
+                }
 
                 for(int i = 0; i < 12; i++)
                 {
@@ -95,19 +95,11 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         for(int cluster_idx (0); cluster_idx < k; cluster_idx++)
         {
             clusters.set(cluster_idx, all_clusters.at(cluster_idx));
-            Clusters::ClusterData & cluster (all_clusters.at(cluster_idx));
-            qCritical() << "******************* CLUSTER [" << cluster_idx << "]";
-            qCritical() << "Slope at --> " << cluster.slope;
-            qCritical() << "Temperature: --> " << cluster.temperatures;
-//            for(int i = 0; i < 2; i++)
-//                qCritical() << "Illumination (" << (i == 0 ? "Min"  : "Max") << ") ] --> " << cluster.illumination[i];
-            for(int i = 0; i < 12; i++)
-                qCritical() << "Soil humidity (" << i << ") --> " << cluster.soil_humidities[i];
         }
         clusters.push_to_gpu(); // Pushes data to the GPU
     }
 
-    clustering_fn(clusters, resources, memberships, 50); // Perform clustering
+    clustering_fn(clusters, resources, memberships, 100); // Perform clustering
     memberships.syncFromGPU();
     clusters.sync_from_gpu();
 
@@ -119,7 +111,7 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
 //        cluster_membership_fn(clusters, resources, memberships);
         // Sync memberships from GPU
 //        memberships.syncFromGPU();
-//        std::vector<Clusters::ClusterData> cluster_data(recalculate_cluster_means(k, memberships, temp_data, illumination_data,
+//        std::vector<ClusterData> cluster_data(recalculate_cluster_means(k, memberships, temp_data, illumination_data,
 //                                                                                  slope_data, weighted_soil_humidity_data));
 //        // Update cluster data on GPU
 //        for(int cluster_idx(0); cluster_idx < k; cluster_idx++)
@@ -144,29 +136,34 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
             n_members[cluster_idx]++;
         }
     }
-    qCritical() << "*** FINAL CLUSTERS ***";
-    clusters.summarize();
-    qCritical() << "*** MEMBERSHIP COUNT ***";
     for(int i(0); i < k; i++)
     {
-        qCritical() << i << " --> " << n_members[i];
+        clusters.setMembershipCount(i, n_members[i]);
     }
+
+//    qCritical() << "*** FINAL CLUSTERS ***";
+//    clusters.summarize();
+//    qCritical() << "*** MEMBERSHIP COUNT ***";
+//    for(int i(0); i < k; i++)
+//    {
+//        qCritical() << i << " --> " << n_members[i];
+//    }
 
     emit clustering_complete();
 }
 
-std::vector<Clusters::ClusterData> KMeansClusterer::recalculate_cluster_means(int n_clusters, ClusterMembershipTexture & memberships,
+std::vector<ClusterData> KMeansClusterer::recalculate_cluster_means(int n_clusters, ClusterMembershipTexture & memberships,
                                                                               TerrainTemperature & temp_data,
                                                                               TerrainDailyIllumination & illumination_data,
                                                                               Slope & slope_data,
                                                                               WeightedSoilHumidity & weighted_soil_humidity_data)
 {
     std::vector<int> n_members;
-    std::vector<Clusters::ClusterData> cluster_means;
+    std::vector<ClusterData> cluster_means;
 
     for(int i(0); i < n_clusters; i++)
     {
-        cluster_means.push_back(Clusters::ClusterData());
+        cluster_means.push_back(ClusterData());
         n_members.push_back(0);
     }
 
@@ -177,11 +174,11 @@ std::vector<Clusters::ClusterData> KMeansClusterer::recalculate_cluster_means(in
             int cluster_idx(memberships(x,y));
             n_members[cluster_idx]++;
 
-            Clusters::ClusterData & cluster_data(cluster_means[cluster_idx]);
-            cluster_data.temperatures += temp_data(0, x, y);
+            ClusterData & cluster_data(cluster_means[cluster_idx]);
             for(int i = 0; i < 2; i++)
             {
-//                cluster_data.illumination[i] += illumination_data(i, x, y);
+                cluster_data.temperatures[i] += temp_data(i, x, y);
+                cluster_data.illumination[i] += illumination_data(i, x, y);
             }
             cluster_data.slope += slope_data(x, y);
             for(int i = 0; i < 12; i++)
@@ -195,15 +192,14 @@ std::vector<Clusters::ClusterData> KMeansClusterer::recalculate_cluster_means(in
     for(int cluster_idx (0); cluster_idx < n_clusters; cluster_idx++)
     {
         int cluster_n_members(n_members[cluster_idx]);
-        Clusters::ClusterData & cluster_data(cluster_means[cluster_idx]);
+        ClusterData & cluster_data(cluster_means[cluster_idx]);
 
         if(cluster_n_members > 0)
         {
-            cluster_data.temperatures /= cluster_n_members;
-
             for(int i = 0; i < 2; i++)
             {
-//                cluster_data.illumination[i] /= cluster_n_members;
+                cluster_data.temperatures[i] /= cluster_n_members;
+                cluster_data.illumination[i] /= cluster_n_members;
             }
             cluster_data.slope /= cluster_n_members;
             for(int i = 0; i < 12; i++)
@@ -213,10 +209,10 @@ std::vector<Clusters::ClusterData> KMeansClusterer::recalculate_cluster_means(in
         }
         else
         {
-            cluster_data.temperatures = 0;
             for(int i = 0; i < 2; i++)
             {
-//                cluster_data.illumination[i] = 0;
+                cluster_data.temperatures[i] = 0;
+                cluster_data.illumination[i] = 0;
             }
             cluster_data.slope = 0;
             for(int i = 0; i < 12; i++)
@@ -229,7 +225,7 @@ std::vector<Clusters::ClusterData> KMeansClusterer::recalculate_cluster_means(in
     return cluster_means;
 }
 
-bool KMeansClusterer::containsCluster(std::vector<Clusters::ClusterData> & all_clusters, Clusters::ClusterData & query_cluster)
+bool KMeansClusterer::containsCluster(std::vector<ClusterData> & all_clusters, ClusterData & query_cluster)
 {
     bool found_equal(false);
 

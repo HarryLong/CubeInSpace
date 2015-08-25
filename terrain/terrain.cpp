@@ -10,7 +10,7 @@
 #include "../gl_assets/shape_factory.h"
 
 //-------------------------------------------------------------------
-#define BASE_TERRAIN_SIZE 512
+#define BASE_TERRAIN_SIZE 256
 BaseTerrain::BaseTerrain()
 {
     int width(BASE_TERRAIN_SIZE);

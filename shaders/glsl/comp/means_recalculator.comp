@@ -6,7 +6,7 @@ uniform int n_clusters;
 
 // CLUSTER DATA
 layout(binding = 0, r32f) uniform coherent image2D slope_cluster_data;
-layout(binding = 1, r8_snorm) uniform coherent image2D temperature_cluster_data;
+layout(binding = 1, r8_snorm) uniform coherent image2DArray temperature_cluster_data;
 layout(binding = 2, r8) uniform coherent image2DArray daily_illumination_cluster_data;
 layout(binding = 3, r32f) uniform coherent image2DArray weighted_avg_soil_humidity_cluster_data;
 
@@ -18,7 +18,7 @@ layout(binding = 6, r32f) uniform coherent image2DArray daily_illumination_reduc
 struct ClusteringEntities
 {
     float slope;
-    float temp;
+    float temp[2];
     float illumination[2];
     float soil_humidities[12];
 };
@@ -63,9 +63,9 @@ void main()
 
         ClusteringEntities new_cluster_mean;
         new_cluster_mean.slope = 0.0;
-        new_cluster_mean.temp = 0;
         for(int i = 0; i < 2; i++)
         {
+            new_cluster_mean.temp[i] = 0;
             new_cluster_mean.illumination[i] = 0;
         }
 
@@ -80,7 +80,7 @@ void main()
         {
             for(int y = 0; y < workgroup_count_y; y++)
             {
-                total_member_count += imageLoad(temperature_reducer, ivec3(x*2, y, cluster_idx)).x;
+                total_member_count += imageLoad(temperature_reducer, ivec3(x*3, y, cluster_idx)).x;
             }
         }
 
@@ -92,7 +92,7 @@ void main()
             {
                 for(int y = 0; y < workgroup_count_y; y++)
                 {
-                    weight = imageLoad(temperature_reducer, ivec3(x*2, y, cluster_idx)).r/total_member_count;
+                    weight = imageLoad(temperature_reducer, ivec3(x*3, y, cluster_idx)).r/total_member_count;
                     // SLOPE & HUMIDITY
                     {
                         uint index_x = x * 13;
@@ -107,8 +107,9 @@ void main()
                     }
                     // TEMPERATURE
                     {
-                        uint index_x = (x * 2) + 1;
-                        new_cluster_mean.temp += weight * imageLoad(temperature_reducer, ivec3(index_x, y, cluster_idx)).r;
+                        uint index_x = (x * 3) + 1;
+                        new_cluster_mean.temp[0] += weight * imageLoad(temperature_reducer, ivec3(index_x, y, cluster_idx)).r;
+                        new_cluster_mean.temp[1] += weight * imageLoad(temperature_reducer, ivec3(index_x+1, y, cluster_idx)).r;
                     }
                     // ILLUMINATION
                     {
@@ -124,11 +125,11 @@ void main()
         // Now store this cluster data
         {
             imageStore(slope_cluster_data, ivec2(cluster_idx,0), vec4(new_cluster_mean.slope,0,0,0));
-            imageStore(temperature_cluster_data, ivec2(cluster_idx,0), vec4(i_normalize(int(round(new_cluster_mean.temp))),0,0,0));
 
             for(int i = 0; i < 2; i++)
             {
                 imageStore(daily_illumination_cluster_data, ivec3(cluster_idx,0,i), vec4(ui_normalize(uint(round(new_cluster_mean.illumination[i]))),0,0,0));
+                imageStore(temperature_cluster_data, ivec3(cluster_idx,0,i), vec4(i_normalize(int(round(new_cluster_mean.temp[i]))),0,0,0));
             }
             for(int month = 0; month < 12; month++)
             {

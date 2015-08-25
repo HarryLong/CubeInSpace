@@ -1,8 +1,7 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
 
-#include <gl3.h>
-
+#include "cluster_data.h"
 #include "../resources/terrain_temperature.h"
 #include "../resources/slope.h"
 #include "../resources/weighted_soil_humidity.h"
@@ -10,19 +9,10 @@
 
 class Clusters {
 public:
-    struct ClusterData{
-    public:
-        GLfloat slope;
-        GLint temperatures;
-        GLuint illumination[2];
-        GLfloat soil_humidities[12];
-        bool operator==(const ClusterData & other);
-    };
-
     Clusters(int n_clusters);
     ~Clusters();
 
-    int clusterCount();
+    int clusterCount() const;
 
     void set(int cluster_idx, ClusterData cluster_data);
 
@@ -31,6 +21,11 @@ public:
 
     void summarize();
 
+    void setMembershipCount(int cluster_idx, int member_count);
+
+    int getMemberCount(int cluster_idx) const;
+
+    ClusterData getClusterData(int cluster_idx) const;
 private:
     friend class Computer;
     TerrainTemperature m_temperature_cluster_data;
@@ -39,6 +34,7 @@ private:
     TerrainDailyIllumination m_daily_illumination_cluster_data;
 
     int m_n_clusters;
+    std::map<int, int> m_memberships_count;
 };
 
 #endif // CLUSTER_H

@@ -79,6 +79,20 @@ private:
     virtual void init_actions();
 };
 
+/*****************
+ * MODE ACTTIONS *
+ *****************/
+class ModeActionFamily : public ActionFamily{
+public:
+    const static QString _RESOURCE_EDIT;
+    const static QString _CLUSTERING;
+    const static QString _PLANT_EDIT;
+    ModeActionFamily();
+    ~ModeActionFamily();
+
+private:
+    virtual void init_actions();
+};
 
 /********************
  * OVERLAY ACTTIONS *
@@ -110,6 +124,7 @@ private:
 class ShowActionFamily : public ActionFamily{
 public:
     const static QString _POINTER_INFO;
+    const static QString _CLUSTERS_INFO;
     ShowActionFamily();
     ~ShowActionFamily();
 
@@ -130,7 +145,6 @@ public:
     const static QString _SOIL_INFILTRATION_RATE;
     const static QString _FLOOD_FILL;
     const static QString _ABSOLUTE_AGGREGATE_HEIGHT;
-    const static QString _CLUSTERING;
 
     EditActionFamily();
     ~EditActionFamily();
@@ -146,6 +160,7 @@ public:
     ~AllActions() {}
 
     BaseActionFamily m_base_actions;
+    ModeActionFamily m_mode_actions;
     RenderActionFamily m_render_actions;
     ControlActionFamily m_control_actions;
     OverlayActionFamily m_overlay_actions;

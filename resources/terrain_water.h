@@ -26,6 +26,7 @@ private:
  * TERRAIN WATER *
  *****************/
 class TerrainWater : public TextureElement2DArray<GLfloat>{
+Q_OBJECT
 public:
     struct MaterialProperties{
         static const glm::vec4 _DIFFUSE;
@@ -36,10 +37,13 @@ public:
     TerrainWater();
     ~TerrainWater();
 
-    bool incrementBalancingIteration(int month, int changes);
+    void incrementBalancingIteration(int month, int changes);
     bool balanced();
     bool balanced(int month);
     void setUnbalanced();
+
+signals:
+    void water_balanced(int month);
 
 private:
     std::vector<BalanceChecker> m_balance_checkers;

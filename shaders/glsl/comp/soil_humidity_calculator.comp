@@ -2,9 +2,11 @@
 
 layout (local_size_x = 32, local_size_y = 32) in;
 
+const uniform int _FLOODED_HUMIDITY = 1000;
+
 layout(binding = 0, r32ui) uniform coherent uimage2D soil_infiltrations;
 layout(binding = 1, r32ui) uniform coherent uimage2D resulting_soil_humidity;
-layout(binding = 2, r32f) uniform coherent image2D resulting_standing_water;
+layout(binding = 2, r32f) uniform coherent image2D standing_water;
 
 uniform int rainfall;
 uniform int rainfall_intensity;
@@ -22,19 +24,20 @@ void main()
     bool valid = global_idx.x < int(heightmap_size.x) && global_idx.y < int(heightmap_size.y);
     if(valid)
     {
-        // Load the soil infiltration rate
-        uint soil_infiltration_rate = imageLoad(soil_infiltrations, global_idx).x;
+        int soil_humidity = _FLOODED_HUMIDITY;
 
-        // Soil humidity allocation
-        float soil_allocation = min(1.0, float(soil_infiltration_rate)/rainfall_intensity);
-        int soil_humidity = int(round(soil_allocation * rainfall));
+        float standing_water = imageLoad(standing_water, global_idx).x;
 
-        // Standing water allocation
-        int standing_water = rainfall - soil_humidity;
-        float f_standing_water = float(standing_water)/(1000.0*terrain_scale);
+        if(standing_water == 0)
+        {
+            // Load the soil infiltration rate
+            uint soil_infiltration_rate = imageLoad(soil_infiltrations, global_idx).x;
+            // Soil humidity allocation
+            float soil_allocation = min(1.0, float(soil_infiltration_rate)/rainfall_intensity);
 
+            soil_humidity = int(round(soil_allocation * rainfall));
+        }
         imageStore(resulting_soil_humidity, global_idx, uvec4(soil_humidity,0,0,0));
-        imageStore(resulting_standing_water, global_idx, vec4(f_standing_water,0,0,0));
     }
 
     memoryBarrierImage();

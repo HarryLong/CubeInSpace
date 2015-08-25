@@ -29,6 +29,7 @@ public:
     WaterFluxGeneratorShader m_water_flux_generator;
     WaterComparatorShader m_water_comparator;
     SoilHumidityCalculatorShader m_soil_humidity_calculator;
+    StandingWaterCalculator m_standing_water_calculator;
     SlopeBasedSoilInfiltrationShader m_slope_based_soil_infiltration_calculator;
     AggregateHeightShader m_aggregate_height;
     BorderOverlapReducer m_border_overlap_reducer;

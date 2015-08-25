@@ -82,6 +82,7 @@ private slots:
     void load_terrain_file();
 
     void refresh_temperature(bool refresh_overlay = true);
+    void refresh_temperature(int jun_temp, int dec_temp, float lapse_rate, bool refresh_overlay = true);
     void refresh_illumination(bool refresh_overlay = true);
     void refresh_shade(bool refresh_overlay = true);
     void refresh_water();
@@ -112,13 +113,19 @@ private slots:
     void reset_water();
     void format_overlay_texture();
     void set_flood_fill_enabled(bool);
+    void flood_fill(int month, const glm::ivec2 & seed_point);
     bool flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height);
     void new_terrain_is_going_to_load();
     void refresh_overlay_texture();
     void refresh_clusters(int);
-    void enable_clustering_actions(bool enable);
     void enable_clustering();
     void disable_clustering();
+
+    void trigger_edit_mode();
+    void trigger_clustering_mode();
+    void trigger_plant_mode();
+
+    void standing_water_set(int month);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -185,6 +192,7 @@ private:
     bool m_navigation_enabled;
     bool m_authorise_navigation_mode_switch;
     bool m_flood_fill_mode;
+    bool m_previous_flood_fill_all_months_changed;
     bool m_clustering_enabled;
 
     QTimer * m_fps_callback_timer;
@@ -207,6 +215,8 @@ private:
     KMeansClusterer m_clusterer;
 
     const char * m_active_overlay;
+
+    static const int _STANDING_WATER_HUMIDITY = 10000;
 };
 
 #endif

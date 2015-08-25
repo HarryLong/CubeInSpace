@@ -24,7 +24,7 @@ public:
     void valid(bool & shade, bool & daily_illumination, bool & temp);
     void refreshShade(Terrain & terrain, const glm::vec3 & sun_position);
     void refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain);
-    void refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec);
+    void refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float temp_at_zero_dec, float lapse_rate);
 
     TerrainWater & getTerrainWater();
     SoilInfiltration & getSoilInfiltration();
@@ -44,11 +44,15 @@ signals:
     void dailyIlluminationInvalidated();
     void shadeInvalidated();
     void tempAndDailyIlluminationValid();
+    void water_balanced(int month);
 
 public slots:
     void terrainChanged(int width, int depth);
     void latitudeChanged();
     void sunPositionChanged();
+
+private slots:
+    void emit_water_balanced(int month);
 
 private:
     GLubyte * get_shade(Terrain & terrain, const glm::vec3 & sun_position, bool emit_progress_updates = true);

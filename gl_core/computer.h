@@ -57,14 +57,21 @@ public:
                               const char * active_overlay,
                               int month);
 
-    void calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_texture_id,
-                                               GLuint resulting_soil_humidity_texture_id,
-                                               GLuint resulting_standing_water_texture_id,
-                                               int rainfall,
-                                               int rainfall_intensity,
-                                               int terrain_width,
-                                               int terrain_depth,
-                                               float terrain_scale);
+    void calculateStandingWater(ResourceWrapper & resources,
+                                int month,
+                                int rainfall,
+                                int rainfall_intensity,
+                                int terrain_width,
+                                int terrain_depth,
+                                float terrain_scale);
+
+    void calculateSoilHumidity(ResourceWrapper & resources,
+                               int month,
+                               int rainfall,
+                               int rainfall_intensity,
+                               int terrain_width,
+                               int terrain_depth,
+                               float terrain_scale);
 
     void calculateWeightedSoilHumidity(SoilHumidity & soil_humdities,
                                        WeightedSoilHumidity & weighted_soil_humidities);

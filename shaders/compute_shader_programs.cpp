@@ -57,6 +57,23 @@ WaterComparatorShader::~WaterComparatorShader()
 
 }
 
+/************************************
+ * STANDING WATER CALCULATOR SHADER *
+ ************************************/
+const int StandingWaterCalculator::_GROUP_SIZE_X = 32;
+const int StandingWaterCalculator::_GROUP_SIZE_Y = 32;
+const int StandingWaterCalculator::_GROUP_SIZE_Z = 1;
+StandingWaterCalculator::StandingWaterCalculator() : ComputeShaderProgram(":/standing_water_calculator.comp")
+{
+
+}
+
+StandingWaterCalculator::~StandingWaterCalculator()
+{
+
+}
+
+
 /***********************************
  * SOIL HUMIDITY CALCULATOR SHADER *
  ***********************************/

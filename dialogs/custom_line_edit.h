@@ -14,6 +14,7 @@ public:
     QDoubleLineEdit(double min, double max, int decimals, double default_value, QWidget * parent = 0);
     ~QDoubleLineEdit();
     double value();
+    void setValue(double value);
     void reset();
 
 public slots:
@@ -39,6 +40,7 @@ public:
     ~QIntLineEdit();
 
     int value();
+    void setValue(int value);
     void reset();
 
 public slots:

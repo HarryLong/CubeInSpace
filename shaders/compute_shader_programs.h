@@ -46,6 +46,20 @@ public:
     static const int _GROUP_SIZE_Z;
 };
 
+/************************************
+ * STANDING WATER CALCULATOR SHADER *
+ ************************************/
+class StandingWaterCalculator : public ComputeShaderProgram
+{
+public:
+    StandingWaterCalculator();
+    ~StandingWaterCalculator();
+
+    static const int _GROUP_SIZE_X;
+    static const int _GROUP_SIZE_Y;
+    static const int _GROUP_SIZE_Z;
+};
+
 /***********************************
  * SOIL HUMIDITY CALCULATOR SHADER *
  ***********************************/

@@ -9,6 +9,7 @@
 #include "cluster.h"
 #include <functional>
 #include <QObject>
+#include "cluster_data.h"
 
 class KMeansClusterer : public QObject
 {
@@ -26,13 +27,13 @@ signals:
     void clustering_complete();
 
 private:
-    std::vector<Clusters::ClusterData> recalculate_cluster_means(int n_clusters, ClusterMembershipTexture & memberships,
+    std::vector<ClusterData> recalculate_cluster_means(int n_clusters, ClusterMembershipTexture & memberships,
                                                                  TerrainTemperature & temp_data,
                                                                  TerrainDailyIllumination & illumination_data,
                                                                  Slope & slope_data,
                                                                  WeightedSoilHumidity & weighted_soil_humidity_data);
 
-    bool containsCluster(std::vector<Clusters::ClusterData> & all_clusters, Clusters::ClusterData & query_cluster);
+    bool containsCluster(std::vector<ClusterData> & all_clusters, ClusterData & query_cluster);
 };
 
 #endif // K_MEANS_CLUSTERER_H

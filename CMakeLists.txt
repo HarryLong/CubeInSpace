@@ -40,7 +40,7 @@ resources/weighted_soil_humidity resources/slope)
 SET(LIGHTING_SOURCE_FILES lighting/lighting_manager lighting/light_properties)
 
 SET(DIALOGS_SOURCE_FILES dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs
-    dialogs/monthly_rainfall_edit_dlg)
+    dialogs/monthly_rainfall_edit_dlg dialogs/cluster_info_dialog)
 
 SET(SHADER_SOURCE_FILES shaders/rendering_shader_programs shaders/rendering_shaders
 shaders/compute_shader_programs shaders/compute_shaders shaders/uniforms)
@@ -60,7 +60,7 @@ SET(GL_CORE_SOURCE_FILES gl_core/camera gl_core/gl_drawable gl_core/glheader gl_
 SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/texture_element_2d gl_texture/counter_texture gl_texture/overlay_texture
 gl_texture/texture_element_2d_array)
 
-SET(CLUSTERING_SOURCE_FILES clustering/k_means_clusterer clustering/cluster clustering/cluster_membership_texture)
+SET(CLUSTERING_SOURCE_FILES clustering/k_means_clusterer clustering/cluster clustering/cluster_membership_texture clustering/cluster_data)
 
 SET(SOURCE_FILES
 ${RESOURCES_SOURCE_FILES}

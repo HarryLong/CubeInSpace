@@ -16,6 +16,7 @@ void ComputeShaders::compileAndLink()
 {
     m_water_flux_generator.compileAndLink();
     m_water_comparator.compileAndLink();
+    m_standing_water_calculator.compileAndLink();
     m_soil_humidity_calculator.compileAndLink();
     m_slope_based_soil_infiltration_calculator.compileAndLink();
     m_aggregate_height.compileAndLink();

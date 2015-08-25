@@ -58,9 +58,12 @@ TerrainWater::~TerrainWater()
 
 }
 
-bool TerrainWater::incrementBalancingIteration(int month, int changes)
+void TerrainWater::incrementBalancingIteration(int month, int changes)
 {
-    return m_balance_checkers[month-1].incrementBalancingIteration(changes);
+    if(m_balance_checkers[month-1].incrementBalancingIteration(changes))
+    {
+        emit water_balanced(month);
+    }
 }
 
 bool TerrainWater::balanced()

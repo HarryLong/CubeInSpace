@@ -8,6 +8,7 @@ ResourceWrapper::ResourceWrapper() :
     m_daily_illumination_valid(false),
     m_shade_valid(false)
 {
+    connect(&m_terrain_water, SIGNAL(water_balanced(int)), this, SLOT(emit_water_balanced(int)));
 }
 
 ResourceWrapper::~ResourceWrapper()
@@ -293,7 +294,7 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     setDailyIlluminationValid(true);
 }
 
-void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec)
+void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float temp_at_zero_dec, float lapse_rate)
 {
     int terrain_width(terrain.getWidth());
     int terrain_depth(terrain.getDepth());
@@ -310,7 +311,6 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     // June temperatures
     {
         float temp_at_zero(temp_at_zero_june);
-        float lapse_rate(lapse_rate_june);
 
         for(int z = 0 ; z < terrain_depth; z++, iteration_counter += terrain_width)
         {
@@ -333,7 +333,6 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
     // December temperatures
     {
         float temp_at_zero(temp_at_zero_dec);
-        float lapse_rate(lapse_rate_dec);
 
         int i(0);
         for(int z = 0 ; z < terrain_depth; z++, iteration_counter += terrain_width)
@@ -365,7 +364,7 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 
 void ResourceWrapper::check_if_all_resources_valid()
 {
-    if(m_temp_valid /*&& m_daily_illumination_valid*/)
+    if(m_temp_valid && m_daily_illumination_valid)
         emit tempAndDailyIlluminationValid();
 }
 
@@ -399,4 +398,9 @@ void ResourceWrapper::setShadeValid(bool valid)
 
     if(!valid)
         emit shadeInvalidated();
+}
+
+void ResourceWrapper::emit_water_balanced(int month)
+{
+    emit water_balanced(month);
 }

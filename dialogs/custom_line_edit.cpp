@@ -36,6 +36,11 @@ double QDoubleLineEdit::value()
     return std::max(m_validator->bottom(), std::min(m_validator->top(),text().toDouble()));
 }
 
+void QDoubleLineEdit::setValue(double value)
+{
+    setText(QString::number(value));
+}
+
 void QDoubleLineEdit::reset()
 {
     setText(QString::number(m_default));
@@ -79,4 +84,9 @@ int QIntLineEdit::value()
 void QIntLineEdit::reset()
 {
     setText(QString::number(m_default));
+}
+
+void QIntLineEdit::setValue(int value)
+{
+    setText(QString::number(value));
 }

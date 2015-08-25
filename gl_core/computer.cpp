@@ -336,14 +336,46 @@ GLuint Computer::balanceWater(PaddedTerrain & padded_terrain,
     return aggregated_verticies_changed;
 }
 
-void Computer::calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_texture_id,
-                                                     GLuint resulting_soil_humidity_texture_id,
-                                                     GLuint resulting_standing_water_texture_id,
-                                                     int rainfall,
-                                                     int rainfall_intensity,
-                                                     int terrain_width,
-                                                     int terrain_depth,
-                                                     float terrain_scale)
+void Computer::calculateStandingWater(ResourceWrapper & resources,
+                                      int month,
+                                      int rainfall,
+                                      int rainfall_intensity,
+                                      int terrain_width,
+                                      int terrain_depth,
+                                      float terrain_scale)
+{
+    QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if(!f)
+        qCritical() << "Could not obtain required OpenGL context version";
+    f->initializeOpenGLFunctions();
+
+    glm::uvec3 group_count (calculateGroupCount(terrain_width, terrain_depth, 1,
+                                                SoilHumidityCalculatorShader::_GROUP_SIZE_X,
+                                                SoilHumidityCalculatorShader::_GROUP_SIZE_Y,
+                                                SoilHumidityCalculatorShader::_GROUP_SIZE_Z));
+
+    m_shaders.m_standing_water_calculator.bind();
+    m_shaders.m_standing_water_calculator.setUniformValue(Uniforms::Rainfall::_RAINFALL, rainfall);
+    m_shaders.m_standing_water_calculator.setUniformValue(Uniforms::Rainfall::_INTENSITY, rainfall_intensity);
+    m_shaders.m_standing_water_calculator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);
+
+    f->glBindImageTexture(0, resources.getSoilInfiltration().textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
+//    f->glBindImageTexture(1, resulting_soil_humidity_texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
+    f->glBindImageTexture(1, resources.getTerrainWater()[month-1]->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE();
+
+    f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
+    f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
+
+    m_shaders.m_standing_water_calculator.release();
+}
+
+void Computer::calculateSoilHumidity(ResourceWrapper & resources,
+                           int month,
+                           int rainfall,
+                           int rainfall_intensity,
+                           int terrain_width,
+                           int terrain_depth,
+                           float terrain_scale)
 {
     QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
     if(!f)
@@ -360,9 +392,9 @@ void Computer::calculateSoilHumidityAndStandingWater(GLuint soil_infiltration_te
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Rainfall::_INTENSITY, rainfall_intensity);
     m_shaders.m_soil_humidity_calculator.setUniformValue(Uniforms::Terrain::_SCALE, terrain_scale);
 
-    f->glBindImageTexture(0, soil_infiltration_texture_id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
-    f->glBindImageTexture(1, resulting_soil_humidity_texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
-    f->glBindImageTexture(2, resulting_standing_water_texture_id, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);  CE();
+    f->glBindImageTexture(0, resources.getSoilInfiltration().textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);  CE();
+    f->glBindImageTexture(1, resources.getSoilHumidity()[month-1]->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();
+    f->glBindImageTexture(2, resources.getTerrainWater()[month-1]->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);  CE();
 
     f->glDispatchCompute(group_count.x, group_count.y, group_count.z);  CE();
     f->glMemoryBarrier(GL_ALL_BARRIER_BITS);  CE();
@@ -506,7 +538,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
 
     // Reset size of reduction textures
     m_slope_and_humidity_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*13, closest_cluster_group_count.y);
-    m_temperature_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*2, closest_cluster_group_count.y);
+    m_temperature_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*3, closest_cluster_group_count.y);
     m_daily_illumination_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*2, closest_cluster_group_count.y);
 
     for(int cluster_iteration(0); cluster_iteration < clustering_iterations; cluster_iteration++)
@@ -527,7 +559,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
              *****************************/
             f->glBindImageTexture(1, clusters.m_slope_cluster_data.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             // TEMPERATURE
-            f->glBindImageTexture(2, clusters.m_temperature_cluster_data[0]->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
+            f->glBindImageTexture(2, clusters.m_temperature_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
             // DAILY ILLUMINATION
             f->glBindImageTexture(3, clusters.m_daily_illumination_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8);  CE();
             // WEIGHTED SOIL HUMIDITY
@@ -558,7 +590,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
             {
                 f->glActiveTexture(texture_unit); CE();
                 m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_TEMPERATURE, texture_unit-GL_TEXTURE0); CE();
-                resources.getTerrainTemp()[0]->bind() ;CE();
+                resources.getTerrainTemp().bind() ;CE();
                 texture_unit++;
             }
             // Daily illumination
@@ -691,7 +723,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
              *****************************/
             f->glBindImageTexture(0, clusters.m_slope_cluster_data.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             // TEMPERATURE
-            f->glBindImageTexture(1, clusters.m_temperature_cluster_data[0]->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
+            f->glBindImageTexture(1, clusters.m_temperature_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
             // DAILY ILLUMINATION
             f->glBindImageTexture(2, clusters.m_daily_illumination_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8);  CE();
             // WEIGHTED SOIL HUMIDITY

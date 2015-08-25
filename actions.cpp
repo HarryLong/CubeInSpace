@@ -67,6 +67,30 @@ void BaseActionFamily::init_actions()
     m_actions[BaseActionFamily::_OPEN_SETTINGS] = new QAction(BaseActionFamily::_OPEN_SETTINGS, NULL);
 }
 
+/*****************
+ * MODE ACTTIONS *
+ *****************/
+const QString ModeActionFamily::_RESOURCE_EDIT = "Resource edit";
+const QString ModeActionFamily::_CLUSTERING = "Clustering";
+const QString ModeActionFamily::_PLANT_EDIT = "Plant edit";
+ModeActionFamily::ModeActionFamily() : ActionFamily(false, true)
+{
+    init_actions();
+    finalise();
+}
+
+ModeActionFamily::~ModeActionFamily()
+{
+
+}
+
+void ModeActionFamily::init_actions()
+{
+    m_actions[ModeActionFamily::_RESOURCE_EDIT] = new QAction(ModeActionFamily::_RESOURCE_EDIT, NULL);
+    m_actions[ModeActionFamily::_CLUSTERING] = new QAction(ModeActionFamily::_CLUSTERING, NULL);
+    m_actions[ModeActionFamily::_PLANT_EDIT] = new QAction(ModeActionFamily::_PLANT_EDIT, NULL);
+}
+
 /*******************
  * RENDER ACTTIONS *
  *******************/
@@ -166,12 +190,14 @@ void OverlayActionFamily::init_actions()
  * SHOW ACTIONS *
  ****************/
 const QString ShowActionFamily::_POINTER_INFO = "Pointer Info";
+const QString ShowActionFamily::_CLUSTERS_INFO = "Clusters Info";
 ShowActionFamily::ShowActionFamily() : ActionFamily(true, true)
 {
     init_actions();
     finalise();
 
     m_actions[ShowActionFamily::_POINTER_INFO]->setChecked(false);
+    m_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(false);
 }
 
 ShowActionFamily::~ShowActionFamily()
@@ -182,8 +208,8 @@ ShowActionFamily::~ShowActionFamily()
 void ShowActionFamily::init_actions()
 {
     m_actions[ShowActionFamily::_POINTER_INFO] = new QAction(ShowActionFamily::_POINTER_INFO, NULL);
+    m_actions[ShowActionFamily::_CLUSTERS_INFO] = new QAction(ShowActionFamily::_CLUSTERS_INFO, NULL);
 }
-
 
 /*****************
  * EDIT ACTTIONS *
@@ -196,7 +222,6 @@ const QString EditActionFamily::_MONTHLY_RAINFALL = "Monthly Rainfall";
 const QString EditActionFamily::_SOIL_INFILTRATION_RATE = "Soil Infiltration Rate";
 const QString EditActionFamily::_FLOOD_FILL = "Flood fill";
 const QString EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT = "Absolute Aggregate Height";
-const QString EditActionFamily::_CLUSTERING = "Clustering";
 EditActionFamily::EditActionFamily() : ActionFamily(true, true)
 {
     init_actions();
@@ -221,5 +246,4 @@ void EditActionFamily::init_actions()
     m_actions[EditActionFamily::_SOIL_INFILTRATION_RATE] = new QAction(EditActionFamily::_SOIL_INFILTRATION_RATE, NULL);
     m_actions[EditActionFamily::_FLOOD_FILL] = new QAction(EditActionFamily::_FLOOD_FILL, NULL);
     m_actions[EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT] = new QAction(EditActionFamily::_ABSOLUTE_AGGREGATE_HEIGHT, NULL);
-    m_actions[EditActionFamily::_CLUSTERING] = new QAction(EditActionFamily::_CLUSTERING, NULL);
 }

@@ -38,80 +38,12 @@ LapseLineEdit::~LapseLineEdit()
 }
 
 /*****************************
- * TEMPERATURE EDITOR WIDGET *
- *****************************/
-TemperatureEditWidget::TemperatureEditWidget(QWidget * parent, Qt::WindowFlags f) :
-    QWidget(parent, f), m_temp_le(new TemperatureLineEdit(this)), m_lapse_rate_le(new LapseLineEdit(this))
-{
-    init_layout();
-}
-
-TemperatureEditWidget::~TemperatureEditWidget()
-{
-
-}
-
-void TemperatureEditWidget::init_layout()
-{
-    QVBoxLayout * main_layout (new QVBoxLayout);
-
-    // Temperature
-    {
-        QHBoxLayout * layout (new QHBoxLayout);
-
-        layout->addWidget(new QLabel("Temperature at zero meters: "),2, Qt::AlignLeft);
-        layout->addWidget(m_temp_le, 1, Qt::AlignRight);
-
-        main_layout->addLayout(layout);
-    }
-
-    // Lapse
-    {
-        QHBoxLayout * layout (new QHBoxLayout);
-
-        layout->addWidget(new QLabel("Lapse rate: "),2, Qt::AlignLeft);
-        layout->addWidget(m_lapse_rate_le, 1, Qt::AlignRight);
-
-        main_layout->addLayout(layout);
-    }
-
-    setLayout(main_layout);
-}
-
-float TemperatureEditWidget::getTemperature()
-{
-    return m_temp_le->value();
-}
-
-float TemperatureEditWidget::getLapseRate()
-{
-    return m_lapse_rate_le->value();
-}
-
-void TemperatureEditWidget::reset()
-{
-    m_temp_le->reset();
-    m_lapse_rate_le->reset();
-}
-
-void TemperatureEditWidget::pop()
-{
-    m_temp_le->setText(m_cached_temp);
-    m_lapse_rate_le->setText(m_cached_lapse);
-}
-
-void TemperatureEditWidget::push()
-{
-    m_cached_temp = m_temp_le->text();
-    m_cached_lapse = m_lapse_rate_le->text();
-}
-
-/*****************************
  * TEMPERATURE EDITOR DIALOG *
  *****************************/
 TemperatureEditDialog::TemperatureEditDialog(QWidget * parent, Qt::WindowFlags f ) :
-    QDialog(parent,f), m_jun_temp_edit(new TemperatureEditWidget), m_dec_temp_edit(new TemperatureEditWidget),
-    m_ok_btn(new QPushButton("OK")), m_cancel_btn(new QPushButton("Cancel")), m_info_lbl(new QLabel(this))
+    QDialog(parent,f), m_jun_temp_edit(new TemperatureLineEdit(this)), m_dec_temp_edit(new TemperatureLineEdit(this)),
+    m_lapse_rate_edit(new LapseLineEdit(this)), m_ok_btn(new QPushButton("OK")), m_cancel_btn(new QPushButton("Cancel")),
+    m_info_lbl(new QLabel(this))
 {
     setWindowTitle("Temperature Editor");
 
@@ -126,31 +58,61 @@ TemperatureEditDialog::~TemperatureEditDialog()
 
 }
 
-TemperatureEditDialog::TemperatureAttributes TemperatureEditDialog::getJunTemperatureAttributes()
+int TemperatureEditDialog::getJunTemp()
 {
-    return TemperatureAttributes(m_jun_temp_edit->getTemperature(), m_jun_temp_edit->getLapseRate());
+    return m_jun_temp_edit->value();
 }
 
-TemperatureEditDialog::TemperatureAttributes TemperatureEditDialog::getDecTemperatureAttributes()
+int TemperatureEditDialog::getDecTemp()
 {
-    return TemperatureAttributes(m_dec_temp_edit->getTemperature(), m_dec_temp_edit->getLapseRate());
+    return m_dec_temp_edit->value();
+}
+
+float TemperatureEditDialog::getLapseRate()
+{
+    return m_lapse_rate_edit->value();
 }
 
 void TemperatureEditDialog::init_layout()
 {
     QVBoxLayout * main_layout (new QVBoxLayout);
 
-    // Minimum temperature
+    // June Temperature
     {
         main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> JUNE </span> </html>"),0, Qt::AlignCenter);
-        main_layout->addWidget(m_jun_temp_edit,0);
+
+        QHBoxLayout * layout (new QHBoxLayout);
+
+        layout->addWidget(new QLabel("Temperature at zero meters: "),2, Qt::AlignLeft);
+        layout->addWidget(m_jun_temp_edit, 1, Qt::AlignRight);
+
+        main_layout->addLayout(layout,0);
     }
 
-    // Maximum temperature
+    // December Temperature
     {
         main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> DECEMBER </span> </html>"),0, Qt::AlignCenter);
-        main_layout->addWidget(m_dec_temp_edit,0);
+
+        QHBoxLayout * layout (new QHBoxLayout);
+
+        layout->addWidget(new QLabel("Temperature at zero meters: "),2, Qt::AlignLeft);
+        layout->addWidget(m_dec_temp_edit, 1, Qt::AlignRight);
+
+        main_layout->addLayout(layout,0);
     }
+
+    // Lapse Rate
+    {
+        main_layout->addWidget(new QLabel("<html> <span style=\"font-size:14pt; font-weight:600;\"> LAPSE RATE </span> </html>"),0, Qt::AlignCenter);
+
+        QHBoxLayout * layout (new QHBoxLayout);
+
+        layout->addWidget(new QLabel("Lapse rate: "),2, Qt::AlignLeft);
+        layout->addWidget(m_lapse_rate_edit, 1, Qt::AlignRight);
+
+        main_layout->addLayout(layout);
+    }
+
 
     main_layout->addWidget(m_info_lbl,0, Qt::AlignCenter);
 
@@ -170,28 +132,39 @@ void TemperatureEditDialog::init_layout()
 
 void TemperatureEditDialog::reject()
 {
-    m_jun_temp_edit->pop();
-    m_dec_temp_edit->pop();
-
+    pop();
     QDialog::reject();
 }
 
 void TemperatureEditDialog::accept()
 {
-    emit temperatureValuesChanged(m_jun_temp_edit->getTemperature(), m_jun_temp_edit->getLapseRate(),
-                                  m_dec_temp_edit->getTemperature(), m_dec_temp_edit->getLapseRate());
-    hide();
     QDialog::accept();
+    emit temperatureValuesChanged(getJunTemp(), getDecTemp(), getLapseRate());
+    hide();
 }
 
 void TemperatureEditDialog::showEvent(QShowEvent * event)
 {
-    m_jun_temp_edit->push();
-    m_dec_temp_edit->push();
+    push();
 }
 
 void TemperatureEditDialog::reset()
 {
     m_jun_temp_edit->reset();
     m_dec_temp_edit->reset();
+    m_lapse_rate_edit->reset();
+}
+
+void TemperatureEditDialog::push()
+{
+    m_cached_jun_temp = QString::number(m_jun_temp_edit->value());
+    m_cached_dec_temp = QString::number(m_dec_temp_edit->value());
+    m_cached_lapse_rate = QString::number(m_lapse_rate_edit->value());
+}
+
+void TemperatureEditDialog::pop()
+{
+    m_jun_temp_edit->setText(m_cached_jun_temp);
+    m_dec_temp_edit->setText(m_cached_dec_temp);
+    m_lapse_rate_edit->setText(m_cached_lapse_rate);
 }

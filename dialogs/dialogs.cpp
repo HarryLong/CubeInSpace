@@ -1,7 +1,8 @@
 #include "dialogs.h"
 
 Dialogs::Dialogs(QWidget * parent) :
-    m_settings_dlg(parent), m_temp_editor_dlg(parent), m_pointer_info_dlg(parent), m_monthly_rainfall_edit_dlg(parent)
+    m_settings_dlg(parent), m_temp_editor_dlg(parent), m_pointer_info_dlg(parent), m_monthly_rainfall_edit_dlg(parent),
+    m_cluster_info_dlg(parent)
 {
 
 }
@@ -35,4 +36,12 @@ void Dialogs::triggerPointerInfoDialog(bool show)
         m_pointer_info_dlg.show();
     else if(!show && m_pointer_info_dlg.isVisible())
         m_pointer_info_dlg.hide();
+}
+
+void Dialogs::triggerClusterInfoDialog(bool show)
+{
+    if(show && !m_cluster_info_dlg.isVisible())
+        m_cluster_info_dlg.show();
+    else if(!show && m_cluster_info_dlg.isVisible())
+        m_cluster_info_dlg.hide();
 }

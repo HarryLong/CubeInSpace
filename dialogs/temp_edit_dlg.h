@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include "custom_line_edit.h"
+#include <QLabel>
 
 /*************************
  * TEMPERATURE LINE EDIT *
@@ -25,59 +26,24 @@ public:
 };
 
 /*****************************
- * TEMPERATURE EDITOR WIDGET *
- *****************************/
-class QLabel;
-class QSlider;
-class QPushButton;
-class TemperatureEditWidget : public QWidget{
-    Q_OBJECT
-public:
-    TemperatureEditWidget(QWidget * parent = 0, Qt::WindowFlags f = 0);
-    ~TemperatureEditWidget();
-
-    float getTemperature();
-    float getLapseRate();
-    void reset();
-
-    void push();
-    void pop();
-
-private:
-    void init_layout();
-
-    TemperatureLineEdit * m_temp_le;
-    LapseLineEdit * m_lapse_rate_le;
-
-    QString m_cached_temp, m_cached_lapse;
-};
-
-/*****************************
  * TEMPERATURE EDITOR DIALOG *
  *****************************/
 class TemperatureEditDialog : public QDialog {
     Q_OBJECT
 public:
-    struct TemperatureAttributes{
-    public:
-        TemperatureAttributes( float temperature_at_zero_meters, float lapse_rate) :
-            temperature_at_zero_meters(temperature_at_zero_meters), lapse_rate(lapse_rate) { }
-
-        float temperature_at_zero_meters;
-        float lapse_rate;
-    };
-
     TemperatureEditDialog(QWidget * parent = 0, Qt::WindowFlags f = 0);
     ~TemperatureEditDialog();
 
     void reset();
-    TemperatureAttributes getJunTemperatureAttributes();
-    TemperatureAttributes getDecTemperatureAttributes();
+
+    int getJunTemp();
+    int getDecTemp();
+    float getLapseRate();
 
     QPushButton * m_ok_btn;
 
 signals:    
-    void temperatureValuesChanged(float temp_at_zero_june, float lapse_rate_june, float temp_at_zero_dec, float lapse_rate_dec);
+    void temperatureValuesChanged(int temp_at_zero_june, int temp_at_zero_dec, float lapse_rate);
 
 public slots:
     virtual void reject();
@@ -88,10 +54,16 @@ protected:
 
 private:
     void init_layout();
+    void push();
+    void pop();
+
+    QString m_cached_jun_temp, m_cached_dec_temp, m_cached_lapse_rate;
 
     QPushButton * m_cancel_btn;
-    TemperatureEditWidget * m_jun_temp_edit;
-    TemperatureEditWidget * m_dec_temp_edit;
+    TemperatureLineEdit * m_jun_temp_edit;
+    TemperatureLineEdit * m_dec_temp_edit;
+    LapseLineEdit * m_lapse_rate_edit;
+
     QLabel * m_info_lbl;
 };
 #endif // TEMP_EDIT_DIALOG_H

@@ -20,6 +20,7 @@
         <file alias="normals_to_slope_converter.comp">glsl/comp/normals_to_slope_converter.comp</file>
         <file alias="closest_cluster_finder.comp">glsl/comp/closest_cluster_finder.comp</file>
         <file alias="means_recalculator.comp">glsl/comp/means_recalculator.comp</file>
+        <file alias="standing_water_calculator.comp">glsl/comp/standing_water_calculator.comp</file>
         <!-- OVERLAY CREATOR COMPUTE SHADERS -->
         <file alias="overlay_texture_creator_slope.comp">glsl/comp/overlay_creators/overlay_texture_creator_slope.comp</file>
         <file alias="overlay_texture_creator_altitude.comp">glsl/comp/overlay_creators/overlay_texture_creator_altitude.comp</file>

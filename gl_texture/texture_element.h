@@ -4,8 +4,10 @@
 #include "../gl_core/glheader.h"
 #include <QOpenGLTexture>
 #include "../fixed_size_stack.h"
+#include <QObject>
 
-class TextureElement {
+class TextureElement : public QObject{
+Q_OBJECT
 public:
     TextureElement(QOpenGLTexture::Target target, QOpenGLTexture::TextureFormat texture_format, QOpenGLTexture::PixelFormat pixel_format,
                    QOpenGLTexture::PixelType pixel_type);

@@ -24,24 +24,21 @@ void main()
 {
     outputColor = ambient;
     float normal_dot_lightdir = dot(camera_space_normal.xyz, light_direction);
-    if(normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
+    if(!overlay_active && normal_dot_lightdir > 0.0) // i.e light direction TO normal in range [-89,89]
     {
-        outputColor += diffuse * normal_dot_lightdir;
+        outputColor += diffuse * normal_dot_lightdir;        
+
         float normal_dot_half_vector = dot(camera_space_normal, half_vector);
-
-        if(normal_dot_half_vector > 0.0)
-        {
-            outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
-        }
-
-        if(overlay_active)
-            outputColor = mix(outputColor, overlay_color, 0.8);
-
-        // Contour lines
-        float f  = abs(fract (world_space_pos.y * 0.5) - 0.5);
-        float df = fwidth(world_space_pos.y * 0.5);
-        float g = smoothstep(-1.0*df, 1.0*df , f);
-        float c = g;
-        outputColor = vec4(c,c,c,1.0) * outputColor;
+        outputColor += matSpec * specularCol * pow(normal_dot_half_vector, shiny);
     }
+
+    // Contour lines
+    float f  = abs(fract (world_space_pos.y * 0.5) - 0.5);
+    float df = fwidth(world_space_pos.y * 0.5);
+    float g = smoothstep(-1.0*df, 1.0*df , f);
+    float c = g;
+    outputColor = vec4(c,c,c,1.0) * outputColor;
+
+    if(overlay_active)
+        outputColor = mix(outputColor, overlay_color, 0.4);
 }

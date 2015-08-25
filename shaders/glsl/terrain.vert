@@ -18,6 +18,7 @@ uniform sampler2D water_heightmap;
 uniform sampler2D overlay_texture;
 uniform sampler2D normals_texture;
 uniform bool render_water;
+uniform bool overlay_active;
 
 //colours and material
 uniform vec4 terrain_material_diffuse;
@@ -29,7 +30,6 @@ uniform vec4 light_diffuse_color;
 uniform vec4 light_ambient_color;
 
 uniform float base_height;
-uniform bool overlay_active;
 uniform float terrain_scale;
 
 out vec3 camera_space_normal; // vertex normal
@@ -53,13 +53,10 @@ void main()
 
     // Fetch the y coordinate from the heightmap texture
     world_space_pos = vec3(vPos.x, texture(terrain_height_map_texture, texture_coord).r, vPos.z);
-    float water_height = texture(water_heightmap, texture_coord).r;
-    if(!render_water || water_height*terrain_scale*1000 < 10) // Don't render if under 1 cm
+    float water_height = 0;
+    if(!overlay_active && render_water) // Don't render if under 1 cm
     {
-        water_height = 0;
-    }
-    else
-    {
+        water_height = texture(water_heightmap, texture_coord).r;
         world_space_pos.y += water_height;
     }
 
