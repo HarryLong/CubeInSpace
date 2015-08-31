@@ -104,10 +104,8 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
     m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_ALTITUDE]] = Uniforms::Overlay::_ALTITUDE;
     m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]] = Uniforms::Overlay::_SHADE;
     m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]] = Uniforms::Overlay::_TEMPERATURE;
-    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]] =
-            Uniforms::Overlay::_MIN_DAILY_ILLUMINATION;
-    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]] =
-            Uniforms::Overlay::_MAX_DAILY_ILLUMINATION;
+    m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_ILLUMINATION]] =
+            Uniforms::Overlay::_ILLUMINATION;
     m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]] =
             Uniforms::Overlay::_SOIL_INFILTRATION_RATE;
     m_overlay_action_to_overlay_uniform[m_actions->m_overlay_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY]] =
@@ -833,9 +831,9 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
         float altitude(m_terrain.getAltitude(intersecion_point_2d));
 
         bool shaded;
-        int min_daily_illumination, max_daily_illumination, soil_infiltration_rate, soil_humidity;
-        float slope, temperature, water_height, weighted_soil_humidity;
-        m_resources.getResourceInfo(intersecion_point_2d, month(), slope, water_height, shaded, min_daily_illumination, max_daily_illumination,
+        int illumination, temperature, soil_infiltration_rate, soil_humidity;
+        float slope, water_height, weighted_soil_humidity;
+        m_resources.getResourceInfo(intersecion_point_2d, month(), slope, water_height, shaded, illumination,
                                     temperature, soil_infiltration_rate, soil_humidity, weighted_soil_humidity);
         bool shade_valid, temp_valid, illumination_valid;
         m_resources.valid(shade_valid,illumination_valid,temp_valid);
@@ -847,7 +845,7 @@ void GLWidget::update_info_pointer_dlg(const glm::vec2 &screen_pos)
                                             altitude, slope, water_height, soil_infiltration_rate, soil_humidity, weighted_soil_humidity,
                                             shade_valid, shaded,
                                             temp_valid, temperature,
-                                            illumination_valid, min_daily_illumination, max_daily_illumination);
+                                            illumination_valid, illumination);
     }
     else
         m_dialogs.m_pointer_info_dlg.invalidPoint();
@@ -897,9 +895,11 @@ void GLWidget::refresh_clusters(int k)
     if(m_cluster_membership_texture.width() != m_terrain.getWidth() ||
             m_cluster_membership_texture.height() != m_terrain.getDepth())
     {
-        m_cluster_membership_texture.setDimensions(m_terrain.getWidth(), m_terrain.getDepth());
-        m_cluster_membership_texture.reset();
+        m_cluster_membership_texture.reset(m_terrain.getWidth(), m_terrain.getDepth());
     }
+
+    // Calculate monthly temperature change
+    float monthly_temp_change ( (m_dialogs.m_temp_editor_dlg.getDecTemp() - m_dialogs.m_temp_editor_dlg.getJunTemp())/6.f );
 
     Clusters resulting_clusters(k);
     std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &,int)> clustering_function =
@@ -910,6 +910,7 @@ void GLWidget::refresh_clusters(int k)
                                    m_resources,
                                    resulting_clusters,
                                    m_cluster_membership_texture,
+                                   monthly_temp_change,
                                    clustering_function); CE();
 
 
@@ -1311,19 +1312,9 @@ bool GLWidget::overlay_temperature()
     return m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]->isChecked();
 }
 
-bool GLWidget::overlay_min_illumination()
-{
-    return m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]->isChecked();
-}
-
-bool GLWidget::overlay_max_illumination()
-{
-    return m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]->isChecked();
-}
-
 bool GLWidget::overlay_illumination()
 {
-    return overlay_min_illumination() || overlay_max_illumination();
+    return m_actions->m_overlay_actions[OverlayActionFamily::_ILLUMINATION]->isChecked();
 }
 
 bool GLWidget::overlay_soil_infiltration()
@@ -1447,7 +1438,7 @@ void GLWidget::daily_illumination_invalidated()
 
 void GLWidget::monthChanged()
 {
-    if(overlay_temperature() || overlay_monthly_soil_humidity() || overlay_weighted_avg_soil_humidity())
+    if(overlay_temperature() || overlay_monthly_soil_humidity() || overlay_weighted_avg_soil_humidity() || overlay_illumination()) // Month dependant overlays
         refresh_overlay_texture();
 }
 

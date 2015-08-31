@@ -25,6 +25,8 @@ public:
 
     int getMemberCount(int cluster_idx) const;
 
+    void finaliseTemperatures(float monthly_change);
+
     ClusterData getClusterData(int cluster_idx) const;
 private:
     friend class Computer;

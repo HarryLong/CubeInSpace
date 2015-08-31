@@ -47,8 +47,7 @@ public:
         static const char * _ALTITUDE;
         static const char * _SHADE;
         static const char * _TEMPERATURE;
-        static const char * _MIN_DAILY_ILLUMINATION;
-        static const char * _MAX_DAILY_ILLUMINATION;
+        static const char * _ILLUMINATION;
         static const char * _SOIL_INFILTRATION_RATE;
         static const char * _MONTHLY_SOIL_HUMIDITY;
         static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;

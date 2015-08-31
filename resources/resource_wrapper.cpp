@@ -99,8 +99,8 @@ Slope & ResourceWrapper::getSlope()
     return m_slope;
 }
 
-void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & slope, float & water_height, bool & shaded, int & min_illumination,
-                                      int & max_illumination, float & temp, int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity)
+void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & slope, float & water_height, bool & shaded, int & illumination,
+                                      int & temp, int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity)
 {
     // Slope
     {
@@ -115,21 +115,10 @@ void ResourceWrapper::getResourceInfo(const glm::vec2 & pos, int month, float & 
         shaded = m_terrain_shade(pos[0], pos[1]);
     // Daily illumination
     if(m_daily_illumination_valid)
-    {
-        min_illumination = (int) m_terrain_daily_illumination(TerrainDailyIllumination::_MIN_LAYER_IDX, pos[0], pos[1]);
-        max_illumination = (int) m_terrain_daily_illumination(TerrainDailyIllumination::_MAX_LAYER_IDX, pos[0], pos[1]);
-    }
+        illumination = (int) m_terrain_daily_illumination(month-1, pos[0], pos[1]);
     // Temperature
     if(m_temp_valid)
-    {
-        GLbyte jun = m_terrain_temp(TerrainTemperature::_JUN_LAYER_IDX, pos[0], pos[1]);
-        GLbyte dec = m_terrain_temp(TerrainTemperature::_DEC_LAYER_IDX, pos[0], pos[1]);
-
-        GLbyte temp_diff = jun - dec;
-
-        float jun_percentage = (6.f-(abs(6.f-month)))/6.f;
-        temp = dec + (jun_percentage * temp_diff);
-    }
+        temp = (int) m_terrain_temp(month-1, pos[0], pos[1]);
     // Soil infiltration rate
     {
         soil_infiltration_rate = m_soil_infiltration(pos[0],pos[1]);
@@ -221,10 +210,6 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     int terrain_depth(terrain.getDepth());
     int n_elements(terrain_width*terrain_depth);
 
-    GLubyte * intermediary_illumination_data = new GLubyte[n_elements];
-    GLubyte * aggregated_min = new GLubyte[n_elements];
-    GLubyte * aggregated_max = new GLubyte[n_elements];
-
     float n_iterations (24 * 12);
     int iteration(0);
 
@@ -232,7 +217,8 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
 
     for(int month = 1; month < 13; month++)
     {
-        memset(intermediary_illumination_data, 0, n_elements);
+        GLubyte * illumination_data = new GLubyte[n_elements];
+        memset(illumination_data, 0, n_elements*sizeof(GLubyte));
 
         lighting_manager.setMonth(month);
 
@@ -252,38 +238,14 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
                 for(int x = 0; x < terrain_width; x++)
                 {
                     int index(z*terrain_width+x);
-                    intermediary_illumination_data[index] += (shade_data[index] > 0 ? 0 : 1);
+                    illumination_data[index] += (shade_data[index] > 0 ? 0 : 1);
                 }
             }
             delete shade_data;
         }
-        // Now check if it is the minimum/maximum
-        if(month > 1)
-        {
-#pragma omp parallel for
-            for(int z = 0 ; z < terrain_depth; z++)
-            {
-                for(int x = 0; x < terrain_width; x++)
-                {
-                    int index(z*terrain_width+x);
-                    GLubyte value(intermediary_illumination_data[index]);
-                    if(value > aggregated_max[index])
-                        aggregated_max[index] = value;
-                    if(value < aggregated_min[index])
-                        aggregated_min[index] = value;
-                }
-            }
-        }
-        else
-        {
-            std::memcpy(aggregated_min, intermediary_illumination_data, n_elements*sizeof(GLubyte));
-            std::memcpy(aggregated_max, intermediary_illumination_data, n_elements*sizeof(GLubyte));
-        }
+        // Set data in texture
+        m_terrain_daily_illumination.setData(month-1, illumination_data);
     }
-    delete intermediary_illumination_data;
-
-    m_terrain_daily_illumination.setData(TerrainDailyIllumination::_MIN_LAYER_IDX, aggregated_min);
-    m_terrain_daily_illumination.setData(TerrainDailyIllumination::_MAX_LAYER_IDX, aggregated_max);
 
     // Restore time and date
     lighting_manager.setMonth(current_month);
@@ -294,23 +256,24 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     setDailyIlluminationValid(true);
 }
 
-void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float temp_at_zero_dec, float lapse_rate)
+void ResourceWrapper::refreshTemperature(const Terrain & terrain, int temp_at_zero_june, int temp_at_zero_dec, float lapse_rate)
 {
     int terrain_width(terrain.getWidth());
     int terrain_depth(terrain.getDepth());
-    int n_iterations(terrain_depth*terrain_width*2);
+    int n_iterations(terrain_depth*terrain_width*12);
 
     emit processing("Calculating Temperature...");
     int iteration_counter(0);
 
-    GLbyte * jun_temp_data = new GLbyte[terrain_width * terrain_depth];
-    GLbyte * dec_temp_data = new GLbyte[terrain_width * terrain_depth];
-//    GLbyte * temp_data = new GLbyte[terrain_width * terrain_depth * 2];
-//    int dec_start_idx_offset(terrain_width*terrain_depth);
+    int temp_diff(temp_at_zero_june-temp_at_zero_dec);
 
-    // June temperatures
+    for(int month = 1; month <= 12; month++)
     {
-        float temp_at_zero(temp_at_zero_june);
+        GLbyte * temp_data = new GLbyte[terrain_width * terrain_depth];
+
+        // Calculate base temp
+        float jun_percentage ( (6-(abs(6-month)))/6.f );
+        float temp_at_zero( temp_at_zero_dec + (jun_percentage * temp_diff) );
 
         for(int z = 0 ; z < terrain_depth; z++, iteration_counter += terrain_width)
         {
@@ -324,39 +287,11 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, float temp_at_
 
                 float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
 
-//                temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
-                jun_temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
+                temp_data[index] = (GLbyte) std::round(std::min(50.0f,std::max(-50.0f, temp)));
             }
         }
+        m_terrain_temp.setData(month-1,temp_data);
     }
-
-    // December temperatures
-    {
-        float temp_at_zero(temp_at_zero_dec);
-
-        int i(0);
-        for(int z = 0 ; z < terrain_depth; z++, iteration_counter += terrain_width)
-        {
-            emit processingUpdate((((float)iteration_counter)/n_iterations)*100);
-#pragma omp parallel for
-            for(int x = 0; x < terrain_width; x++)
-            {
-                int index(z*terrain_width+x);
-
-                float altitude( terrain.getAltitude(glm::vec2(x,z)) );
-
-                float temp(temp_at_zero - ((altitude/1000.0f) * lapse_rate));
-
-//                temp_data[dec_start_idx_offset+index] = std::min(50.0f,std::max(-50.0f, temp));
-
-                dec_temp_data[index] = std::min(50.0f,std::max(-50.0f, temp));
-            }
-        }
-    }
-
-//    m_terrain_temp.setData(temp_data);
-    m_terrain_temp.setData(TerrainTemperature::_JUN_LAYER_IDX,jun_temp_data);
-    m_terrain_temp.setData(TerrainTemperature::_DEC_LAYER_IDX,dec_temp_data);
 
     emit processingComplete();
     setTempValid(true);

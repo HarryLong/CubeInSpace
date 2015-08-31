@@ -6,10 +6,9 @@ layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
 const vec4 color_at_minus_fifty_degrees = vec4(0,0,1,.7);
 const vec4 color_at_plus_fifty_degrees = vec4(1,0,0,.7);
 
-uniform int month;
-uniform sampler2DArray temperature_texture;
+uniform sampler2D temperature_texture;
 
-vec4 temp_to_output_color(in float temperature)
+vec4 temp_to_output_color(in int temperature)
 {
     float color_at_plus_fifty_degrees_percentage = (temperature+50)/100.0;
     float color_at_minus_fifty_degrees_percentage = 1-color_at_plus_fifty_degrees_percentage;
@@ -42,12 +41,8 @@ void main()
         vec4 resulting_color = vec4(0,0,0,0);
         vec2 texture_coord = vec2(float(global_idx.x)/(heightmap_size.x-1), float(global_idx.y)/(heightmap_size.y-1));
 
-        float jun_temperature = float(i_unnormalize(texture(temperature_texture, vec3(texture_coord,0)).r));
-        float dec_temperature = float(i_unnormalize(texture(temperature_texture, vec3(texture_coord,1)).r));
-        float temp_diff = jun_temperature - dec_temperature;
-        float jun_percentage = (6.0-(abs(6-month)))/6.0;
-        float temperature = dec_temperature + (jun_percentage * temp_diff);
-        resulting_color = temp_to_output_color(temperature);
+        int temp = i_unnormalize(texture(temperature_texture, texture_coord).r);
+        resulting_color = temp_to_output_color(temp);
 
         imageStore(resulting_overlay, global_idx, resulting_color);
     }

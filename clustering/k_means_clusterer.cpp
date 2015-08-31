@@ -13,6 +13,7 @@ KMeansClusterer::~KMeansClusterer()
 }
 
 void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clusters & clusters, ClusterMembershipTexture & memberships,
+                                         float monthly_temperature_change,
                                          std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &,int)> & clustering_fn)
 {
     QString msg("Performing K Means Clustering...");
@@ -27,21 +28,6 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
     int width(temp_data.width());
     int height(temp_data.height());
 
-    float avg_slope(0);
-    float avg_temp(0);
-    for(int x (0) ; x < width; x++)
-    {
-        for(int y (0) ; y < height; y++)
-        {
-            avg_slope += slope_data(x,y);
-            avg_temp += temp_data(0,x,y);
-        }
-    }
-    avg_slope /= (width*height);
-    avg_temp /= (width*height);
-
-    qCritical() << "Avg slope: " << avg_slope;
-    qCritical() << "Avg temp: " << avg_temp;
     // First generate k random clusters
     {
         std::vector<ClusterData> all_clusters;
@@ -50,19 +36,15 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         float diagonal_increments(diagonal_length/k);
         int x_y_increments(std::sqrt((diagonal_increments*diagonal_increments)/2));
 
-        qCritical() << "Increments: " << x_y_increments;
         int x_y (0);
         do{
             ClusterData cluster_data;
-            for(int i = 0; i < 2; i++)
-            {
-                cluster_data.temperatures[i] = (GLint) temp_data(i,x_y,x_y);
-                cluster_data.illumination[i] = (GLuint) illumination_data(i, x_y, x_y);
-            }
             cluster_data.slope = slope_data(x_y,x_y) ;
             for(int i = 0; i < 12; i++)
             {
+                cluster_data.illumination[i] = (GLuint) illumination_data(i, x_y, x_y);
                 cluster_data.soil_humidities[i] = weighted_soil_humidity_data(i, x_y, x_y);
+                cluster_data.temperatures[i] = (GLint) temp_data(i,x_y,x_y);
             }
 
             int increment(1);
@@ -74,18 +56,13 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
                 cluster_data.slope += (multiplier * increment);
                 cluster_data.slope = std::min(90.f, std::max(0.f, cluster_data.slope));
 
-                for(int i = 0; i < 2; i++)
+                for(int i = 0; i < 12; i++)
                 {
                     int tmp_illumination = std::min(24, std::max(0, ((int)cluster_data.illumination[i]) + (multiplier * increment)));
                     cluster_data.illumination[i] = (GLuint)tmp_illumination;
-
-                    cluster_data.temperatures[i] = std::max(0, cluster_data.temperatures[i] + (multiplier*increment));
-                }
-
-                for(int i = 0; i < 12; i++)
-                {
                     cluster_data.soil_humidities[i] += (multiplier * increment);
                     cluster_data.soil_humidities[i] = std::max(0.f, cluster_data.soil_humidities[i]);
+                    cluster_data.temperatures[i] = std::max(0, cluster_data.temperatures[i] + (multiplier*increment));
                 }
                 increment++;
             }
@@ -99,9 +76,13 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         clusters.push_to_gpu(); // Pushes data to the GPU
     }
 
-    clustering_fn(clusters, resources, memberships, 100); // Perform clustering
+    clusters.summarize();
+
+    clustering_fn(clusters, resources, memberships, 50); // Perform clustering
     memberships.syncFromGPU();
     clusters.sync_from_gpu();
+
+//    qCritical() << "Memberships [" << memberships.width() << "," << memberships.height() << "]";
 
 //    int total_iterations(100);
 
@@ -139,6 +120,23 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
     for(int i(0); i < k; i++)
     {
         clusters.setMembershipCount(i, n_members[i]);
+    }
+
+    // Set the remaining temperatures
+    for(int cluster_idx(0); cluster_idx < k; cluster_idx++)
+    {
+        ClusterData cluster_data(clusters.getClusterData(cluster_idx));
+        int jun_temp(cluster_data.temperatures[5]);
+        for(int month_diff(1); month_diff < 7; month_diff++)
+        {
+            float temp(jun_temp+(month_diff*monthly_temperature_change));
+
+            if(month_diff < 6)
+                cluster_data.temperatures[5-month_diff] = temp;
+
+            cluster_data.temperatures[5+month_diff] = temp;
+        }
+        clusters.set(cluster_idx, cluster_data);
     }
 
 //    qCritical() << "*** FINAL CLUSTERS ***";

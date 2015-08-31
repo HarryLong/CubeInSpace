@@ -6,9 +6,6 @@
 class TerrainDailyIllumination : public TextureElement2DArray<GLubyte>
 {
 public:
-    static const int _MIN_LAYER_IDX = 0;
-    static const int _MAX_LAYER_IDX = 1;
-
     TerrainDailyIllumination();
     ~TerrainDailyIllumination();
 };

@@ -20,7 +20,7 @@ public slots:
                 float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity, float weighted_soil_humidity,
                 bool shade_set, bool shaded,
                 bool temp_set, float temp,
-                bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination);
+                bool daily_illumination_set, int daily_illumination);
     void invalidPoint();
 
 private slots:
@@ -29,8 +29,7 @@ private slots:
     void setSlope(float slope);
     void setTemp(float temp);
     void setShaded(bool shaded);
-    void setMinDailyIllumination(int min_daily_illumination);
-    void setMaxDailyIllumination(int max_daily_illumination);
+    void setDailyIllumination(int daily_illumination);
     void setWaterHeight(float water_height);
     void setSoilInfiltrationRate(int soil_infiltration_rate);
     void setSoilHumidity(int soil_humidity);
@@ -52,8 +51,7 @@ private:
         _WEIGHTED_SOIL_HUMIDITY,
         _SHADE,
         _TEMP,
-        _MIN_DAILY_ILLUMINATION,
-        _MAX_DAILY_ILLUMINATION,
+        _DAILY_ILLUMINATION,
         _WATER_HEIGHT,
         _AGGREGATE_HEIGHT
     };

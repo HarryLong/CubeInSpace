@@ -18,13 +18,13 @@ public:
     ResourceWrapper();
     ~ResourceWrapper();
 
-    void getResourceInfo(const glm::vec2 & pos, int month, float & slope, float & water_height, bool & shaded, int & min_illumination,
-                         int & max_illumination, float & temp, int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity);
+    void getResourceInfo(const glm::vec2 & pos, int month, float & slope, float & water_height, bool & shaded, int & illumination,
+                         int & temp, int & soil_infiltration_rate, int & soil_humidity, float & weighted_soil_humidity);
 
     void valid(bool & shade, bool & daily_illumination, bool & temp);
     void refreshShade(Terrain & terrain, const glm::vec3 & sun_position);
     void refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain);
-    void refreshTemperature(const Terrain & terrain, float temp_at_zero_june, float temp_at_zero_dec, float lapse_rate);
+    void refreshTemperature(const Terrain & terrain, int temp_at_zero_june, int temp_at_zero_dec, float lapse_rate);
 
     TerrainWater & getTerrainWater();
     SoilInfiltration & getSoilInfiltration();

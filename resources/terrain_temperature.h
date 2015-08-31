@@ -6,9 +6,6 @@
 class TerrainTemperature : public TextureElement2DArray<GLbyte>
 {
 public:
-    static const int _JUN_LAYER_IDX = 0;
-    static const int _DEC_LAYER_IDX = 1;
-
     TerrainTemperature();
     ~TerrainTemperature();
 };

@@ -149,8 +149,6 @@ private:
     bool overlay_altitude();
     bool overlay_shade();
     bool overlay_temperature();
-    bool overlay_min_illumination();
-    bool overlay_max_illumination();
     bool overlay_illumination();
     bool overlay_soil_infiltration();
     bool overlay_monthly_soil_humidity();

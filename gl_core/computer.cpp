@@ -92,11 +92,8 @@ ComputeShaderProgram * Computer::get_overlay_creator_shader(const char * active_
         return &m_shaders.m_overlay_creator_shaders.m_shade;
     else if(active_overlay == Uniforms::Overlay::_TEMPERATURE)
         return &m_shaders.m_overlay_creator_shaders.m_temperature;
-    else if(active_overlay == Uniforms::Overlay::_MIN_DAILY_ILLUMINATION ||
-            active_overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION)
-    {
+    else if(active_overlay == Uniforms::Overlay::_ILLUMINATION)
         return &m_shaders.m_overlay_creator_shaders.m_daily_illumination;
-    }
     else if(active_overlay == Uniforms::Overlay::_SOIL_INFILTRATION_RATE)
         return &m_shaders.m_overlay_creator_shaders.m_soil_infiltration_rate;
     else if(active_overlay == Uniforms::Overlay::_MONTHLY_SOIL_HUMIDITY)
@@ -152,18 +149,12 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id,
     else if(active_overlay == Uniforms::Overlay::_TEMPERATURE)
     {
         shader->setUniformValue(Uniforms::Texture::_TEMPERATURE, 0); CE();
-        resources.getTerrainTemp().bind();
-        shader->setUniformValue(Uniforms::Timing::_MONTH, month); CE();
+        resources.getTerrainTemp()[month-1]->bind();
     }
-    else if(active_overlay == Uniforms::Overlay::_MIN_DAILY_ILLUMINATION)
+    else if(active_overlay == Uniforms::Overlay::_ILLUMINATION)
     {
         shader->setUniformValue(Uniforms::Texture::_DAILY_ILLUMINATION, 0); CE();
-        resources.getDailyIllumination()[TerrainDailyIllumination::_MIN_LAYER_IDX]->bind();
-    }
-    else if(active_overlay == Uniforms::Overlay::_MAX_DAILY_ILLUMINATION)
-    {
-        shader->setUniformValue(Uniforms::Texture::_DAILY_ILLUMINATION, 0); CE();
-        resources.getDailyIllumination()[TerrainDailyIllumination::_MAX_LAYER_IDX]->bind();
+        resources.getDailyIllumination()[month-1]->bind();
     }
     else if(active_overlay == Uniforms::Overlay::_SOIL_INFILTRATION_RATE)
     {
@@ -538,11 +529,13 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
 
     // Reset size of reduction textures
     m_slope_and_humidity_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*13, closest_cluster_group_count.y);
-    m_temperature_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*3, closest_cluster_group_count.y);
-    m_daily_illumination_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*2, closest_cluster_group_count.y);
+    m_temperature_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*2, closest_cluster_group_count.y);
+    m_daily_illumination_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*12, closest_cluster_group_count.y);
 
     for(int cluster_iteration(0); cluster_iteration < clustering_iterations; cluster_iteration++)
     {
+        qCritical() << "Clustering iteration: " << cluster_iteration;
+        qCritical() << "Final clustering iteration: " << (cluster_iteration == clustering_iterations-1 ? "Yes" : "No");
         /****************************************
          * FIND CLOSEST CLUSTERS FOR EACH POINT *
          ****************************************/
@@ -559,7 +552,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
              *****************************/
             f->glBindImageTexture(1, clusters.m_slope_cluster_data.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             // TEMPERATURE
-            f->glBindImageTexture(2, clusters.m_temperature_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
+            f->glBindImageTexture(2, clusters.m_temperature_cluster_data[5]->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
             // DAILY ILLUMINATION
             f->glBindImageTexture(3, clusters.m_daily_illumination_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8);  CE();
             // WEIGHTED SOIL HUMIDITY
@@ -590,7 +583,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
             {
                 f->glActiveTexture(texture_unit); CE();
                 m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Texture::_TEMPERATURE, texture_unit-GL_TEXTURE0); CE();
-                resources.getTerrainTemp().bind() ;CE();
+                resources.getTerrainTemp()[5]->bind() ;CE();
                 texture_unit++;
             }
             // Daily illumination
@@ -723,7 +716,7 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
              *****************************/
             f->glBindImageTexture(0, clusters.m_slope_cluster_data.textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);  CE();
             // TEMPERATURE
-            f->glBindImageTexture(1, clusters.m_temperature_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
+            f->glBindImageTexture(1, clusters.m_temperature_cluster_data[5]->textureId(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8_SNORM);  CE();
             // DAILY ILLUMINATION
             f->glBindImageTexture(2, clusters.m_daily_illumination_cluster_data.textureId(), 0, GL_TRUE, 0, GL_READ_WRITE, GL_R8);  CE();
             // WEIGHTED SOIL HUMIDITY

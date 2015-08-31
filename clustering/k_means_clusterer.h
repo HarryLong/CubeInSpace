@@ -19,7 +19,8 @@ public:
     ~KMeansClusterer();
 
     void perform_clustering(int k, ResourceWrapper & resources, Clusters & clusters, ClusterMembershipTexture & memberships,
-                                   std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &,int)> & clustering_fn);
+                            float monthly_temperature_change,
+                            std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &,int)> & clustering_fn);
 
 signals:
     void clustering_start(QString);

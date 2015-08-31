@@ -6,8 +6,8 @@
 class ClusterData{
 public:
     GLfloat slope;
-    GLint temperatures[2];
-    GLuint illumination[2];
+    GLint temperatures[12];
+    GLuint illumination[12];
     GLfloat soil_humidities[12];
     int member_count;
     bool operator==(const ClusterData & other);

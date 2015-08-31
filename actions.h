@@ -104,8 +104,7 @@ public:
     const static QString _ALTITUDE;
     const static QString _SHADE;
     const static QString _TEMPERATURE;
-    const static QString _MIN_DAILY_ILLUMINATION;
-    const static QString _MAX_DAILY_ILLUMINATION;
+    const static QString _ILLUMINATION;
     const static QString _SOIL_INFILTRATION_RATE;
     const static QString _MONTHLY_SOIL_HUMIDITY;
     const static QString _WEIGHTED_AVG_SOIL_HUMIDITY;

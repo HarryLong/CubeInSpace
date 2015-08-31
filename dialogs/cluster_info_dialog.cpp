@@ -40,33 +40,57 @@ const QColor ClusterInfoTable::_CLUSTER_COLORS[216] = {
     QColor(204,204,51), QColor(0,0,204), QColor(255,102,255), QColor(153,51,204), QColor(0,51,0), QColor(0,153,0)
 };
 
+ClusterInfoTable::RowIndices ClusterInfoTable::build_row_indices()
+{
+    RowIndices row_indices;
+    int row_idx(0);
+    row_indices.cluster_id = row_idx++;
+    row_indices.color = row_idx++;
+    row_indices.member_count = row_idx++;
+    row_indices.slope = row_idx++;
+    for(int i = 0; i < 12; i++)
+        row_indices.temp[i] = row_idx++;
+    for(int i = 0; i < 12; i++)
+        row_indices.illumination[i] = row_idx++;
+    for(int i = 0; i < 12; i++)
+        row_indices.soil_humidity[i] = row_idx++;
+    row_indices.row_count = row_idx;
+
+    return row_indices;
+}
+
+ClusterInfoTable::RowIndices ClusterInfoTable::_ROW_INDICES = ClusterInfoTable::build_row_indices();
 ClusterInfoTable::ClusterInfoTable(QWidget * parent) : QTableWidget(parent)
 {
+    ClusterInfoTable::build_row_indices();
+
     setWindowTitle("Clusters");
 
-    setRowCount(ClusterInfoTable::Rows::_ROW_COUNT);
+    setRowCount(_ROW_INDICES.row_count);
     setColumnCount(0);
 
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_CLUSTER_ID, new QTableWidgetItem("Cluster ID"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_COLOR, new QTableWidgetItem("Color"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_MEMBER_COUNT, new QTableWidgetItem("# members"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SLOPE, new QTableWidgetItem("Slope"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_TEMP_JUN, new QTableWidgetItem("Temp (Jun)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_TEMP_DEC, new QTableWidgetItem("Temp (Dec)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_MIN_ILLUMINATION, new QTableWidgetItem("Min Illumination"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_MAX_ILLUMINATION, new QTableWidgetItem("Max Illumination"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_JAN, new QTableWidgetItem("Soil Humidity (Jan)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_FEB, new QTableWidgetItem("Soil Humidity (Feb)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_MAR, new QTableWidgetItem("Soil Humidity (Mar)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_APR, new QTableWidgetItem("Soil Humidity (Apr)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_MAY, new QTableWidgetItem("Soil Humidity (May)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_JUN, new QTableWidgetItem("Soil Humidity (Jun)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_JUL, new QTableWidgetItem("Soil Humidity (Jul)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_AUG, new QTableWidgetItem("Soil Humidity (Aug)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_SEP, new QTableWidgetItem("Soil Humidity (Sep)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_OCT, new QTableWidgetItem("Soil Humidity (Oct)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_NOV, new QTableWidgetItem("Soil Humidity (Nov)"));
-    setVerticalHeaderItem(ClusterInfoTable::Rows::_SOIL_HUMIDITY_DEC, new QTableWidgetItem("Soil Humidity (Dec)"));
+    setVerticalHeaderItem(_ROW_INDICES.cluster_id, new QTableWidgetItem("Cluster ID"));
+    setVerticalHeaderItem(_ROW_INDICES.color, new QTableWidgetItem("Color"));
+    setVerticalHeaderItem(_ROW_INDICES.member_count, new QTableWidgetItem("# members"));
+    setVerticalHeaderItem(_ROW_INDICES.slope, new QTableWidgetItem("Slope"));
+    for(int i = 0; i < 12; i++)
+    {
+        QString heading ("Temp [");
+        heading.append(QString::number(i+1)).append("]");
+        setVerticalHeaderItem(_ROW_INDICES.temp[i], new QTableWidgetItem(heading));
+    }
+    for(int i = 0; i < 12; i++)
+    {
+        QString heading ("Illumination [");
+        heading.append(QString::number(i+1)).append("]");
+        setVerticalHeaderItem(_ROW_INDICES.illumination[i], new QTableWidgetItem(heading));
+    }
+    for(int i = 0; i < 2; i++)
+    {
+        QString heading ("Soil Humdity [");
+        heading.append(QString::number(i+1)).append("]");
+        setVerticalHeaderItem(_ROW_INDICES.soil_humidity[i], new QTableWidgetItem(heading));
+    }
 }
 
 ClusterInfoTable::~ClusterInfoTable()
@@ -77,31 +101,31 @@ ClusterInfoTable::~ClusterInfoTable()
 void ClusterInfoTable::addCluster(ClusterData cluster_data, int cluster_id)
 {
     // Cluster ID
-    setItem(ClusterInfoTable::Rows::_CLUSTER_ID, cluster_id, generate_read_only_cell(QString::number(cluster_id)));
+    setItem(_ROW_INDICES.cluster_id, cluster_id, generate_read_only_cell(QString::number(cluster_id)));
     // Color
     {
         QTableWidgetItem * color_cell (generate_read_only_cell(""));
         color_cell->setBackgroundColor(ClusterInfoTable::_CLUSTER_COLORS[cluster_id]);
-        setItem(ClusterInfoTable::Rows::_COLOR, cluster_id, color_cell);
+        setItem(_ROW_INDICES.color, cluster_id, color_cell);
     }
     // Member count
-    setItem(ClusterInfoTable::Rows::_MEMBER_COUNT, cluster_id, generate_read_only_cell(QString::number(cluster_data.member_count)));
+    setItem(_ROW_INDICES.member_count, cluster_id, generate_read_only_cell(QString::number(cluster_data.member_count)));
     // Slope
-    setItem(ClusterInfoTable::Rows::_SLOPE, cluster_id, generate_read_only_cell(QString::number(cluster_data.slope)));
+    setItem(_ROW_INDICES.slope, cluster_id, generate_read_only_cell(QString::number(cluster_data.slope)));
     // Temp
-    for(int i(ClusterInfoTable::Rows::_TEMP_JUN); i <= ClusterInfoTable::Rows::_TEMP_DEC; i++)
+    for(int i(0); i < 12; i++)
     {
-        setItem(static_cast<ClusterInfoTable::Rows>(i), cluster_id, generate_read_only_cell(QString::number(cluster_data.temperatures[i-ClusterInfoTable::Rows::_TEMP_JUN])));
+        setItem(i+_ROW_INDICES.temp[0], cluster_id, generate_read_only_cell(QString::number(cluster_data.temperatures[i])));
     }
     // Illumination
-    for(int i(ClusterInfoTable::Rows::_MIN_ILLUMINATION); i <= ClusterInfoTable::Rows::_MAX_ILLUMINATION; i++)
+    for(int i(0); i < 12; i++)
     {
-        setItem(static_cast<ClusterInfoTable::Rows>(i), cluster_id, generate_read_only_cell(QString::number(cluster_data.illumination[i-ClusterInfoTable::Rows::_MIN_ILLUMINATION])));
+        setItem(i+_ROW_INDICES.illumination[0], cluster_id, generate_read_only_cell(QString::number(cluster_data.illumination[i])));
     }
-    // Soil Humidity
-    for(int i(ClusterInfoTable::Rows::_SOIL_HUMIDITY_JAN); i <= ClusterInfoTable::Rows::_SOIL_HUMIDITY_DEC; i++)
+    // Temp
+    for(int i(0); i < 12; i++)
     {
-        setItem(static_cast<ClusterInfoTable::Rows>(i), cluster_id, generate_read_only_cell(QString::number(cluster_data.soil_humidities[i-ClusterInfoTable::Rows::_SOIL_HUMIDITY_JAN])));
+        setItem(i+_ROW_INDICES.soil_humidity[0], cluster_id, generate_read_only_cell(QString::number(cluster_data.soil_humidities[i])));
     }
 }
 

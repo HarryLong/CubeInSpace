@@ -4,7 +4,7 @@ layout (local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
 
-uniform sampler2D daily_illumination_texture;
+uniform sampler2D illumination_texture;
 
 vec4 daily_illumination_to_output_color(in uint daily_illumination)
 {
@@ -35,7 +35,7 @@ void main()
     {
         vec2 texture_coord = vec2(float(global_idx.x)/(heightmap_size.x-1), float(global_idx.y)/(heightmap_size.y-1));
 
-        uint daily_illumination = ui_unnormalize(texture(daily_illumination_texture, texture_coord).r);
+        uint daily_illumination = ui_unnormalize(texture(illumination_texture, texture_coord).r);
         vec4 resulting_color = daily_illumination_to_output_color(daily_illumination);
 
         imageStore(resulting_overlay, global_idx, resulting_color);

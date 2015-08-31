@@ -11,7 +11,7 @@ uniform bool final_clustering_iteration;
 
 // CLUSTER DATA
 layout(binding = 1, r32f) uniform coherent image2D slope_cluster_data;
-layout(binding = 2, r8_snorm) uniform coherent image2DArray temperature_cluster_data;
+layout(binding = 2, r8_snorm) uniform coherent image2D temperature_cluster_data;
 layout(binding = 3, r8) uniform coherent image2DArray daily_illumination_cluster_data;
 layout(binding = 4, r32f) uniform coherent image2DArray weighted_avg_soil_humidity_cluster_data;
 
@@ -21,15 +21,15 @@ layout(binding = 7, r32f) uniform coherent image2DArray daily_illumination_reduc
 
 // RESOURCE DATA
 uniform sampler2D slope_texture;
-uniform sampler2DArray temperature_texture;
-uniform sampler2DArray daily_illumination_texture;
+uniform sampler2D temperature_texture;
+uniform sampler2DArray illumination_texture;
 uniform sampler2DArray weighted_avg_soil_humidity_texture;
 
 struct ClusteringEntities
 {
     float slope;
-    float temp[2];
-    float illumination[2];
+    float temp;
+    float illumination[12];
     float soil_humidities[12];
 };
 
@@ -40,16 +40,13 @@ float calculateDistance(in ClusteringEntities cluster_one, in ClusteringEntities
     // SLOPE
     dist += abs(cluster_one.slope-cluster_two.slope);
 
-    for(int i = 0; i < 2; i++)
-    {
-        dist += 10*abs(cluster_one.temp[i]-cluster_two.temp[i]); // TEMPERATURE
-        dist += 10*abs(cluster_one.illumination[i]-cluster_two.illumination[i]); // ILLUMINATION
-    }
+    dist += abs(cluster_one.temp-cluster_two.temp) * 12; // TEMPERATURE
 
-//    // SOIL HUMIDITY
+    // Illumination & SOIL HUMIDITY
     for(int i = 0; i < 12; i++)
     {
-        dist += 0.1 * abs(cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i]); // SOIL HUMIDITY
+        dist += 0.1* abs(cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i]); // SOIL HUMIDITY
+        dist += abs(cluster_one.illumination[i]-cluster_two.illumination[i]); // ILLUMINATION
     }
 
     return dist;
@@ -101,15 +98,12 @@ void main()
 
         // Slope
         resource_entities.slope = texture(slope_texture, resource_texture_coord).r;
-        // Temperature & Illumination
-        for(int i = 0; i < 2; i++)
-        {
-            resource_entities.temp[i] = float(i_unnormalize(texture(temperature_texture, vec3(resource_texture_coord,i)).r));
-            resource_entities.illumination[i] = float(ui_unnormalize(texture(daily_illumination_texture, vec3(resource_texture_coord,i)).r));
-        }
-        // Soil humidity
+        resource_entities.temp = float(i_unnormalize(texture(temperature_texture, resource_texture_coord).r));
+
+        // Soil humidity & Temperature & Illumination
         for(int month = 0; month < 12; month++)
         {
+            resource_entities.illumination[month] = float(ui_unnormalize(texture(illumination_texture, vec3(resource_texture_coord,month)).r));
             resource_entities.soil_humidities[month] = texture(weighted_avg_soil_humidity_texture, vec3(resource_texture_coord, month)).r;
         }
 
@@ -132,19 +126,12 @@ void main()
             *********************/
             // Slope
             cluster_entities.slope = imageLoad(slope_cluster_data, cluster_coord).x;
-            // Temperature
-            for(int i = 0; i < 2; i++)
-            {
-                cluster_entities.temp[i] = float(i_unnormalize(imageLoad(temperature_cluster_data, ivec3(cluster_coord,i)).r));
-            }
-            // Illumination
-            for(int i = 0; i < 2; i++)
-            {
-                cluster_entities.illumination[i] = float(ui_unnormalize(imageLoad(daily_illumination_cluster_data, ivec3(cluster_coord, i)).x));
-            }
-            // Soil humidity
+            cluster_entities.temp = float(i_unnormalize(imageLoad(temperature_cluster_data, cluster_coord).r));
+
+            // Temperature & Illumination & Soil humidity
             for(int month = 0; month < 12; month++)
             {
+                cluster_entities.illumination[month] = float(ui_unnormalize(imageLoad(daily_illumination_cluster_data, ivec3(cluster_coord, month)).x));
                 cluster_entities.soil_humidities[month] = imageLoad(weighted_avg_soil_humidity_cluster_data, ivec3(cluster_coord, month)).r;
             }
             float cluster_distance = calculateDistance(resource_entities, cluster_entities);
@@ -164,14 +151,11 @@ void main()
         int member_count = 0;
         ClusteringEntities new_cluster_mean;
         new_cluster_mean.slope = 0.0;
-        for(int i = 0; i < 2; i++)
-        {
-            new_cluster_mean.temp[i] = 0.0;
-            new_cluster_mean.illumination[i] = 0.0;
-        }
+        new_cluster_mean.temp = 0.0;
         for(int i = 0; i < 12; i++)
         {
             new_cluster_mean.soil_humidities[i] = 0.0;
+            new_cluster_mean.illumination[i] = 0.0;
         }
 
         // AGGREGATE
@@ -185,18 +169,12 @@ void main()
                     member_count++;
                     // Slope
                     new_cluster_mean.slope += work_group_resource_entities[membership_idx_x][membership_idx_y].slope;
-                    for(int i = 0; i < 2; i++)
-                    {
-                        new_cluster_mean.temp[i] += work_group_resource_entities[membership_idx_x][membership_idx_y].temp[i];
-                    }
-                    for(int i = 0; i < 2; i++)
-                    {
-                        new_cluster_mean.illumination[i] += work_group_resource_entities[membership_idx_x][membership_idx_y].illumination[i];
-                    }
-                    // Soil humidity
+                    new_cluster_mean.temp += work_group_resource_entities[membership_idx_x][membership_idx_y].temp;
+                    // Illumination & Soil humidity & Temperature
                     for(int month = 0; month < 12; month++)
                     {
                         new_cluster_mean.soil_humidities[month] += work_group_resource_entities[membership_idx_x][membership_idx_y].soil_humidities[month];
+                        new_cluster_mean.illumination[month] += work_group_resource_entities[membership_idx_x][membership_idx_y].illumination[month];
                     }
                 }
             }
@@ -205,13 +183,10 @@ void main()
         if(member_count > 0)
         {
             new_cluster_mean.slope /= member_count;
-            for(int i = 0; i < 2; i++)
-            {
-                new_cluster_mean.temp[i] /= member_count;
-                new_cluster_mean.illumination[i] /= member_count;
-            }
+            new_cluster_mean.temp /= member_count;
             for(int month = 0; month < 12; month++)
             {
+                new_cluster_mean.illumination[month] /= member_count;
                 new_cluster_mean.soil_humidities[month] /= member_count;
             }
         }
@@ -231,16 +206,17 @@ void main()
             }
             // TEMPERATURE
             {
-                uint index_x = gl_WorkGroupID.x*3;
+                uint index_x = gl_WorkGroupID.x*2;
                 imageStore(temperature_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(member_count,0,0,0));
-                imageStore(temperature_reducer, ivec3(index_x+1, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.temp[0],0,0,0));
-                imageStore(temperature_reducer, ivec3(index_x+2, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.temp[1],0,0,0));
+                imageStore(temperature_reducer, ivec3(index_x+1, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.temp,0,0,0));
             }
             // ILLUMINATION
             {
-                uint index_x = gl_WorkGroupID.x * 2;
-                imageStore(daily_illumination_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.illumination[0],0,0,0));
-                imageStore(daily_illumination_reducer, ivec3(index_x+1, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.illumination[1],0,0,0));
+                uint index_x = gl_WorkGroupID.x * 12;
+                for(int month = 0; month < 12; month++, index_x++)
+                {
+                    imageStore(daily_illumination_reducer, ivec3(index_x, index_y, mean_calculator_cluster_idx), vec4(new_cluster_mean.illumination[month],0,0,0));
+                }
             }
         }
     }

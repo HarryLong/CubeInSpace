@@ -78,11 +78,7 @@ void MainWindow::init_menu_elements()
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SHADE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_TEMPERATURE]);
         m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]);
-
-        m_illumination_submenu = new QMenu("Illumination");
-        m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MIN_DAILY_ILLUMINATION]);
-        m_illumination_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MAX_DAILY_ILLUMINATION]);
-        m_overlay_menu->addMenu(m_illumination_submenu);
+        m_overlay_menu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_ILLUMINATION]);
 
         m_soil_humidity_submenu = new QMenu("Soil humidity");
         m_soil_humidity_submenu->addAction(m_actions->m_overlay_actions[OverlayActionFamily::_MONTHLY_SOIL_HUMIDITY]);

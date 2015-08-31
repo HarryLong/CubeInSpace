@@ -25,8 +25,7 @@ void PointerInformationDialog::init_labels()
     m_labels[LabelType::_WEIGHTED_SOIL_HUMIDITY] = new QLabel(this);
     m_labels[LabelType::_SHADE] = new QLabel(this);
     m_labels[LabelType::_TEMP] = new QLabel(this);
-    m_labels[LabelType::_MIN_DAILY_ILLUMINATION] = new QLabel(this);
-    m_labels[LabelType::_MAX_DAILY_ILLUMINATION] = new QLabel(this);
+    m_labels[LabelType::_DAILY_ILLUMINATION] = new QLabel(this);
     m_labels[LabelType::_WATER_HEIGHT] = new QLabel(this);
     m_labels[LabelType::_AGGREGATE_HEIGHT] = new QLabel(this);
 }
@@ -69,14 +68,9 @@ void PointerInformationDialog::setTemp(float temp)
     m_labels[LabelType::_TEMP]->setText(QString::number(temp));
 }
 
-void PointerInformationDialog::setMinDailyIllumination(int min_daily_illumination)
+void PointerInformationDialog::setDailyIllumination(int daily_illumination)
 {
-    m_labels[LabelType::_MIN_DAILY_ILLUMINATION]->setText(QString::number(min_daily_illumination));
-}
-
-void PointerInformationDialog::setMaxDailyIllumination(int max_daily_illumination)
-{
-    m_labels[LabelType::_MAX_DAILY_ILLUMINATION]->setText(QString::number(max_daily_illumination));
+    m_labels[LabelType::_DAILY_ILLUMINATION]->setText(QString::number(daily_illumination));
 }
 
 void PointerInformationDialog::setWaterHeight(float water_height)
@@ -109,7 +103,7 @@ void PointerInformationDialog::update(const glm::vec2 & point,
                                       float altitude, float slope, float water_height, int soil_infiltration_rate, int soil_humidity, float weighted_soil_humidity,
                                       bool shade_set, bool shaded,
                                       bool temp_set, float temp,
-                                      bool daily_illumination_set, int min_daily_illumination, int max_daily_illumination)
+                                      bool daily_illumination_set, int daily_illumination)
 {
     //POINT
     setPoint(point);
@@ -142,25 +136,15 @@ void PointerInformationDialog::update(const glm::vec2 & point,
 
     // MIN-MAX TEMPERATURE
     if(temp_set)
-    {
         setTemp(temp);
-    }
     else
-    {
         setInvalid(m_labels[LabelType::_TEMP]);
-    }
 
     // MIN-MAX DAILY ILLUMINATION
     if(daily_illumination_set)
-    {
-        setMinDailyIllumination(min_daily_illumination);
-        setMaxDailyIllumination(max_daily_illumination);
-    }
+        setDailyIllumination(daily_illumination);
     else
-    {
-        setInvalid(m_labels[LabelType::_MIN_DAILY_ILLUMINATION]);
-        setInvalid(m_labels[LabelType::_MAX_DAILY_ILLUMINATION]);
-    }
+        setInvalid(m_labels[LabelType::_DAILY_ILLUMINATION]);
 }
 
 void PointerInformationDialog::setInvalid(QLabel * lbl)
@@ -254,19 +238,8 @@ void PointerInformationDialog::init_layout()
     {
         QHBoxLayout * layout (new QHBoxLayout);
 
-        layout->addWidget(new QLabel("Min daily illumination (h.): "), 1, Qt::AlignLeft);
-        layout->addWidget(m_labels[LabelType::_MIN_DAILY_ILLUMINATION], 1, Qt::AlignRight);
-
-        main_layout->addLayout(layout, 0);
-    }
-
-    // Max daily illumination
-    {
-        QHBoxLayout * layout (new QHBoxLayout);
-
-
-        layout->addWidget(new QLabel("Max daily illumination (h.): "), 1, Qt::AlignLeft);
-        layout->addWidget(m_labels[LabelType::_MAX_DAILY_ILLUMINATION], 1, Qt::AlignRight);
+        layout->addWidget(new QLabel("Daily illumination (h.): "), 1, Qt::AlignLeft);
+        layout->addWidget(m_labels[LabelType::_DAILY_ILLUMINATION], 1, Qt::AlignRight);
 
         main_layout->addLayout(layout, 0);
     }
@@ -281,7 +254,6 @@ void PointerInformationDialog::init_layout()
 
         main_layout->addLayout(layout, 0);
     }
-
 
     // Aggregate height
     {
