@@ -114,6 +114,16 @@ void MainWindow::init_menu_elements()
         m_clustering_show_menu = new QMenu("Show");
         m_clustering_show_menu->addAction(m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]);
     }
+
+    /************************
+     * PLANTS MENU ELEMENTS *
+     ************************/
+    // CLUSTERING SHOW MENU
+    {
+        m_plants_show_menu = new QMenu("Show");
+        m_plants_show_menu->addAction(m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]);
+        m_plants_show_menu->addAction(m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION]);
+    }
 }
 
 void MainWindow::setEditMenu()
@@ -148,6 +158,7 @@ void MainWindow::setPlantsMenu()
     menuBar()->addMenu(m_mode_menu);
     menuBar()->addMenu(m_render_menu);
     menuBar()->addMenu(m_controls_menu);
+    menuBar()->addMenu(m_plants_show_menu);
 }
 
 void MainWindow::establish_connections()

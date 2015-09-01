@@ -2,7 +2,7 @@
 
 Dialogs::Dialogs(QWidget * parent) :
     m_settings_dlg(parent), m_temp_editor_dlg(parent), m_pointer_info_dlg(parent), m_monthly_rainfall_edit_dlg(parent),
-    m_cluster_info_dlg(parent)
+    m_cluster_info_dlg(parent), m_plant_selection_dlg(parent)
 {
 
 }
@@ -10,6 +10,13 @@ Dialogs::Dialogs(QWidget * parent) :
 Dialogs::~Dialogs()
 {
 
+}
+
+void Dialogs::hideAll()
+{
+    triggerPointerInfoDialog(false);
+    triggerClusterInfoDialog(false);
+    triggetPlantSelectionDialog(false);
 }
 
 void Dialogs::showSettingsDialog()
@@ -44,4 +51,12 @@ void Dialogs::triggerClusterInfoDialog(bool show)
         m_cluster_info_dlg.show();
     else if(!show && m_cluster_info_dlg.isVisible())
         m_cluster_info_dlg.hide();
+}
+
+void Dialogs::triggetPlantSelectionDialog(bool show)
+{
+    if(show && !m_plant_selection_dlg.isVisible())
+        m_plant_selection_dlg.show();
+    else if(!show && m_plant_selection_dlg.isVisible())
+        m_plant_selection_dlg.hide();
 }

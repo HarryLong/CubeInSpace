@@ -41,6 +41,8 @@ private:
 
     QMenu * m_clustering_show_menu;
 
+    QMenu * m_plants_show_menu;
+
     // Submenu elements
     QMenu * m_illumination_submenu;
     QMenu * m_soil_humidity_submenu;

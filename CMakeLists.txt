@@ -26,9 +26,11 @@ link_directories(
     "lib/"
 )
 
+set(LIBS "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU TerragenFileManager PlantDB)
+
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${OpenMP_CXX_FLAGS} -O2 -g -std=c++11")
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -O2 -std=c++11")
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -O0 -g -DGL_DEBUG -std=c++11")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -O0 -g -std=c++11")
 #SET(CMAKE_BUILD_TYPE DEBUG)
 #SET(CMAKE_BUILD_TYPE RELEASE)
 SET(CMAKE_BUILD_TYPE RELWITHDEBINFO)
@@ -40,7 +42,7 @@ resources/weighted_soil_humidity resources/slope)
 SET(LIGHTING_SOURCE_FILES lighting/lighting_manager lighting/light_properties)
 
 SET(DIALOGS_SOURCE_FILES dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs
-    dialogs/monthly_rainfall_edit_dlg dialogs/cluster_info_dialog)
+    dialogs/monthly_rainfall_edit_dlg dialogs/cluster_info_dialog dialogs/plant_selection_dlg)
 
 SET(SHADER_SOURCE_FILES shaders/rendering_shader_programs shaders/rendering_shaders
 shaders/compute_shader_programs shaders/compute_shaders shaders/uniforms)
@@ -82,4 +84,4 @@ qt5_add_resources(RESOURCES ${SHADER_RESOURCES})
 
 add_executable(CubeInSpace ${SOURCE_FILES} ${RESOURCES})
 # Use the Widgets module from Qt 5.
-target_link_libraries(CubeInSpace "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU TerragenFileManager)
+target_link_libraries(CubeInSpace ${LIBS})

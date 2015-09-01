@@ -124,6 +124,8 @@ class ShowActionFamily : public ActionFamily{
 public:
     const static QString _POINTER_INFO;
     const static QString _CLUSTERS_INFO;
+    const static QString _PLANT_SELECTION;
+
     ShowActionFamily();
     ~ShowActionFamily();
 

@@ -94,6 +94,8 @@ private slots:
     void edit(QAction * triggered_action);
     void reset_edit();
 
+    void hide_all_dialogs();
+
     void set_overlays_active(bool active);
     void set_edit_actions_active(bool active);
 

@@ -1388,8 +1388,7 @@ void GLWidget::disable_clustering()
 
 void GLWidget::trigger_edit_mode()
 {
-    m_dialogs.triggerClusterInfoDialog(false);
-    m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(false);
+    hide_all_dialogs();
 
     m_actions->m_mode_actions[ModeActionFamily::_RESOURCE_EDIT]->setChecked(true);
     m_overlay_widgets.hideAll();
@@ -1400,8 +1399,7 @@ void GLWidget::trigger_edit_mode()
 
 void GLWidget::trigger_clustering_mode()
 {
-    m_dialogs.triggerPointerInfoDialog(false);
-    m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO]->setChecked(false);
+    hide_all_dialogs();
 
     reset_edit();
     makeCurrent();
@@ -1414,8 +1412,21 @@ void GLWidget::trigger_clustering_mode()
 
 void GLWidget::trigger_plant_mode()
 {
+    hide_all_dialogs();
+
     reset_edit();
-    qCritical() << "Plant mode enabled...";
+    reset_overlay();
+
+    m_dialogs.triggetPlantSelectionDialog(true);
+    m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION]->setChecked(true);
+}
+
+void GLWidget::hide_all_dialogs()
+{
+    m_dialogs.hideAll();
+    m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO]->setChecked(false);
+    m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(false);
+    m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION]->setChecked(false);
 }
 
 void GLWidget::temp_invalidated()

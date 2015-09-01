@@ -189,6 +189,7 @@ void OverlayActionFamily::init_actions()
  ****************/
 const QString ShowActionFamily::_POINTER_INFO = "Pointer Info";
 const QString ShowActionFamily::_CLUSTERS_INFO = "Clusters Info";
+const QString ShowActionFamily::_PLANT_SELECTION = "Plant Selection";
 ShowActionFamily::ShowActionFamily() : ActionFamily(true, true)
 {
     init_actions();
@@ -196,6 +197,7 @@ ShowActionFamily::ShowActionFamily() : ActionFamily(true, true)
 
     m_actions[ShowActionFamily::_POINTER_INFO]->setChecked(false);
     m_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(false);
+    m_actions[ShowActionFamily::_PLANT_SELECTION]->setChecked(false);
 }
 
 ShowActionFamily::~ShowActionFamily()
@@ -207,6 +209,7 @@ void ShowActionFamily::init_actions()
 {
     m_actions[ShowActionFamily::_POINTER_INFO] = new QAction(ShowActionFamily::_POINTER_INFO, NULL);
     m_actions[ShowActionFamily::_CLUSTERS_INFO] = new QAction(ShowActionFamily::_CLUSTERS_INFO, NULL);
+    m_actions[ShowActionFamily::_PLANT_SELECTION] = new QAction(ShowActionFamily::_PLANT_SELECTION, NULL);
 }
 
 /*****************
