@@ -128,6 +128,7 @@ private slots:
     void trigger_plant_mode();
 
     void standing_water_set(int month);
+    void enable_plant_edit(bool enable);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);

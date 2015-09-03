@@ -14,9 +14,9 @@ Dialogs::~Dialogs()
 
 void Dialogs::hideAll()
 {
-    triggerPointerInfoDialog(false);
-    triggerClusterInfoDialog(false);
-    triggetPlantSelectionDialog(false);
+    hidePointerInfoDialog();
+    hideClusterInfoDialog();
+    hidePlantSelectionDialog();
 }
 
 void Dialogs::showSettingsDialog()
@@ -37,26 +37,32 @@ void Dialogs::showMonthlyRainfallDialog()
         m_monthly_rainfall_edit_dlg.exec();
 }
 
-void Dialogs::triggerPointerInfoDialog(bool show)
+void Dialogs::showPointerInfoDialog()
 {
-    if(show && !m_pointer_info_dlg.isVisible())
-        m_pointer_info_dlg.show();
-    else if(!show && m_pointer_info_dlg.isVisible())
-        m_pointer_info_dlg.hide();
+    m_pointer_info_dlg.show();
 }
 
-void Dialogs::triggerClusterInfoDialog(bool show)
+void Dialogs::showClusterInfoDialog()
 {
-    if(show && !m_cluster_info_dlg.isVisible())
-        m_cluster_info_dlg.show();
-    else if(!show && m_cluster_info_dlg.isVisible())
-        m_cluster_info_dlg.hide();
+    m_cluster_info_dlg.show();
 }
 
-void Dialogs::triggetPlantSelectionDialog(bool show)
+void Dialogs::showPlantSelectionDialog()
 {
-    if(show && !m_plant_selection_dlg.isVisible())
-        m_plant_selection_dlg.show();
-    else if(!show && m_plant_selection_dlg.isVisible())
-        m_plant_selection_dlg.hide();
+    m_plant_selection_dlg.show();
+}
+
+void Dialogs::hidePointerInfoDialog()
+{
+    m_pointer_info_dlg.hide();
+}
+
+void Dialogs::hideClusterInfoDialog()
+{
+    m_cluster_info_dlg.hide();
+}
+
+void Dialogs::hidePlantSelectionDialog()
+{
+    m_plant_selection_dlg.hide();
 }

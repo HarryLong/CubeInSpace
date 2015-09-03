@@ -76,7 +76,7 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         clusters.push_to_gpu(); // Pushes data to the GPU
     }
 
-    clusters.summarize();
+//    clusters.summarize();
 
     clustering_fn(clusters, resources, memberships, 50); // Perform clustering
     memberships.syncFromGPU();

@@ -16,7 +16,6 @@ public:
     Dialogs(QWidget * parent);
     ~Dialogs();
 
-
     SettingsDialog m_settings_dlg;
     TemperatureEditDialog m_temp_editor_dlg;
     PointerInformationDialog m_pointer_info_dlg;
@@ -30,9 +29,12 @@ public slots:
     void showMonthlyRainfallDialog();
 
     void hideAll();
-    void triggerPointerInfoDialog(bool show);
-    void triggerClusterInfoDialog(bool show);
-    void triggetPlantSelectionDialog(bool show);
+    void showPointerInfoDialog();
+    void showClusterInfoDialog();
+    void showPlantSelectionDialog();
+    void hidePointerInfoDialog();
+    void hideClusterInfoDialog();
+    void hidePlantSelectionDialog();
 };
 
 #endif // DIALOGS_H

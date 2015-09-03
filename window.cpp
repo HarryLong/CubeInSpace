@@ -118,7 +118,7 @@ void MainWindow::init_menu_elements()
     /************************
      * PLANTS MENU ELEMENTS *
      ************************/
-    // CLUSTERING SHOW MENU
+    // PLANTS SHOW MENU
     {
         m_plants_show_menu = new QMenu("Show");
         m_plants_show_menu->addAction(m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]);
@@ -167,5 +167,5 @@ void MainWindow::establish_connections()
 
     connect(m_actions->m_mode_actions[ModeActionFamily::_RESOURCE_EDIT], SIGNAL(triggered()), this, SLOT(setEditMenu()));
     connect(m_actions->m_mode_actions[ModeActionFamily::_CLUSTERING], SIGNAL(triggered()), this, SLOT(setClusteringMenu()));
-    connect(m_actions->m_mode_actions[ModeActionFamily::_PLANT_EDIT], SIGNAL(triggered()), this, SLOT(setClusteringMenu()));
+    connect(m_actions->m_mode_actions[ModeActionFamily::_PLANT_EDIT], SIGNAL(triggered()), this, SLOT(setPlantsMenu()));
 }

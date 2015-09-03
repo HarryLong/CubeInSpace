@@ -534,8 +534,6 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
 
     for(int cluster_iteration(0); cluster_iteration < clustering_iterations; cluster_iteration++)
     {
-        qCritical() << "Clustering iteration: " << cluster_iteration;
-        qCritical() << "Final clustering iteration: " << (cluster_iteration == clustering_iterations-1 ? "Yes" : "No");
         /****************************************
          * FIND CLOSEST CLUSTERS FOR EACH POINT *
          ****************************************/

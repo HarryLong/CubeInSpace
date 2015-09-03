@@ -33,11 +33,15 @@ private:
 
 class ClusterInfoDialog : public QDialog
 {
+Q_OBJECT
  public:
     ClusterInfoDialog(QWidget * parent);
     ~ClusterInfoDialog();
 
     void setClusters(const Clusters & clusters);
+
+public slots:
+    void clear();
 
 private:
     void init_layout();

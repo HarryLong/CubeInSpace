@@ -120,6 +120,7 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
     setFocusPolicy(Qt::ClickFocus);
     establish_connections();
     setNavigationEnabled(true);
+    enable_plant_edit(false);
     trigger_edit_mode();
 }
 
@@ -164,8 +165,9 @@ void GLWidget::establish_connections()
     connect(m_actions->m_control_actions.getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(control_changed()));
 
     // DISPLAY DIALOGS
-    connect(m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(triggerPointerInfoDialog(bool)));
-    connect(m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(triggerClusterInfoDialog(bool)));
+    connect(m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showPointerInfoDialog()));
+    connect(m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showClusterInfoDialog()));
+    connect(m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showPlantSelectionDialog()));
     connect(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showSettingsDialog()));
 
     // UPDATE PROGRESS BAR
@@ -916,6 +918,16 @@ void GLWidget::refresh_clusters(int k)
 
     m_dialogs.m_cluster_info_dlg.setClusters(resulting_clusters);
 
+    // Format clusters
+    std::vector<ClusterData> cluster_data;
+    for(int i(0); i < k; i++)
+    {
+        cluster_data.push_back(resulting_clusters.getClusterData(i));
+    }
+    m_dialogs.m_plant_selection_dlg.setClusters(cluster_data);
+
+    enable_plant_edit(true);
+
     refresh_overlay_texture();
 
     m_fps_callback_timer->start();
@@ -1399,15 +1411,20 @@ void GLWidget::trigger_edit_mode()
 
 void GLWidget::trigger_clustering_mode()
 {
+    enable_plant_edit(false);
     hide_all_dialogs();
 
     reset_edit();
     makeCurrent();
     m_cluster_membership_texture.reset(m_terrain.getWidth(), m_terrain.getDepth());
+    m_dialogs.m_cluster_info_dlg.clear();
 
     m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN]->setEnabled(false);
     set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
     m_overlay_widgets.trigger_clustering_controllers(true);
+
+    m_dialogs.showClusterInfoDialog();
+    m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(true);
 }
 
 void GLWidget::trigger_plant_mode()
@@ -1415,18 +1432,23 @@ void GLWidget::trigger_plant_mode()
     hide_all_dialogs();
 
     reset_edit();
-    reset_overlay();
 
-    m_dialogs.triggetPlantSelectionDialog(true);
+    m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN]->setEnabled(false);
+    set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
+
+    m_dialogs.showPlantSelectionDialog();
     m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION]->setChecked(true);
+    m_overlay_widgets.hideAll();
+}
+
+void GLWidget::enable_plant_edit(bool enable)
+{
+    m_actions->m_mode_actions[ModeActionFamily::_PLANT_EDIT]->setEnabled(enable);
 }
 
 void GLWidget::hide_all_dialogs()
 {
     m_dialogs.hideAll();
-    m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO]->setChecked(false);
-    m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(false);
-    m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION]->setChecked(false);
 }
 
 void GLWidget::temp_invalidated()

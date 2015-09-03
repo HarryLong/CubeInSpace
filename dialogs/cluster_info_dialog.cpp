@@ -1,5 +1,6 @@
 #include "cluster_info_dialog.h"
 #include <QBoxLayout>
+#include <QHeaderView>
 
 const QColor ClusterInfoTable::_CLUSTER_COLORS[216] = {
     QColor(204,102,0), QColor(153,102,102), QColor(0,51,102), QColor(255,255,102), QColor(0,153,255), QColor(255,0,0),
@@ -63,8 +64,7 @@ ClusterInfoTable::RowIndices ClusterInfoTable::_ROW_INDICES = ClusterInfoTable::
 ClusterInfoTable::ClusterInfoTable(QWidget * parent) : QTableWidget(parent)
 {
     ClusterInfoTable::build_row_indices();
-
-    setWindowTitle("Clusters");
+    horizontalHeader()->setVisible(false);
 
     setRowCount(_ROW_INDICES.row_count);
     setColumnCount(0);
@@ -85,7 +85,7 @@ ClusterInfoTable::ClusterInfoTable(QWidget * parent) : QTableWidget(parent)
         heading.append(QString::number(i+1)).append("]");
         setVerticalHeaderItem(_ROW_INDICES.illumination[i], new QTableWidgetItem(heading));
     }
-    for(int i = 0; i < 2; i++)
+    for(int i = 0; i < 12; i++)
     {
         QString heading ("Soil Humdity [");
         heading.append(QString::number(i+1)).append("]");
@@ -140,6 +140,7 @@ QTableWidgetItem * ClusterInfoTable::generate_read_only_cell(QString p_cell_cont
 ClusterInfoDialog::ClusterInfoDialog(QWidget * parent) : QDialog(parent),
     m_cluster_info_table(new ClusterInfoTable(this))
 {
+    setWindowTitle("Clusters");
     setFixedSize(800, 800);
     init_layout();
 }
@@ -147,6 +148,11 @@ ClusterInfoDialog::ClusterInfoDialog(QWidget * parent) : QDialog(parent),
 ClusterInfoDialog::~ClusterInfoDialog()
 {
 
+}
+
+void ClusterInfoDialog::clear()
+{
+    m_cluster_info_table->clearContents();
 }
 
 void ClusterInfoDialog::init_layout()
@@ -166,6 +172,8 @@ void ClusterInfoDialog::setClusters(const Clusters &  clusters)
 
     for(int cluster_id(0); cluster_id < cluster_count; cluster_id++)
     {
-        m_cluster_info_table->addCluster(clusters.getClusterData(cluster_id), cluster_id);
+        ClusterData cluster_data(clusters.getClusterData(cluster_id));
+        if(cluster_data.member_count > 0)
+            m_cluster_info_table->addCluster(clusters.getClusterData(cluster_id), cluster_id);
     }
 }
