@@ -5,6 +5,7 @@
 #include <QListWidget>
 #include "plantDB/plant_db.h"
 #include "../clustering/cluster_data.h"
+#include <QLineEdit>
 
 /*****************************
  * TERRAIN SUITABILITY SCORE *
@@ -18,19 +19,19 @@ public:
         int illumination[12];
         int min_illumination;
         int max_illumination;
-        int avg_illumination;
+        float avg_illumination;
 
         int temperature[12];
         int min_temp;
         int max_temp;
-        int avg_temp;
+        float avg_temp;
 
         int soil_humidities[12];
         int min_humidity;
         int max_humidity;
-        int avg_humidity;
+        float avg_humidity;
 
-        int aggregate_avg;
+        float aggregate_avg;
     };
 
     TerrainSuitabilityScore(const SpecieProperties * specie_properties, std::vector<ClusterData> cluster_data);
@@ -38,9 +39,9 @@ public:
     ~TerrainSuitabilityScore();
     std::vector<int> getValidClusters();
     int n_clusters() const;
-    int getMaxSuitabilityScore() const;
+    float getMaxSuitabilityScore() const;
     int getMaxSuitabilityClusterIdx() const;
-    int getMinSuitabilityScore() const;
+    float getMinSuitabilityScore() const;
     int getMinSuitabilityClusterIdx() const;
     Score operator[](int cluster_idx);
 
@@ -78,15 +79,14 @@ private:
 /*********************************
  * SPECIE PROPERTIES LIST WIDGET *
  *********************************/
-class SpeciePropertiesListWidget : public QWidget
+class SpeciePropertiesListWidget : public QListWidget
 {
 Q_OBJECT
 public:
-    SpeciePropertiesListWidget(QString title, QWidget * parent = 0);
+    SpeciePropertiesListWidget( QWidget * parent = 0 );
     ~SpeciePropertiesListWidget();
 
     void filter(QString filter_string);
-    QListWidget * m_list;
 
 public slots:
     void unselect();
@@ -94,7 +94,6 @@ public slots:
 private:
     void hide_all();
     void init_layout(QString title);
-    static const QFont _LABEL_FONT;
 };
 
 /********************
@@ -192,6 +191,17 @@ private:
     Type m_selected_type;
     QComboBox * m_cluster_selection_combo_box;
     QComboBox * m_type_selection_combo_box;
+};
+
+/********************
+ * SEARCH LINE EDIT *
+ ********************/
+class SearchLineEdit : public QLineEdit
+{
+Q_OBJECT
+public:
+    SearchLineEdit(QWidget * parent = 0);
+    ~SearchLineEdit();
 };
 
 /**************************

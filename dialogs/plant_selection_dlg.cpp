@@ -3,7 +3,6 @@
 #include <QBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QLineEdit>
 #include <QDebug>
 #include <QLabel>
 #include <QPainter>
@@ -183,9 +182,9 @@ TerrainSuitabilityScore::Score TerrainSuitabilityScore::calculate_score(const Sp
             cluster_score.max_humidity = cluster_score.soil_humidities[i];
     }
     // Avg aggregates
-    cluster_score.avg_temp = std::round(cluster_score.avg_temp/12.f);
-    cluster_score.avg_illumination = std::round(cluster_score.avg_illumination/12.f);
-    cluster_score.avg_humidity = std::round(cluster_score.avg_humidity/12.f);
+    cluster_score.avg_temp = cluster_score.avg_temp/12.f;
+    cluster_score.avg_illumination = cluster_score.avg_illumination/12.f;
+    cluster_score.avg_humidity = cluster_score.avg_humidity/12.f;
 
     // TODO: Slope
     {
@@ -193,7 +192,7 @@ TerrainSuitabilityScore::Score TerrainSuitabilityScore::calculate_score(const Sp
     }
 
     // Aggregate avg
-    cluster_score.aggregate_avg = std::round((cluster_score.avg_temp + cluster_score.avg_illumination + cluster_score.avg_humidity + cluster_score.slope) / 4.f);
+    cluster_score.aggregate_avg = (cluster_score.avg_temp + cluster_score.avg_illumination + cluster_score.avg_humidity + cluster_score.slope) / 4.f;
 
 //    qCritical() << "<-- SCORE SUMMARY [" << specie_properties->specie_name << "] --> ";
 //    qCritical() << "--Illumination--";
@@ -228,7 +227,7 @@ int TerrainSuitabilityScore::n_clusters() const
     return m_per_cluster_scores.size();
 }
 
-int TerrainSuitabilityScore::getMaxSuitabilityScore() const
+float TerrainSuitabilityScore::getMaxSuitabilityScore() const
 {
     return m_max_suitability_score;
 }
@@ -238,7 +237,7 @@ int TerrainSuitabilityScore::getMaxSuitabilityClusterIdx() const
     return m_max_suitability_cluster_idx;
 }
 
-int TerrainSuitabilityScore::getMinSuitabilityScore() const
+float TerrainSuitabilityScore::getMinSuitabilityScore() const
 {
     return m_min_suitability_score;
 }
@@ -295,10 +294,9 @@ bool SpeciePropertiesListItem::operator<(const QListWidgetItem & other) const
 /*********************************
  * SPECIE PROPERTIES LIST WIDGET *
  *********************************/
-const QFont SpeciePropertiesListWidget::_LABEL_FONT("Times", 15, QFont::Weight::Bold);
-SpeciePropertiesListWidget::SpeciePropertiesListWidget(QString title, QWidget * parent) : QWidget(parent)
+SpeciePropertiesListWidget::SpeciePropertiesListWidget(QWidget * parent) : QListWidget(parent)
 {
-    init_layout(title);
+
 }
 
 SpeciePropertiesListWidget::~SpeciePropertiesListWidget()
@@ -308,43 +306,24 @@ SpeciePropertiesListWidget::~SpeciePropertiesListWidget()
 
 void SpeciePropertiesListWidget::unselect()
 {
-    int current_row(m_list->currentRow());
-    if(current_row >= 0)
-        m_list->item(current_row)->setSelected(false);
-}
-
-void SpeciePropertiesListWidget::init_layout(QString title)
-{
-    m_list = new QListWidget(this);
-
-    QVBoxLayout * main_layout = new QVBoxLayout;
-
-    QLabel * lbl = new QLabel(title);
-    lbl->setFont(SpeciePropertiesListWidget::_LABEL_FONT);
-
-    {
-        QHBoxLayout * layout = new QHBoxLayout;
-        layout->addWidget(lbl, 1, Qt::AlignCenter);
-        main_layout->addLayout(layout);
-    }
-    main_layout->addWidget(m_list);
-
-    setLayout(main_layout);
+    int row(currentRow());
+    if(row >= 0)
+        item(row)->setSelected(false);
 }
 
 void SpeciePropertiesListWidget::filter(QString filter_string)
 {
     hide_all();
 
-    QList<QListWidgetItem*> matches ( m_list->findItems(filter_string, Qt::MatchFlag::MatchContains) );
+    QList<QListWidgetItem*> matches ( findItems(filter_string, Qt::MatchFlag::MatchContains) );
     for(QListWidgetItem* item : matches)
-        item->setHidden(false);
+        setHidden(false);
 }
 
 void SpeciePropertiesListWidget::hide_all()
 {
-    for(int row(0); row < m_list->count(); row++ )
-        m_list->item(row)->setHidden(true);
+    for(int row(0); row < count(); row++ )
+        item(row)->setHidden(true);
 }
 
 /********************
@@ -588,15 +567,25 @@ void ScoreSummaryWidget::setSelected(QListWidgetItem * selected_plant)
         {
             QString item("Cluster ");
             item.append(QString::number(i));
+
+            if(m_score.n_clusters() > 1)
+            {
+                if(m_score.getMaxSuitabilityClusterIdx() == i)
+                    item.append(" +");
+                if(m_score.getMinSuitabilityClusterIdx() == i)
+                    item.append(" -");
+            }
             m_cluster_selection_combo_box->addItem(item);
-        }
 
-        if(m_score.n_clusters() > 1)
-        {
-            m_cluster_selection_combo_box->setItemData(m_score.getMaxSuitabilityClusterIdx(), QColor(Qt::green), Qt::BackgroundRole);
-            m_cluster_selection_combo_box->setItemData(m_score.getMinSuitabilityClusterIdx(), QColor(Qt::red), Qt::BackgroundRole);
+            if(m_score.n_clusters() > 1)
+            {
+                TerrainSuitabilityScore::Score score(m_score[i]);
+                if(score.slope == 0 || score.min_humidity == 0 || score.min_illumination == 0 || score.min_temp == 0)
+                    m_cluster_selection_combo_box->setItemData(i, QColor(Qt::red), Qt::BackgroundRole);
+                else
+                    m_cluster_selection_combo_box->setItemData(i, QColor(Qt::green), Qt::BackgroundRole);
+            }
         }
-
         refreshHistograms();
         repaint();
     }
@@ -636,9 +625,9 @@ void ScoreSummaryWidget::refreshHistograms()
     {
         int scores[4];
         scores[AggregateHistogramWrapperWidget::_SLOPE] = score.slope;
-        scores[AggregateHistogramWrapperWidget::_TEMP] = score.avg_temp;
-        scores[AggregateHistogramWrapperWidget::_ILLUMINATION] = score.avg_illumination;
-        scores[AggregateHistogramWrapperWidget::_HUMIDITY] = score.avg_humidity;
+        scores[AggregateHistogramWrapperWidget::_TEMP] = std::round(score.avg_temp);
+        scores[AggregateHistogramWrapperWidget::_ILLUMINATION] = std::round(score.avg_illumination);
+        scores[AggregateHistogramWrapperWidget::_HUMIDITY] = std::round(score.avg_humidity);
         m_aggregate_histogram_widgets[Type::_AVG]->setScores(scores);
     }
     // Minimums
@@ -679,17 +668,31 @@ void ScoreSummaryWidget::clear()
         m_aggregate_histogram_widgets[i]->clear();
 }
 
+/********************
+ * SEARCH LINE EDIT *
+ ********************/
+SearchLineEdit::SearchLineEdit( QWidget * parent ) : QLineEdit(parent)
+{
+    setPlaceholderText("Search");
+}
+
+SearchLineEdit::~SearchLineEdit()
+{
+
+}
+
+
 /**************************
  * PLANT SELECTION DIALOG *
  **************************/
 const QFont PlantSelectionDialog::_LABEL_FONT("Times", 15, QFont::Weight::Bold);
 PlantSelectionDialog::PlantSelectionDialog( QWidget * parent ) : QDialog(parent),
-  m_available_plants_widget ( new SpeciePropertiesListWidget("Available", this) ),
-  m_added_plants_widget ( new SpeciePropertiesListWidget("Added", this) ),
+  m_available_plants_widget ( new SpeciePropertiesListWidget(this) ),
+  m_added_plants_widget ( new SpeciePropertiesListWidget(this) ),
   m_score_summary_widget( new ScoreSummaryWidget(this) ),
   m_add_btn ( new QPushButton(">>", this) ),
   m_remove_btn ( new QPushButton("<<", this) ),
-  m_filter_le (new QLineEdit(this) )
+  m_filter_le (new SearchLineEdit(this) )
 {
     setWindowTitle("Plant Selection");
     setFixedSize(1200,800);
@@ -735,46 +738,48 @@ void PlantSelectionDialog::refresh()
     {
         TerrainSuitabilityScore suitability_score(it->second, m_cluster_data);
         if(suitability_score.getValidClusters().size() > 0) // No point adding plants that can grow in no clusters
-            m_available_plants_widget->m_list->addItem( new SpeciePropertiesListItem(it->second, suitability_score) );
+            m_available_plants_widget->addItem( new SpeciePropertiesListItem(it->second, suitability_score) );
     }
 
-    m_available_plants_widget->m_list->sortItems(Qt::SortOrder::DescendingOrder);
+    m_available_plants_widget->sortItems(Qt::SortOrder::DescendingOrder);
 }
 
 void PlantSelectionDialog::remove_all_list_items()
 {
-    m_available_plants_widget->m_list->clear();
-    m_added_plants_widget->m_list->clear();
+    m_available_plants_widget->clear();
+    m_added_plants_widget->clear();
 }
 
 void PlantSelectionDialog::add_selected_plant()
 {
-    QList<QListWidgetItem*> selected_items (m_available_plants_widget->m_list->selectedItems());
+    QList<QListWidgetItem*> selected_items (m_available_plants_widget->selectedItems());
 
     bool count(selected_items.size());
 
     if(count > 0)
     {
-        QListWidgetItem* selected_item(m_available_plants_widget->m_list->takeItem(m_available_plants_widget->m_list->row(selected_items.at(0))));
-        m_added_plants_widget->m_list->addItem(selected_item);
-        int row(m_added_plants_widget->m_list->row(selected_item));
-        m_added_plants_widget->m_list->item(row)->setSelected(true);
-        m_added_plants_widget->m_list->sortItems(Qt::SortOrder::DescendingOrder);
+        QListWidgetItem* selected_item(m_available_plants_widget->takeItem(m_available_plants_widget->row(selected_items.at(0))));
+        m_added_plants_widget->addItem(selected_item);
+        int row(m_added_plants_widget->row(selected_item));
+        m_added_plants_widget->item(row)->setSelected(true);
+        m_added_plants_widget->sortItems(Qt::SortOrder::DescendingOrder);
+        m_available_plants_widget->unselect();
     }
 }
 
 void PlantSelectionDialog::remove_selected_plant()
 {
-    QList<QListWidgetItem*> selected_items (m_added_plants_widget->m_list->selectedItems());
+    QList<QListWidgetItem*> selected_items (m_added_plants_widget->selectedItems());
     bool count(selected_items.size());
 
     if(count > 0)
     {
-        QListWidgetItem* selected_item(m_added_plants_widget->m_list->takeItem(m_added_plants_widget->m_list->row(selected_items.at(0))));
-        m_available_plants_widget->m_list->addItem(selected_item);
-        int row(m_available_plants_widget->m_list->row(selected_item));
-        m_available_plants_widget->m_list->item(row)->setSelected(true);
-        m_available_plants_widget->m_list->sortItems(Qt::SortOrder::DescendingOrder);
+        QListWidgetItem* selected_item(m_added_plants_widget->takeItem(m_added_plants_widget->row(selected_items.at(0))));
+        m_available_plants_widget->addItem(selected_item);
+        int row(m_available_plants_widget->row(selected_item));
+        m_available_plants_widget->item(row)->setSelected(true);
+        m_available_plants_widget->sortItems(Qt::SortOrder::DescendingOrder);
+        m_added_plants_widget->unselect();
     }
 }
 
@@ -788,7 +793,16 @@ void PlantSelectionDialog::init_layout()
 
         // Available plants
         {
-            h_layout->addWidget(m_available_plants_widget, 1);
+            QVBoxLayout * v_layout = new QVBoxLayout;
+            {
+                QHBoxLayout * h_layout_2 = new QHBoxLayout;
+                QLabel * title = new QLabel("Available Plants");
+                title->setFont(_LABEL_FONT);
+                h_layout_2->addWidget(title, 1, Qt::AlignCenter);
+                v_layout->addLayout(h_layout_2);
+            }
+            v_layout->addWidget(m_available_plants_widget, 1);
+            h_layout->addLayout(v_layout);
         }
         // Add/Remove button
         {
@@ -799,7 +813,16 @@ void PlantSelectionDialog::init_layout()
         }
         // Added plants layout
         {
-            h_layout->addWidget(m_added_plants_widget, 1);
+            QVBoxLayout * v_layout = new QVBoxLayout;
+            {
+                QHBoxLayout * h_layout_2 = new QHBoxLayout;
+                QLabel * title = new QLabel("Added Plants");
+                title->setFont(_LABEL_FONT);
+                h_layout_2->addWidget(title, 1, Qt::AlignCenter);
+                v_layout->addLayout(h_layout_2);
+            }
+            v_layout->addWidget(m_added_plants_widget, 1);
+            h_layout->addLayout(v_layout);
         }
 
         main_layout->addLayout(h_layout);
@@ -810,12 +833,7 @@ void PlantSelectionDialog::init_layout()
         m_filter_le->setMinimumWidth(20);
         QHBoxLayout * layout = new QHBoxLayout;
 
-        layout->addWidget(new QLabel,1); //left-padding
-
-        layout->addWidget(new QLabel("Search: "), 0); // Left-Padding
-        layout->addWidget(m_filter_le, 0);
-
-        layout->addWidget(new QLabel,1); // Right-padding
+        layout->addWidget(m_filter_le,1, Qt::AlignCenter); //left-padding
 
         main_layout->addLayout(layout);
     }
@@ -844,11 +862,11 @@ void PlantSelectionDialog::refresh_filter(QString filter_text)
 
 void PlantSelectionDialog::init_connections()
 {
-    connect(m_available_plants_widget->m_list, SIGNAL(itemClicked(QListWidgetItem*)), m_score_summary_widget, SLOT(setSelected(QListWidgetItem*)));
-    connect(m_added_plants_widget->m_list, SIGNAL(itemClicked(QListWidgetItem*)), m_score_summary_widget, SLOT(setSelected(QListWidgetItem*)));
+    connect(m_available_plants_widget, SIGNAL(itemClicked(QListWidgetItem*)), m_score_summary_widget, SLOT(setSelected(QListWidgetItem*)));
+    connect(m_added_plants_widget, SIGNAL(itemClicked(QListWidgetItem*)), m_score_summary_widget, SLOT(setSelected(QListWidgetItem*)));
 
-    connect(m_available_plants_widget->m_list, SIGNAL(itemClicked(QListWidgetItem*)), m_added_plants_widget, SLOT(unselect()));
-    connect(m_added_plants_widget->m_list, SIGNAL(itemClicked(QListWidgetItem*)), m_available_plants_widget, SLOT(unselect()));
+    connect(m_available_plants_widget, SIGNAL(itemClicked(QListWidgetItem*)), m_added_plants_widget, SLOT(unselect()));
+    connect(m_added_plants_widget, SIGNAL(itemClicked(QListWidgetItem*)), m_available_plants_widget, SLOT(unselect()));
 
     connect(m_add_btn, SIGNAL(clicked(bool)), this, SLOT(add_selected_plant()));
     connect(m_remove_btn, SIGNAL(clicked(bool)), this, SLOT(remove_selected_plant()));

@@ -1429,7 +1429,7 @@ void GLWidget::trigger_clustering_mode()
 
 void GLWidget::trigger_plant_mode()
 {
-    hide_all_dialogs();
+    m_dialogs.hidePointerInfoDialog();
 
     reset_edit();
 
