@@ -173,7 +173,6 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id,
     }
     else if(active_overlay == Uniforms::Overlay::_CLUSTERS)
     {
-        qCritical() << "Creating clusteer membership texture";
         shader->setUniformValue(Uniforms::Texture::_CLUSTER_MEMBERSHIP, 0); CE();
         cluster_membership_texture.bind();
     }
