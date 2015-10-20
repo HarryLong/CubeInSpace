@@ -7,7 +7,7 @@
 #include "temp_edit_dlg.h"
 #include "monthly_rainfall_edit_dlg.h"
 #include "cluster_info_dialog.h"
-#include "plant_selection_dlg.h"
+#include "plant_placement_dlg.h"
 #include <QObject>
 
 class Dialogs : public QObject{
@@ -21,7 +21,7 @@ public:
     PointerInformationDialog m_pointer_info_dlg;
     MonthlyRainfallEditDialog m_monthly_rainfall_edit_dlg;
     ClusterInfoDialog m_cluster_info_dlg;
-    PlantSelectionDialog m_plant_selection_dlg;
+    PlantPlacementDialog m_plant_selection_dlg;
 
 public slots:
     void showSettingsDialog();
