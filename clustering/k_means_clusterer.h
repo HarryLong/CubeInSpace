@@ -15,6 +15,8 @@ class KMeansClusterer : public QObject
 {
 Q_OBJECT
 public:
+    static const int _MAX_CLUSTERS = 50;
+
     KMeansClusterer();
     ~KMeansClusterer();
 

@@ -340,6 +340,8 @@ void PlantSelectionWidget::remove_all_list_items()
 {
     m_available_plants_widget->clear();
     m_added_plants_widget->clear();
+
+    emit noPlantsSelected();
 }
 
 void PlantSelectionWidget::add_selected_plant()
@@ -356,6 +358,8 @@ void PlantSelectionWidget::add_selected_plant()
         m_added_plants_widget->item(row)->setSelected(true);
         m_added_plants_widget->sortItems(Qt::SortOrder::DescendingOrder);
         m_available_plants_widget->unselect();
+
+        emit plantAdded();
     }
 }
 
@@ -372,6 +376,11 @@ void PlantSelectionWidget::remove_selected_plant()
         m_available_plants_widget->item(row)->setSelected(true);
         m_available_plants_widget->sortItems(Qt::SortOrder::DescendingOrder);
         m_added_plants_widget->unselect();
+
+        emit plantRemoved();
+
+        if(getSelectedPlantCount() == 0)
+            emit noPlantsSelected();
     }
 }
 
@@ -463,4 +472,33 @@ void PlantSelectionWidget::init_connections()
     connect(m_add_btn, SIGNAL(clicked(bool)), this, SLOT(add_selected_plant()));
     connect(m_remove_btn, SIGNAL(clicked(bool)), this, SLOT(remove_selected_plant()));
     connect(m_filter_le, SIGNAL(textEdited(QString)), this, SLOT(refresh_filter(QString)));
+}
+
+std::vector<EcoSimRunConfig> PlantSelectionWidget::getRunConfigs()
+{
+    std::vector<EcoSimRunConfig> run_configs;
+    // Go through all clusters
+    for(int cluster_idx(0); cluster_idx < m_cluster_data.size(); cluster_idx++)
+    {
+        ClusterData cd( m_cluster_data.at(cluster_idx) );
+        EcoSimRunConfig run_config(cd);
+
+        // Add suitable plants
+        for(int i(0); i < m_added_plants_widget->count(); i++)
+        {
+            SpeciePropertiesListItem * item (static_cast<SpeciePropertiesListItem*>(m_added_plants_widget->item(i)));
+            if(item->getSuitabilityScore()[cluster_idx].valid)
+                run_config.addSpecie(item->getSpecieProperties());
+        }
+
+        if(run_config.getSpecieCount() > 0)
+            run_configs.push_back(run_config);
+    }
+
+    return run_configs;
+}
+
+int PlantSelectionWidget::getSelectedPlantCount()
+{
+    return m_added_plants_widget->count();
 }

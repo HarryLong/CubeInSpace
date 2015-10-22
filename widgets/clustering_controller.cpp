@@ -1,4 +1,5 @@
 #include "clustering_controller.h"
+#include "clustering/k_means_clusterer.h"
 #include <QBoxLayout>
 
 /********************************
@@ -6,7 +7,7 @@
  ********************************/
 #define DEFAULT_SENSITIVITY 10
 ClusteringSensitivityRow::ClusteringSensitivityRow(QWidget * parent) :
-    ShortcutRow("Sensitivity: ", 1, 50, parent)
+    ShortcutRow("Sensitivity: ", 1, KMeansClusterer::_MAX_CLUSTERS, parent)
 {
 
 }

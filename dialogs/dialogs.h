@@ -21,20 +21,19 @@ public:
     PointerInformationDialog m_pointer_info_dlg;
     MonthlyRainfallEditDialog m_monthly_rainfall_edit_dlg;
     ClusterInfoDialog m_cluster_info_dlg;
-    PlantPlacementDialog m_plant_selection_dlg;
+    PlantPlacementDialog m_plant_placement_dlg;
 
 public slots:
     void showSettingsDialog();
     void showTempDialog();
     void showMonthlyRainfallDialog();
+    void showPlantSelectionDialog();
 
     void hideAll();
     void showPointerInfoDialog();
     void showClusterInfoDialog();
-    void showPlantSelectionDialog();
     void hidePointerInfoDialog();
     void hideClusterInfoDialog();
-    void hidePlantSelectionDialog();
 };
 
 #endif // DIALOGS_H

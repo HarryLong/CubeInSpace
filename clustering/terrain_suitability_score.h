@@ -27,6 +27,8 @@ public:
         float avg_humidity;
 
         float aggregate_avg;
+
+        bool valid;
     };
 
     TerrainSuitabilityScore(const SpecieProperties & specie_properties, std::vector<ClusterData> cluster_data);

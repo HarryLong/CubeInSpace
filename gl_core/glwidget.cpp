@@ -235,6 +235,9 @@ void GLWidget::establish_connections()
     // When water is balanced, calculate soil humidities
     connect(&m_resources, SIGNAL(water_balanced(int)), this, SLOT(standing_water_set(int)));
 
+    connect(&m_dialogs.m_plant_placement_dlg, SIGNAL(accepted()), this, SLOT(place_plants()));
+    connect(&m_dialogs.m_plant_placement_dlg, SIGNAL(rejected()), this, SLOT(trigger_edit_mode()));
+
     // CLUSTERING
 //    connect(&m_clusterer, SIGNAL(clustering_start(QString)), this, SLOT(show_progress_bar(QString)));
 //    connect(&m_clusterer, SIGNAL(clustering_update(int)), &m_progress_bar_widget, SLOT(updateProgress(int)));
@@ -924,7 +927,7 @@ void GLWidget::refresh_clusters(int k)
     {
         cluster_data.push_back(resulting_clusters.getClusterData(i));
     }
-    m_dialogs.m_plant_selection_dlg.setClusters(cluster_data);
+    m_dialogs.m_plant_placement_dlg.setClusters(cluster_data);
 
     enable_plant_edit(true);
 
@@ -1437,8 +1440,6 @@ void GLWidget::trigger_plant_mode()
     set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
 
     m_dialogs.showPlantSelectionDialog();
-    m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION]->setChecked(true);
-    m_overlay_widgets.hideAll();
 }
 
 void GLWidget::enable_plant_edit(bool enable)
@@ -1511,6 +1512,13 @@ void GLWidget::standing_water_set(int month)
 
     if(standing_water.balanced()) // Reenable all edit actions once the water is "balanced"
         set_edit_actions_active(true);
+}
+
+void GLWidget::place_plants()
+{
+    std::vector<EcoSimRunConfig> run_configs(m_dialogs.m_plant_placement_dlg.getRunConfigs());
+
+    qCritical() << "Starting " << run_configs.size() << " ecosimulations!";
 }
 
 // THREAD

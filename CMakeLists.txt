@@ -76,7 +76,7 @@ ${GL_ASSETS_SOURCE_FILES}
 ${GL_CORE_SOURCE_FILES}
 ${GL_TEXTURE_SOURCE_FILES}
 ${CLUSTERING_SOURCE_FILES}
-window main debug geom actions fixed_size_stack)
+window main debug geom actions fixed_size_stack ecosim_run_config)
 
 # Shaders
 add_subdirectory(shaders)

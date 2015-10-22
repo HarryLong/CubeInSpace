@@ -10,7 +10,9 @@ TerrainSuitabilityScore::Score::Score() :
     avg_temp(0),
     min_humidity(0),
     max_humidity(0),
-    avg_humidity(0) {}
+    avg_humidity(0),
+    valid(false)
+{}
 
 TerrainSuitabilityScore::TerrainSuitabilityScore(const SpecieProperties & specie_properties, std::vector<ClusterData> cluster_data)
 {
@@ -20,15 +22,7 @@ TerrainSuitabilityScore::TerrainSuitabilityScore(const SpecieProperties & specie
         TerrainSuitabilityScore::Score cluster_score( calculate_score(specie_properties, cluster) );
         m_per_cluster_scores.push_back(cluster_score);
 
-        // Check if highest scoring
-        std::vector<int> aggregates;
-        aggregates.push_back(cluster_score.min_humidity);
-        aggregates.push_back(cluster_score.min_illumination);
-        aggregates.push_back(cluster_score.min_temp);
-        aggregates.push_back(cluster_score.slope);
-        int min_aggregate(getMin(aggregates));
-
-        if(min_aggregate > 0)
+        if(cluster_score.valid)
         {
             m_valid_clusters.push_back(cluster_idx);
         }
@@ -175,9 +169,21 @@ TerrainSuitabilityScore::Score TerrainSuitabilityScore::calculate_score(const Sp
     cluster_score.avg_illumination = cluster_score.avg_illumination/12.f;
     cluster_score.avg_humidity = cluster_score.avg_humidity/12.f;
 
+
+
     // TODO: Slope
     {
         cluster_score.slope = 100;
+    }
+
+    {
+        // Check if highest scoring
+        std::vector<int> aggregates;
+        aggregates.push_back(cluster_score.min_humidity);
+        aggregates.push_back(cluster_score.min_illumination);
+        aggregates.push_back(cluster_score.min_temp);
+        aggregates.push_back(cluster_score.slope);
+        cluster_score.valid = (getMin(aggregates) > 0);
     }
 
     // Aggregate avg

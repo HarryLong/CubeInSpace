@@ -7,6 +7,7 @@
 #include "../widgets/histogram_widget.h"
 #include "../clustering/terrain_suitability_score.h"
 #include "../widgets/specie_suitability_list_widget.h"
+#include "../ecosim_run_config.h"
 
 #include <QLineEdit>
 
@@ -103,6 +104,13 @@ class PlantSelectionWidget : public QWidget
 public:
     PlantSelectionWidget(QWidget * parent = 0);
     ~PlantSelectionWidget();
+    std::vector<EcoSimRunConfig> getRunConfigs();
+    int getSelectedPlantCount();
+
+signals:
+    void plantAdded();
+    void plantRemoved();
+    void noPlantsSelected();
 
 public slots:
     void setClusters(std::vector<ClusterData> clusters);

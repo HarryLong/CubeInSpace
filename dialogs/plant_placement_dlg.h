@@ -4,9 +4,9 @@
 #include <QDialog>
 #include <QLineEdit>
 #include "../clustering/cluster_data.h"
+#include "../ecosim_run_config.h"
 
 class PlantSelectionWidget;
-class EcosimTrackerWidget;
 class QPushButton;
 class PlantPlacementDialog : public QDialog
 {
@@ -15,17 +15,19 @@ public:
     PlantPlacementDialog(QWidget * parent = 0);
     ~PlantPlacementDialog();
 
+    std::vector<EcoSimRunConfig> getRunConfigs();
+
 public slots:
     void setClusters(std::vector<ClusterData> clusters);
 
 private slots:
-    void startEcoSimRuns();
+    void enable_simulate_button();
+    void disable_simulate_button();
 
 private:
     void init_layout();
 
     PlantSelectionWidget * m_plant_selection_widget;
-    EcosimTrackerWidget * m_ecosim_tracker_widget;
     QPushButton * m_ok_btn;
     QPushButton * m_cancel_btn;
 };

@@ -12,6 +12,7 @@ public:
     ~SpeciePropertiesListItem ();
     TerrainSuitabilityScore getSuitabilityScore() const;
     bool operator<(const QListWidgetItem & other) const override;
+    SpecieProperties getSpecieProperties();
 
 private:
     SpecieProperties m_specie_properties;

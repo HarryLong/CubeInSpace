@@ -131,9 +131,9 @@ void MainWindow::setEditMenu()
     menuBar()->clear();
 
     menuBar()->addMenu(m_file_menu);
+    menuBar()->addMenu(m_mode_menu);
     menuBar()->addMenu(m_render_menu);
     menuBar()->addMenu(m_controls_menu);
-    menuBar()->addMenu(m_mode_menu);
     menuBar()->addMenu(m_overlay_menu);
     menuBar()->addMenu(m_edit_show_menu);
     menuBar()->addMenu(m_edit_menu);
@@ -144,9 +144,9 @@ void MainWindow::setClusteringMenu()
     menuBar()->clear();
 
     menuBar()->addMenu(m_file_menu);
+    menuBar()->addMenu(m_mode_menu);
     menuBar()->addMenu(m_render_menu);
     menuBar()->addMenu(m_controls_menu);
-    menuBar()->addMenu(m_mode_menu);
     menuBar()->addMenu(m_clustering_show_menu);
 }
 

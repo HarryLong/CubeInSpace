@@ -24,6 +24,11 @@ TerrainSuitabilityScore SpeciePropertiesListItem::getSuitabilityScore() const
     return m_suitability_score;
 }
 
+SpecieProperties SpeciePropertiesListItem::getSpecieProperties()
+{
+    return m_specie_properties;
+}
+
 bool SpeciePropertiesListItem::operator<(const QListWidgetItem & other) const
 {
     const SpeciePropertiesListItem & _other = static_cast<const SpeciePropertiesListItem &>(other);

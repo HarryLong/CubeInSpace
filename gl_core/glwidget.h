@@ -130,6 +130,8 @@ private slots:
     void standing_water_set(int month);
     void enable_plant_edit(bool enable);
 
+    void place_plants();
+
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
     void setNavigationEnabled(bool enabled);
