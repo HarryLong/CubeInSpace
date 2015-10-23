@@ -67,30 +67,6 @@ void BaseActionFamily::init_actions()
     m_actions[BaseActionFamily::_OPEN_SETTINGS] = new QAction(BaseActionFamily::_OPEN_SETTINGS, NULL);
 }
 
-/*****************
- * MODE ACTTIONS *
- *****************/
-const QString ModeActionFamily::_RESOURCE_EDIT = "Resource edit";
-const QString ModeActionFamily::_CLUSTERING = "Clustering";
-const QString ModeActionFamily::_PLANT_EDIT = "Plant edit";
-ModeActionFamily::ModeActionFamily() : ActionFamily(false, true)
-{
-    init_actions();
-    finalise();
-}
-
-ModeActionFamily::~ModeActionFamily()
-{
-
-}
-
-void ModeActionFamily::init_actions()
-{
-    m_actions[ModeActionFamily::_RESOURCE_EDIT] = new QAction(ModeActionFamily::_RESOURCE_EDIT, NULL);
-    m_actions[ModeActionFamily::_CLUSTERING] = new QAction(ModeActionFamily::_CLUSTERING, NULL);
-    m_actions[ModeActionFamily::_PLANT_EDIT] = new QAction(ModeActionFamily::_PLANT_EDIT, NULL);
-}
-
 /*******************
  * RENDER ACTTIONS *
  *******************/
@@ -118,30 +94,6 @@ void RenderActionFamily::init_actions()
     m_actions[RenderActionFamily::_TERRAIN] = new QAction(RenderActionFamily::_TERRAIN, NULL);
     m_actions[RenderActionFamily::_RAYS] = new QAction(RenderActionFamily::_RAYS, NULL);
     m_actions[RenderActionFamily::_SUN] = new QAction(RenderActionFamily::_SUN, NULL);
-}
-
-/********************
- * CONTROL ACTTIONS *
- ********************/
-const QString ControlActionFamily::_SOFTIMAGE = "Softimage";
-const QString ControlActionFamily::_FPS = "FPS";
-ControlActionFamily::ControlActionFamily() : ActionFamily(false, true)
-{
-    init_actions();
-    finalise();
-
-    m_actions[ControlActionFamily::_SOFTIMAGE]->setChecked(true);
-}
-
-ControlActionFamily::~ControlActionFamily()
-{
-
-}
-
-void ControlActionFamily::init_actions()
-{
-    m_actions[ControlActionFamily::_SOFTIMAGE] = new QAction(ControlActionFamily::_SOFTIMAGE, NULL);
-    m_actions[ControlActionFamily::_FPS] = new QAction(ControlActionFamily::_FPS, NULL);
 }
 
 /********************
@@ -188,8 +140,6 @@ void OverlayActionFamily::init_actions()
  * SHOW ACTIONS *
  ****************/
 const QString ShowActionFamily::_POINTER_INFO = "Pointer Info";
-const QString ShowActionFamily::_CLUSTERS_INFO = "Clusters Info";
-const QString ShowActionFamily::_PLANT_SELECTION = "Plant Selection";
 ShowActionFamily::ShowActionFamily() : ActionFamily(true, false)
 {
     init_actions();
@@ -204,8 +154,6 @@ ShowActionFamily::~ShowActionFamily()
 void ShowActionFamily::init_actions()
 {
     m_actions[ShowActionFamily::_POINTER_INFO] = new QAction(ShowActionFamily::_POINTER_INFO, NULL);
-    m_actions[ShowActionFamily::_CLUSTERS_INFO] = new QAction(ShowActionFamily::_CLUSTERS_INFO, NULL);
-    m_actions[ShowActionFamily::_PLANT_SELECTION] = new QAction(ShowActionFamily::_PLANT_SELECTION, NULL);
 }
 
 /*****************

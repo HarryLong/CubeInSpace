@@ -16,6 +16,7 @@ void Dialogs::hideAll()
 {
     hidePointerInfoDialog();
     hideClusterInfoDialog();
+    hidePlantSelectionDialog();
 }
 
 void Dialogs::showSettingsDialog()
@@ -48,8 +49,7 @@ void Dialogs::showClusterInfoDialog()
 
 void Dialogs::showPlantSelectionDialog()
 {
-    if(!m_plant_placement_dlg.isVisible())
-        m_plant_placement_dlg.exec();
+    m_plant_placement_dlg.show();
 }
 
 void Dialogs::hidePointerInfoDialog()
@@ -60,4 +60,9 @@ void Dialogs::hidePointerInfoDialog()
 void Dialogs::hideClusterInfoDialog()
 {
     m_cluster_info_dlg.hide();
+}
+
+void Dialogs::hidePlantSelectionDialog()
+{
+    m_plant_placement_dlg.hide();
 }

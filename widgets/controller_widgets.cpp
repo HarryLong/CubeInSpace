@@ -6,6 +6,7 @@
 #include "time_controller.h"
 #include "water_shortcuts_controller.h"
 #include "clustering_controller.h"
+#include "mode_controller.h"
 #include <QBoxLayout>
 #include <QDebug>
 #include <QPainter>
@@ -21,7 +22,9 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
     m_soil_infiltration_widget(new SoilInfiltrationControllerWidget(Qt::AlignRight, parent)),
     m_soil_infiltration_shortcut_widget(new SoilInfiltrationShortcutWidget(Qt::AlignLeft, parent)),
     m_water_shortcut_widget(new WaterShortcutWidget(Qt::AlignLeft, parent)),
-    m_clustering_controller_widget(new ClusteringControllerWidget(Qt::AlignRight, parent))
+//    m_clustering_controller_widget(new ClusteringControllerWidget(Qt::AlignRight, parent)),
+    m_previous_mode_controller_widget(new ModeControllerWidget(Qt::AlignLeft, "LEFT", parent)),
+    m_next_mode_controller_widget(new ModeControllerWidget(Qt::AlignRight, "RIGHT", parent))
 {
     m_alignment_sorted_widgets[Qt::AlignTop] = std::vector<QWidget*>();
     m_alignment_sorted_widgets[Qt::AlignRight] = std::vector<QWidget*>();
@@ -32,7 +35,7 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
     {
         connect(m_latitude_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_latitude_changed(int)));
 
-        m_raw_widgets.push_back(m_latitude_widget);
+        m_dynamic_display_widgets.push_back(m_latitude_widget);
         m_alignment_sorted_widgets[m_latitude_widget->alignment()].push_back(m_latitude_widget);
     }
 
@@ -41,8 +44,8 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
         connect(m_month_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_month_changed(int)));
         connect(m_time_widget->getSlider(), SIGNAL(valueChanged(int)), this, SLOT(emit_time_changed(int)));
 
-        m_raw_widgets.push_back(m_month_widget);
-        m_raw_widgets.push_back(m_time_widget);
+        m_dynamic_display_widgets.push_back(m_month_widget);
+        m_dynamic_display_widgets.push_back(m_time_widget);
 
         m_alignment_sorted_widgets[m_month_widget->alignment()].push_back(m_month_widget);
         m_alignment_sorted_widgets[m_time_widget->alignment()].push_back(m_time_widget);
@@ -54,8 +57,8 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
         connect(m_soil_infiltration_shortcut_widget, SIGNAL(soilInfiltrationZeroOverSlope(int)), this, SLOT(emit_soil_infiltration_zero_over_slope(int)));
         connect(m_soil_infiltration_shortcut_widget, SIGNAL(fill(int)), this, SLOT(emit_soil_infiltration_fill(int)));
 
-        m_raw_widgets.push_back(m_soil_infiltration_widget);
-        m_raw_widgets.push_back(m_soil_infiltration_shortcut_widget);
+        m_dynamic_display_widgets.push_back(m_soil_infiltration_widget);
+        m_dynamic_display_widgets.push_back(m_soil_infiltration_shortcut_widget);
 
         m_alignment_sorted_widgets[m_soil_infiltration_widget->alignment()].push_back(m_soil_infiltration_widget);
         m_alignment_sorted_widgets[m_soil_infiltration_shortcut_widget->alignment()].push_back(m_soil_infiltration_shortcut_widget);
@@ -65,25 +68,63 @@ OverlayWidgets::OverlayWidgets(QWidget * parent) :
     {
         connect(m_water_shortcut_widget, SIGNAL(absoluteHeight(int)), this, SLOT(emit_absolute_height_changed(int)));
 
-        m_raw_widgets.push_back(m_water_shortcut_widget);
+        m_dynamic_display_widgets.push_back(m_water_shortcut_widget);
         m_alignment_sorted_widgets[m_water_shortcut_widget->alignment()].push_back(m_water_shortcut_widget);
     }
 
-    // CLUSTERING
-    {
-        connect(m_clustering_controller_widget, SIGNAL(clusteringSensitivityChanged(int)) ,this, SLOT(emit_clustering_sensitivity_changed(int)));
+//    // CLUSTERING
+//    {
+//        connect(m_clustering_controller_widget, SIGNAL(clusteringSensitivityChanged(int)) ,this, SLOT(emit_clustering_sensitivity_changed(int)));
 
-        m_raw_widgets.push_back(m_clustering_controller_widget);
-        m_alignment_sorted_widgets[m_clustering_controller_widget->alignment()].push_back(m_clustering_controller_widget);
+//        m_dynamic_display_widgets.push_back(m_clustering_controller_widget);
+//        m_alignment_sorted_widgets[m_clustering_controller_widget->alignment()].push_back(m_clustering_controller_widget);
+//    }
+
+    // LEFT MODE SELECTION WIDGET
+    {
+        connect(m_previous_mode_controller_widget, SIGNAL(triggered()) ,this, SLOT(emit_previous_mode_triggered()));
+
+        m_static_display_widgets.push_back(m_previous_mode_controller_widget);
+        m_alignment_sorted_widgets[m_previous_mode_controller_widget->alignment()].push_back(m_previous_mode_controller_widget);
     }
+
+    // LEFT MODE SELECTION WIDGET
+    {
+        connect(m_next_mode_controller_widget, SIGNAL(triggered()) ,this, SLOT(emit_next_mode_triggered()));
+
+        m_static_display_widgets.push_back(m_next_mode_controller_widget);
+        m_alignment_sorted_widgets[m_next_mode_controller_widget->alignment()].push_back(m_next_mode_controller_widget);
+    }
+
 
     hideAll();
 }
 
+void OverlayWidgets::enable_static_widgets(bool enable)
+{
+    m_previous_mode_controller_widget->setVisible(enable && m_enable_previous);
+    m_next_mode_controller_widget->setVisible(enable && m_enable_next);
+}
+
 OverlayWidgets::~OverlayWidgets()
 {
-    for(QWidget* w : m_raw_widgets)
+    for(QWidget* w : m_dynamic_display_widgets)
         delete w;
+    for(QWidget* w : m_static_display_widgets)
+        delete w;
+}
+
+void OverlayWidgets::enableModeWidgets(bool previous, bool next)
+{
+    m_enable_previous = previous;
+    m_enable_next = next;
+    enable_static_widgets(true);
+}
+
+void OverlayWidgets::setModeLabels(QString previous, QString next)
+{
+    m_previous_mode_controller_widget->setLabel(previous);
+    m_next_mode_controller_widget->setLabel(next);
 }
 
 int OverlayWidgets::getLatitude()
@@ -111,10 +152,10 @@ int OverlayWidgets::getSoilInfiltrationZeroOverSlope()
     return m_soil_infiltration_shortcut_widget->getSoilInfiltrationZeroOverSlope();
 }
 
-int OverlayWidgets::getClusteringSensitivity()
-{
-    return m_clustering_controller_widget->getClusteringSensitivity();
-}
+//int OverlayWidgets::getClusteringSensitivity()
+//{
+//    return m_clustering_controller_widget->getClusteringSensitivity();
+//}
 
 bool OverlayWidgets::timeControllersActive()
 {
@@ -136,18 +177,20 @@ bool OverlayWidgets::waterControllersActive()
     return m_water_shortcut_widget->isVisible();
 }
 
-bool OverlayWidgets::clusteringSensitivityControllersActive()
-{
-    return m_clustering_controller_widget->isVisible();
-}
+//bool OverlayWidgets::clusteringSensitivityControllersActive()
+//{
+//    return m_clustering_controller_widget->isVisible();
+//}
 
 void OverlayWidgets::hideAll()
 {
-    for(QWidget* w : m_raw_widgets)
+    for(QWidget* w : m_dynamic_display_widgets)
         w->hide();
+
+    enable_static_widgets(true);
 }
 
-void OverlayWidgets::trigger_time_controllers(bool show)
+void OverlayWidgets::triggerTimeControllers(bool show)
 {
     if(show)
     {
@@ -161,10 +204,12 @@ void OverlayWidgets::trigger_time_controllers(bool show)
         m_month_widget->hide();
     }
 
+    enable_static_widgets(!show);
+
     emit timeControllersStateChanged(show);
 }
 
-void OverlayWidgets::trigger_latitude_controllers(bool show)
+void OverlayWidgets::triggerLatitudeControllers(bool show)
 {
     if(show)
     {
@@ -175,11 +220,12 @@ void OverlayWidgets::trigger_latitude_controllers(bool show)
     {
         m_latitude_widget->hide();
     }
+    enable_static_widgets(!show);
 
     emit latitudeControllersStateChanged(show);
 }
 
-void OverlayWidgets::trigger_soil_infiltration_controllers(bool show)
+void OverlayWidgets::triggerSoilInfiltrationControllers(bool show)
 {
     if(show)
     {
@@ -192,11 +238,12 @@ void OverlayWidgets::trigger_soil_infiltration_controllers(bool show)
         m_soil_infiltration_widget->hide();
         m_soil_infiltration_shortcut_widget->hide();
     }
+    enable_static_widgets(!show);
 
     emit soilInfiltrationControllersStateChanged(show);
 }
 
-void OverlayWidgets::trigger_water_controllers(bool show)
+void OverlayWidgets::triggerWaterControllers(bool show)
 {
     if(show)
     {
@@ -207,31 +254,33 @@ void OverlayWidgets::trigger_water_controllers(bool show)
     {
         m_water_shortcut_widget->hide();
     }
+    enable_static_widgets(!show);
 
     emit waterControllersStateChanged(show);
 }
 
-void OverlayWidgets::trigger_clustering_controllers(bool show)
-{
-    if(show)
-    {
-        hideAll();
-        m_clustering_controller_widget->show();
-    }
-    else
-    {
-        m_clustering_controller_widget->hide();
-    }
+//void OverlayWidgets::triggerClusteringControllers(bool show)
+//{
+//    if(show)
+//    {
+//        hideAll();
+//        m_clustering_controller_widget->show();
+//    }
+//    else
+//    {
+//        m_clustering_controller_widget->hide();
+//    }
+//    enable_static_widgets(!show);
 
-    emit clusteringControllersStateChanged(show);
-}
+//    emit clusteringControllersStateChanged(show);
+//}
 
 void OverlayWidgets::resize(int container_width, int container_height)
 {
     for(QWidget * w : m_alignment_sorted_widgets[Qt::AlignRight])
         w->move(container_width-w->width(), 0);
 
-    for(QWidget * w : m_raw_widgets)
+    for(QWidget * w : m_dynamic_display_widgets)
         w->setFixedHeight(container_height);
 }
 
@@ -273,4 +322,14 @@ void OverlayWidgets::emit_absolute_height_changed(int height)
 void OverlayWidgets::emit_clustering_sensitivity_changed(int clustering_sensitivity)
 {
     emit clusteringSensitivityChanged(clustering_sensitivity);
+}
+
+void OverlayWidgets::emit_previous_mode_triggered()
+{
+    emit previousModeTriggered();
+}
+
+void OverlayWidgets::emit_next_mode_triggered()
+{
+    emit nextModeTriggered();
 }

@@ -53,7 +53,7 @@ SET(WIDGETS_SOURCE_FILES widgets/progress_bar_widget widgets/controller_widgets 
     widgets/latitude_controller widgets/time_controller widgets/month_controller widgets/soil_infiltration_controller
     widgets/soil_infiltration_shortcuts_widget widgets/water_shortcuts_controller widgets/shortcut_controller_row
     widgets/clustering_controller widgets/specie_suitability_list_widget widgets/histogram_widget widgets/plant_selection_widget
-    widgets/ecosim_tracker_widget)
+    widgets/ecosim_tracker_widget widgets/mode_controller)
 
 SET(GL_ASSETS_SOURCE_FILES gl_assets/asset gl_assets/grid gl_assets/rays gl_assets/shape_factory gl_assets/sun_asset)
 

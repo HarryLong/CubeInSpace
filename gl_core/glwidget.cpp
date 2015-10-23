@@ -69,6 +69,9 @@ float MouseTracker::getDiffZ()
 //----------------------------------------------------------------------------------------------
 #include <QBoxLayout>
 const int GLWidget::_TARGET_FPS = 30;
+const QString GLWidget::_RESOURCE_MODE_LABEL = "RESOURCES";
+const QString GLWidget::_CLUSTER_MODE_LABEL = "CLUSTERS";
+const QString GLWidget::_PLANT_MODE_LABEL = "PLANTS";
 GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
   QOpenGLWidget(parent),
   m_progress_bar_widget(this),
@@ -81,14 +84,12 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
   m_active_overlay(Uniforms::Overlay::_NONE),
   m_selection_rect(ShapeFactory::getTerrainRectangle()),
   m_humidity_rect(ShapeFactory::getTerrainRectangle()),
-  m_flood_fill_mode(false),
-  m_clustering_enabled(false)
+  m_flood_fill_mode(false)
 {
     m_humidity_rect->resize(5,5); // Temporary
 
     // Set up camera properties
-    m_camera.setTranslationSensitivity(m_dialogs.m_settings_dlg.getTranslationSensitivity());
-    m_camera.setRotationSensitivity(m_dialogs.m_settings_dlg.getRotationSensitivity());
+    refresh_camera_properties();
 
     // Set up orientation widget
     m_orientation_widget.setCameraDirection(m_camera.getCameraDirection());
@@ -119,9 +120,8 @@ GLWidget::GLWidget(AllActions * actions, QWidget * parent) :
     m_ctrl_pressed.store(false);
     setFocusPolicy(Qt::ClickFocus);
     establish_connections();
-    setNavigationEnabled(true);
-    enable_plant_edit(false);
-    trigger_edit_mode();
+    setNavigationEnabled(false);
+    setMode(Mode::_RESOURCE);
 }
 
 GLWidget::~GLWidget()
@@ -136,11 +136,6 @@ GLWidget::~GLWidget()
 
 void GLWidget::establish_connections()
 {
-    // MODE CHANGES
-    connect(m_actions->m_mode_actions[ModeActionFamily::_RESOURCE_EDIT], SIGNAL(triggered(bool)), this, SLOT(trigger_edit_mode()));
-    connect(m_actions->m_mode_actions[ModeActionFamily::_CLUSTERING], SIGNAL(triggered(bool)), this, SLOT(trigger_clustering_mode()));
-    connect(m_actions->m_mode_actions[ModeActionFamily::_PLANT_EDIT], SIGNAL(triggered(bool)), this, SLOT(trigger_plant_mode()));
-
     // LOAD NEW TERRAIN
     connect(m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN], SIGNAL(triggered(bool)), this, SLOT(load_terrain_file()));
 
@@ -151,23 +146,14 @@ void GLWidget::establish_connections()
     connect(&m_terrain, SIGNAL(normalsInvalid()), this, SLOT(refresh_normals()));
 
     // TERRAIN DIMENSTIONS CHANGED
-    connect(&m_terrain, SIGNAL(newTerrainGoingToLoad(int,int)), this, SLOT(new_terrain_is_going_to_load()));
-    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), &m_lighting_manager, SLOT(setTerrainDimensions(int,int)));
-    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), &m_resources, SLOT(terrainChanged(int,int)));
-    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(refresh_water()));
-    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(format_overlay_texture()));
-    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(reset_edit()));
+    connect(&m_terrain, SIGNAL(newTerrainGoingToLoad(int,int)), this, SLOT(new_terrain_is_going_to_load(int,int)));
+    connect(&m_terrain, SIGNAL(newTerrainLoaded(int,int)), this, SLOT(new_terrain_loaded(int,int)));
 
     // CAMERA ORIENTATION CHANGE
     connect(&m_camera, SIGNAL(cameraDirectionChanged(float,float,float)), &m_orientation_widget, SLOT(setCameraDirection(float,float,float)));
 
-    // CONTROL STYLE CHANGE
-    connect(m_actions->m_control_actions.getActionGroup(), SIGNAL(triggered(QAction*)), this, SLOT(control_changed()));
-
     // DISPLAY DIALOGS
     connect(m_actions->m_show_actions[ShowActionFamily::_POINTER_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showPointerInfoDialog()));
-    connect(m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showClusterInfoDialog()));
-    connect(m_actions->m_show_actions[ShowActionFamily::_PLANT_SELECTION], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showPlantSelectionDialog()));
     connect(m_actions->m_base_actions[BaseActionFamily::_OPEN_SETTINGS], SIGNAL(triggered(bool)), &m_dialogs, SLOT(showSettingsDialog()));
 
     // UPDATE PROGRESS BAR
@@ -185,7 +171,6 @@ void GLWidget::establish_connections()
     // When controller widgets are activated
     connect(&m_overlay_widgets, SIGNAL(soilInfiltrationRateChanged(int)), this, SLOT(soil_infiltration_rate_changed(int)));
     connect(&m_overlay_widgets, SIGNAL(absoluteHeightChanged(int)), this, SLOT(set_absolute_aggregate_height(int)));
-    connect(&m_overlay_widgets, SIGNAL(clusteringSensitivityChanged(int)), this, SLOT(refresh_clusters(int)));
 
     // When sun position changed
     connect(&m_lighting_manager, SIGNAL(sunPositionChanged(float,float,float)), this, SLOT(sunPositionChanged(float,float,float)));
@@ -209,11 +194,8 @@ void GLWidget::establish_connections()
     // ORIENTATION CHANGE
     connect(&m_orientation_widget, SIGNAL(northOrientationChanged(float,float,float)), &m_lighting_manager, SLOT(setNorthOrientation(float,float,float)));
 
-    // ORIENTATION EDIT
-
     // CAMERA SENSITIVITY
-    connect(&m_dialogs.m_settings_dlg, SIGNAL(rotationSensitivityChanged(float)), &m_camera, SLOT(setRotationSensitivity(float)));
-    connect(&m_dialogs.m_settings_dlg, SIGNAL(translationSensitivityChanged(float)), &m_camera, SLOT(setTranslationSensitivity(float)));
+    connect(&m_dialogs.m_settings_dlg, SIGNAL(accepted()), this, SLOT(refresh_camera_properties()));
 
     // TEMPERATURE
     connect(&m_dialogs.m_temp_editor_dlg, SIGNAL(temperatureValuesChanged(int,int,float)), this, SLOT(refresh_temperature(int,int,float)));
@@ -227,35 +209,20 @@ void GLWidget::establish_connections()
     // WHEN A RESOUCE IS INVALIDATED CHECK REFRESH IT IF NECESSARY
     connect(&m_resources, SIGNAL(shadeInvalidated()), this, SLOT(shade_invalidated()));
     connect(&m_resources, SIGNAL(tempInvalidated()), this, SLOT(temp_invalidated()));
-    connect(&m_resources, SIGNAL(tempInvalidated()), this, SLOT(disable_clustering()));
     connect(&m_resources, SIGNAL(dailyIlluminationInvalidated()), this, SLOT(daily_illumination_invalidated()));
-    connect(&m_resources, SIGNAL(dailyIlluminationInvalidated()), this, SLOT(disable_clustering()));
-    connect(&m_resources, SIGNAL(tempAndDailyIlluminationValid()), this, SLOT(enable_clustering()));
 
     // When water is balanced, calculate soil humidities
     connect(&m_resources, SIGNAL(water_balanced(int)), this, SLOT(standing_water_set(int)));
 
-    connect(&m_dialogs.m_plant_placement_dlg, SIGNAL(accepted()), this, SLOT(place_plants()));
-    connect(&m_dialogs.m_plant_placement_dlg, SIGNAL(rejected()), this, SLOT(trigger_edit_mode()));
+    connect(&m_overlay_widgets, SIGNAL(previousModeTriggered()), this, SLOT(previous_mode_triggered()));
+    connect(&m_overlay_widgets, SIGNAL(nextModeTriggered()), this, SLOT(next_mode_triggered()));
+
+    connect(&m_dialogs.m_cluster_info_dlg, SIGNAL(refresh_clusters(int)), this, SLOT(refresh_clusters(int)));
 
     // CLUSTERING
 //    connect(&m_clusterer, SIGNAL(clustering_start(QString)), this, SLOT(show_progress_bar(QString)));
 //    connect(&m_clusterer, SIGNAL(clustering_update(int)), &m_progress_bar_widget, SLOT(updateProgress(int)));
 //    connect(&m_clusterer, SIGNAL(clustering_complete()), this, SLOT(hide_progress_bar()));
-}
-
-void GLWidget::control_changed()
-{
-    if(fps())
-    {
-        show_cursor(false);
-        reset_fps_cursor();
-    }
-    else // SOFTIMAGE
-    {
-        show_cursor(true);
-        setNavigationEnabled(true);
-    }
 }
 
 void GLWidget::initializeGL() // Override
@@ -280,6 +247,43 @@ void GLWidget::initializeGL() // Override
     load_terrain(BaseTerrain());
 
     m_fps_callback_timer->start((int)(1000.0f/GLWidget::_TARGET_FPS));
+}
+
+void GLWidget::setMode(Mode mode)
+{
+    m_current_mode = mode;
+
+    if(mode == Mode::_RESOURCE)
+    {
+        m_overlay_widgets.setModeLabels("", GLWidget::_CLUSTER_MODE_LABEL);
+        m_overlay_widgets.enableModeWidgets(false,true);
+        trigger_resource_mode();
+        emit resourceModeTriggered();
+    }
+    else if(mode == Mode::_CLUSTERING)
+    {
+        m_overlay_widgets.setModeLabels(GLWidget::_RESOURCE_MODE_LABEL, GLWidget::_PLANT_MODE_LABEL);
+        m_overlay_widgets.enableModeWidgets(true,true);
+        trigger_clustering_mode();
+        emit clusteringModeTriggered();
+    }
+    else // PLANT MODE
+    {
+        m_overlay_widgets.setModeLabels(GLWidget::_CLUSTER_MODE_LABEL, "");
+        m_overlay_widgets.enableModeWidgets(true,false);
+        trigger_plant_mode();
+        emit plantModeTriggered();
+    }
+}
+
+void GLWidget::previous_mode_triggered()
+{
+    setMode(static_cast<Mode>(static_cast<int>(m_current_mode)-1));
+}
+
+void GLWidget::next_mode_triggered()
+{
+    setMode(static_cast<Mode>(static_cast<int>(m_current_mode)+1));
 }
 
 void GLWidget::paintGL() // Override
@@ -518,12 +522,12 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             {
                 if(m_mouse_position_tracker.ctrl_pressed)
                 {
-                    m_camera.rotate(diff_x, diff_y);
+                    m_camera.rotate(-diff_x, -diff_y);
                 }
                 else
                 {
-                    m_camera.move(diff_x > 0 ? Camera::Direction::RIGHT : Camera::Direction::LEFT);
-                    m_camera.move(diff_y > 0 ? Camera::Direction::UP : Camera::Direction::DOWN);
+                    m_camera.move(diff_x > 0 ? Camera::Direction::LEFT : Camera::Direction::RIGHT, std::abs(diff_x));
+                    m_camera.move(diff_y > 0 ? Camera::Direction::UP : Camera::Direction::DOWN, std::abs(diff_y));
                 }
 
                 float end_x, end_y, end_z;
@@ -802,9 +806,7 @@ void GLWidget::load_terrain(TerragenFile terrain_file)
 {
     makeCurrent();
     m_terrain.setTerrain(terrain_file);
-    m_padded_terrain.refresh(m_terrain); // refresh the padded terrain for water flow calculations
 }
-
 
 #define PROGRESS_BAR_HEIGHT 100
 #define ORIENTATION_WIDGET_HEIGHT 25
@@ -928,8 +930,6 @@ void GLWidget::refresh_clusters(int k)
         cluster_data.push_back(resulting_clusters.getClusterData(i));
     }
     m_dialogs.m_plant_placement_dlg.setClusters(cluster_data);
-
-    enable_plant_edit(true);
 
     refresh_overlay_texture();
 
@@ -1055,8 +1055,6 @@ void GLWidget::set_overlays_active(bool active)
     for(QAction * action : m_actions->m_overlay_actions.allActions())
         action->setEnabled(active);
 
-    m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]->setEnabled(active && m_clustering_enabled);
-
     if(!active)
     {
         set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_NONE]);
@@ -1133,7 +1131,6 @@ void GLWidget::soil_infiltration_rate_changed(int infiltration_rate)
 bool GLWidget::flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height)
 {
     float terrain_height(m_terrain.getHeight(point)); // x 1000 to convert to mm
-//    float water_height(terrain_water(point[0], point[1]));
 
     if(terrain_height < seed_height)
     {
@@ -1141,28 +1138,28 @@ bool GLWidget::flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water
         return true;
     }
 
-//    int aggregate_height(water_height+terrain_height);
-//    GLuint new_water_height = std::max(0,);
-//        qCritical() << "***----------------------------------------------------------------------**";
-//        qCritical() << "Terrain height: " << terrain_height << " | Water height: " << water_height <<
-//                       " | Aggregate height: " << aggregate_height << " | Water to add: " << water_to_add <<
-//                       " | Seed height: " << seed_height_mm << " | Total height: " << (water_to_add+aggregate_height);
-
-
-//    if(new_water_height > 0)
-//    {
-
-//    }
-
     return false;
 }
 
-void GLWidget::new_terrain_is_going_to_load()
+void GLWidget::new_terrain_loaded(int width, int depth)
+{
+    format_overlay_texture(width, depth);
+    m_padded_terrain.refresh(m_terrain); // refresh the padded terrain for water flow calculations
+
+    m_lighting_manager.setTerrainDimensions(width, depth);
+    m_resources.terrainChanged(width, depth);
+
+    refresh_water();
+    refresh_temperature(false);
+
+    reset_edit();
+}
+
+void GLWidget::new_terrain_is_going_to_load(int width, int depth)
 {
     m_selection_rect->clear();
     m_dialogs.m_monthly_rainfall_edit_dlg.reset();
     m_overlay_widgets.hideAll();
-//    grabKeyboard();
     reset_overlay();
     set_overlays_active(true);
 }
@@ -1219,7 +1216,6 @@ void GLWidget::edit(QAction * triggered_action)
         if(checked)
         {
             m_orientation_widget.toggle_edit_mode(true);
-//            set_overlays_active(false);
         }
         else
             m_orientation_widget.toggle_edit_mode(false);
@@ -1228,16 +1224,14 @@ void GLWidget::edit(QAction * triggered_action)
     {
         if(checked)
         {
-            m_overlay_widgets.trigger_time_controllers(true);
-//            set_overlays_active(false);
+            m_overlay_widgets.triggerTimeControllers(true);
         }
     }
     else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_LATITUDE])
     {
         if(checked)
         {
-            m_overlay_widgets.trigger_latitude_controllers(true);
-//            set_overlays_active(false);
+            m_overlay_widgets.triggerLatitudeControllers(true);
         }
     }
     else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_SOIL_INFILTRATION_RATE])
@@ -1246,7 +1240,7 @@ void GLWidget::edit(QAction * triggered_action)
         {
             set_overlays_active(false);
 
-            m_overlay_widgets.trigger_soil_infiltration_controllers(true);
+            m_overlay_widgets.triggerSoilInfiltrationControllers(true);
             reset_water();
             soil_infiltration_rate_changed(m_overlay_widgets.getSoilInfiltrationRate());
             set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_SOIL_INFILTRATION_RATE]);
@@ -1262,24 +1256,19 @@ void GLWidget::edit(QAction * triggered_action)
     {
         if(checked)
         {
-            m_overlay_widgets.trigger_water_controllers(true);
-//            set_overlays_active(false);
+            m_overlay_widgets.triggerWaterControllers(true);
         }
     }
     else if(triggered_action ==  m_actions->m_edit_actions[EditActionFamily::_FLOOD_FILL])
     {
         set_flood_fill_enabled(checked);
-        if(checked)
-        {
-//            set_overlays_active(false);
-        }
     }
 }
 
-void GLWidget::format_overlay_texture()
+void GLWidget::format_overlay_texture(int width, int depth)
 {
     makeCurrent();
-    m_overlay_texture.setDimensions(m_terrain.getWidth(), m_terrain.getDepth());
+    m_overlay_texture.setDimensions(width, depth);
 }
 
 bool GLWidget::render_rays()
@@ -1359,12 +1348,12 @@ bool GLWidget::edit_infiltration_rate()
 
 bool GLWidget::fps()
 {
-    return m_actions->m_control_actions[ControlActionFamily::_FPS]->isChecked();
+    return m_dialogs.m_settings_dlg.fps();
 }
 
 bool GLWidget::softimage()
 {
-    return m_actions->m_control_actions[ControlActionFamily::_SOFTIMAGE]->isChecked();
+    return m_dialogs.m_settings_dlg.softimage();
 }
 
 glm::vec3 GLWidget::to_world(const glm::vec3 & screen_coord)
@@ -1391,60 +1380,48 @@ int GLWidget::month()
     m_overlay_widgets.getMonth();
 }
 
-void GLWidget::enable_clustering()
+void GLWidget::reset_clusters()
 {
-    m_actions->m_mode_actions[ModeActionFamily::_CLUSTERING]->setEnabled(true);
+    m_cluster_membership_texture.reset(m_terrain.getWidth(), m_terrain.getDepth());
+    m_dialogs.m_cluster_info_dlg.clear();
 }
 
-void GLWidget::disable_clustering()
-{
-    m_actions->m_mode_actions[ModeActionFamily::_CLUSTERING]->setEnabled(false);
-}
-
-void GLWidget::trigger_edit_mode()
+void GLWidget::trigger_resource_mode()
 {
     hide_all_dialogs();
-
-    m_actions->m_mode_actions[ModeActionFamily::_RESOURCE_EDIT]->setChecked(true);
-    m_overlay_widgets.hideAll();
     reset_overlay();
-    reset_edit();
-    m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN]->setEnabled(true);
 }
 
 void GLWidget::trigger_clustering_mode()
 {
-    enable_plant_edit(false);
     hide_all_dialogs();
-
     reset_edit();
     makeCurrent();
-    m_cluster_membership_texture.reset(m_terrain.getWidth(), m_terrain.getDepth());
-    m_dialogs.m_cluster_info_dlg.clear();
 
-    m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN]->setEnabled(false);
+    bool temp_valid, illumination_valid, shade_valid;
+    m_resources.valid(shade_valid, illumination_valid, temp_valid);
+    if(!temp_valid)
+        refresh_temperature();
+    if(!illumination_valid)
+        refresh_illumination();
+
+    if(!m_dialogs.m_cluster_info_dlg.containsData())
+        refresh_clusters(1);
+
     set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
-    m_overlay_widgets.trigger_clustering_controllers(true);
 
     m_dialogs.showClusterInfoDialog();
-    m_actions->m_show_actions[ShowActionFamily::_CLUSTERS_INFO]->setChecked(true);
 }
 
 void GLWidget::trigger_plant_mode()
 {
-    m_dialogs.hidePointerInfoDialog();
-
+    hide_all_dialogs();
     reset_edit();
+    makeCurrent();
 
-    m_actions->m_base_actions[BaseActionFamily::_LOAD_TERRAIN]->setEnabled(false);
     set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
 
     m_dialogs.showPlantSelectionDialog();
-}
-
-void GLWidget::enable_plant_edit(bool enable)
-{
-    m_actions->m_mode_actions[ModeActionFamily::_PLANT_EDIT]->setEnabled(enable);
 }
 
 void GLWidget::hide_all_dialogs()
@@ -1519,6 +1496,12 @@ void GLWidget::place_plants()
     std::vector<EcoSimRunConfig> run_configs(m_dialogs.m_plant_placement_dlg.getRunConfigs());
 
     qCritical() << "Starting " << run_configs.size() << " ecosimulations!";
+}
+
+void GLWidget::refresh_camera_properties()
+{
+    m_camera.setTranslationSensitivity(m_dialogs.m_settings_dlg.getTranslationSensitivity());
+    m_camera.setRotationSensitivity(m_dialogs.m_settings_dlg.getRotationSensitivity());
 }
 
 // THREAD

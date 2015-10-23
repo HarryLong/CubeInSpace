@@ -6,6 +6,9 @@ CentralWidget::CentralWidget(AllActions * actions, QWidget * parent) : QWidget(p
 {
     m_glwidget = new GLWidget(actions, this);
 
+    connect(m_glwidget, SIGNAL(resourceModeTriggered()), this, SLOT(emit_enable_menus()));
+    connect(m_glwidget, SIGNAL(clusteringModeTriggered()), this, SLOT(emit_disable_menus()));
+    connect(m_glwidget, SIGNAL(plantModeTriggered()), this, SLOT(emit_disable_menus()));
 
     QBoxLayout * layout(new QVBoxLayout);
     layout->setMargin(0);
@@ -16,4 +19,15 @@ CentralWidget::CentralWidget(AllActions * actions, QWidget * parent) : QWidget(p
 CentralWidget::~CentralWidget()
 {
 
+}
+
+
+void CentralWidget::emit_disable_menus()
+{
+    emit disable_menus();
+}
+
+void CentralWidget::emit_enable_menus()
+{
+    emit enable_menus();
 }

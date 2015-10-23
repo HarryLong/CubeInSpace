@@ -105,27 +105,31 @@ void Camera::setClipping(double near_clip_distance, double far_clip_distance) {
 }
 
 void Camera::move(Direction dir) {
+    move(dir, 1);
+}
+
+void Camera::move(Direction dir, float amount) {
     if (camera_type == FREE) {
-		switch (dir) {
-			case UP:
-                m_camera_position_delta += m_camera_up * m_translation_sensitivity;
-				break;
-			case DOWN:
-                m_camera_position_delta -= m_camera_up * m_translation_sensitivity;
-				break;
-			case LEFT:
-                m_camera_position_delta -= glm::cross(m_camera_direction, m_camera_up) * m_translation_sensitivity;
-				break;
-			case RIGHT:
-                m_camera_position_delta += glm::cross(m_camera_direction, m_camera_up) * m_translation_sensitivity;
-				break;
-			case FORWARD:
-                m_camera_position_delta += m_camera_direction * m_translation_sensitivity;
-				break;
-			case BACK:
-                m_camera_position_delta -= m_camera_direction * m_translation_sensitivity;
-				break;
-		}
+        switch (dir) {
+            case UP:
+                m_camera_position_delta += m_camera_up * amount * m_translation_sensitivity;
+                break;
+            case DOWN:
+                m_camera_position_delta -= m_camera_up * amount * m_translation_sensitivity;
+                break;
+            case LEFT:
+                m_camera_position_delta -= glm::cross(m_camera_direction, m_camera_up) * amount * m_translation_sensitivity;
+                break;
+            case RIGHT:
+                m_camera_position_delta += glm::cross(m_camera_direction, m_camera_up) * amount * m_translation_sensitivity;
+                break;
+            case FORWARD:
+                m_camera_position_delta += m_camera_direction * amount * m_translation_sensitivity;
+                break;
+            case BACK:
+                m_camera_position_delta -= m_camera_direction * amount * m_translation_sensitivity;
+                break;
+        }
     }
 }
 

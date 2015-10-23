@@ -23,6 +23,8 @@ public:
     //For a spherical camera this will be around the look_at point
     //For a free camera a delta will be computed for the direction of movement.
     void move(Camera::Direction dir);
+    void move(Direction dir, float amount);
+
     //Change the yaw and pitch of the camera based on the 2d movement of the mouse
     void rotate(float x, float y);
 

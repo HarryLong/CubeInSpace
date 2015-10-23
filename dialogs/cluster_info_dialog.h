@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QTableWidget>
 #include "../clustering/cluster.h"
+#include "custom_line_edit.h"
 
 class ClusterInfoTable : public QTableWidget
 {
@@ -31,6 +32,27 @@ private:
     static RowIndices _ROW_INDICES;
 };
 
+class ClusterControllerWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    ClusterControllerWidget(QWidget * parent = 0);
+    ~ClusterControllerWidget();
+    int getClusterCount();
+
+signals:
+    void refreshClusters(int);
+
+private slots:
+    void emit_refresh_clusters();
+
+private:
+    void init_layout();
+
+    QIntLineEdit * m_cluster_count_le;
+    QPushButton * m_refresh_btn;
+};
+
 class ClusterInfoDialog : public QDialog
 {
 Q_OBJECT
@@ -39,14 +61,27 @@ Q_OBJECT
     ~ClusterInfoDialog();
 
     void setClusters(const Clusters & clusters);
+    bool containsData();
+
+signals:
+    void refresh_clusters(int);
 
 public slots:
     void clear();
 
+protected:
+    virtual void keyPressEvent(QKeyEvent * event);
+    virtual void closeEvent(QCloseEvent * event);
+
+private slots:
+    void emit_refresh_clusters(int);
+
 private:
     void init_layout();
+    bool m_valid;
 
     ClusterInfoTable * m_cluster_info_table;
+    ClusterControllerWidget * m_cluster_controller_widget;
 };
 
 #endif // CLUSTER_INFO_DIALOG_H

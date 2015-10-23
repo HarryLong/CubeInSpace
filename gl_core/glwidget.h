@@ -58,7 +58,18 @@ public:
     ~GLWidget();
     void loadTerrain(QString filename);
 
+signals:
+    void plantModeTriggered();
+    void clusteringModeTriggered();
+    void resourceModeTriggered();
+
 protected:
+    enum Mode{
+        _RESOURCE = 0,
+        _CLUSTERING,
+        _PLANT
+    } m_current_mode;
+
     void initializeGL() override;
     void paintGL() override;
     void resizeGL(int p_width, int p_height) override;
@@ -76,10 +87,12 @@ protected:
 
 private slots:
     void load_terrain(TerragenFile terrain_file);
-    void control_changed();
     void clear_rays();
     void sunPositionChanged(float,float,float);
     void load_terrain_file();
+    void refresh_camera_properties();
+    void previous_mode_triggered();
+    void next_mode_triggered();
 
     void refresh_temperature(bool refresh_overlay = true);
     void refresh_temperature(int jun_temp, int dec_temp, float lapse_rate, bool refresh_overlay = true);
@@ -113,24 +126,21 @@ private slots:
     void fill_infiltration_rate(int infiltration_rate);
     void set_absolute_aggregate_height(int height);
     void reset_water();
-    void format_overlay_texture();
+    void format_overlay_texture(int width, int depth);
     void set_flood_fill_enabled(bool);
     void flood_fill(int month, const glm::ivec2 & seed_point);
     bool flood_fill(const glm::ivec2 & point, TerrainWater & terrain_water, int month, float & seed_height);
-    void new_terrain_is_going_to_load();
+    void new_terrain_is_going_to_load(int,int);
+    void new_terrain_loaded(int,int);
+
     void refresh_overlay_texture();
     void refresh_clusters(int);
-    void enable_clustering();
-    void disable_clustering();
-
-    void trigger_edit_mode();
-    void trigger_clustering_mode();
-    void trigger_plant_mode();
+    void reset_clusters();
 
     void standing_water_set(int month);
-    void enable_plant_edit(bool enable);
 
     void place_plants();
+    void setMode(Mode mode);
 
 private:
     void normalizeScreenCoordinates(float & p_x, float & p_y);
@@ -162,6 +172,10 @@ private:
     bool edit_infiltration_rate();
     bool fps();
     bool softimage();
+
+    void trigger_resource_mode();
+    void trigger_clustering_mode();
+    void trigger_plant_mode();
 
     void enable_continuous_mouse_tracking(bool enabled);
     void mouse_tracking_callback();
@@ -196,7 +210,6 @@ private:
     bool m_authorise_navigation_mode_switch;
     bool m_flood_fill_mode;
     bool m_previous_flood_fill_all_months_changed;
-    bool m_clustering_enabled;
 
     QTimer * m_fps_callback_timer;
 
@@ -218,6 +231,10 @@ private:
     KMeansClusterer m_clusterer;
 
     const char * m_active_overlay;
+
+    static const QString _RESOURCE_MODE_LABEL;
+    static const QString _CLUSTER_MODE_LABEL;
+    static const QString _PLANT_MODE_LABEL;
 
     static const int _STANDING_WATER_HUMIDITY = 10000;
 };

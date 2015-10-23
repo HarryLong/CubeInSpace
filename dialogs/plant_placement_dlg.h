@@ -20,6 +20,10 @@ public:
 public slots:
     void setClusters(std::vector<ClusterData> clusters);
 
+protected:
+    virtual void keyPressEvent(QKeyEvent * event);
+    virtual void closeEvent(QCloseEvent * event);
+
 private slots:
     void enable_simulate_button();
     void disable_simulate_button();
@@ -29,7 +33,6 @@ private:
 
     PlantSelectionWidget * m_plant_selection_widget;
     QPushButton * m_ok_btn;
-    QPushButton * m_cancel_btn;
 };
 
 #endif // PLANT_PLACEMENT_DLG_H

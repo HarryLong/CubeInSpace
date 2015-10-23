@@ -18,10 +18,9 @@ public:
     MainWindow();
     ~MainWindow();
 
-private slots:
-    void setEditMenu();
-    void setClusteringMenu();
-    void setPlantsMenu();
+public slots:
+    void disable_menus();
+    void enable_menus();
 
 private:
     void init_menu_elements();
@@ -30,18 +29,14 @@ private:
 
     AllActions * m_actions;
 
+    CentralWidget * m_cw;
+
     // Menu elements
     QMenu * m_file_menu;
     QMenu * m_render_menu;
-    QMenu * m_controls_menu;
-    QMenu * m_mode_menu;
     QMenu * m_overlay_menu;
     QMenu * m_edit_show_menu;
     QMenu * m_edit_menu;
-
-    QMenu * m_clustering_show_menu;
-
-    QMenu * m_plants_show_menu;
 
     // Submenu elements
     QMenu * m_illumination_submenu;

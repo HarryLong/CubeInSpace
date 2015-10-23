@@ -27,13 +27,14 @@ public slots:
     void showSettingsDialog();
     void showTempDialog();
     void showMonthlyRainfallDialog();
-    void showPlantSelectionDialog();
 
     void hideAll();
     void showPointerInfoDialog();
     void showClusterInfoDialog();
     void hidePointerInfoDialog();
     void hideClusterInfoDialog();
+    void showPlantSelectionDialog();
+    void hidePlantSelectionDialog();
 };
 
 #endif // DIALOGS_H

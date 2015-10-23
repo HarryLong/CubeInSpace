@@ -9,6 +9,7 @@ class BaseSliderControllerWidget;
 class SoilInfiltrationShortcutWidget;
 class WaterShortcutWidget;
 class ClusteringControllerWidget;
+class ModeControllerWidget;
 /******************************
  * CONTROLLER WIDGETS WRAPPER *
  ******************************/
@@ -51,12 +52,16 @@ signals:
     void soilInfiltrationRateChanged(int);
     void clusteringSensitivityChanged(int);
 
+    void nextModeTriggered();
+    void previousModeTriggered();
+
 public slots:
-    void trigger_time_controllers(bool show_widget);
-    void trigger_latitude_controllers(bool show_widget);
-    void trigger_soil_infiltration_controllers(bool show_widget);
-    void trigger_water_controllers(bool show_widget);
-    void trigger_clustering_controllers(bool show_widget);
+    void triggerTimeControllers(bool show_widget);
+    void triggerLatitudeControllers(bool show_widget);
+    void triggerSoilInfiltrationControllers(bool show_widget);
+    void triggerWaterControllers(bool show_widget);
+    void enableModeWidgets(bool previous, bool next);
+    void setModeLabels(QString previous, QString next);
 
 private slots:
     void emit_latitude_changed(int latitude);
@@ -67,9 +72,13 @@ private slots:
     void emit_soil_infiltration_fill(int infiltration_rate);
     void emit_absolute_height_changed(int infiltration_rate);
     void emit_clustering_sensitivity_changed(int clustering_sensitivity);
+    void emit_next_mode_triggered();
+    void emit_previous_mode_triggered();
+    void enable_static_widgets(bool enable);
 
-private:
-    std::vector<QWidget*> m_raw_widgets;
+private:    
+    std::vector<QWidget*> m_dynamic_display_widgets;
+    std::vector<QWidget*> m_static_display_widgets;
     std::map<int, std::vector<QWidget*> > m_alignment_sorted_widgets;
 
     BaseSliderControllerWidget * m_time_widget;
@@ -78,8 +87,12 @@ private:
     BaseSliderControllerWidget * m_soil_infiltration_widget;
     SoilInfiltrationShortcutWidget * m_soil_infiltration_shortcut_widget;
     WaterShortcutWidget * m_water_shortcut_widget;
-    ClusteringControllerWidget * m_clustering_controller_widget;
-};
+//    ClusteringControllerWidget * m_clustering_controller_widget;
+    ModeControllerWidget * m_previous_mode_controller_widget;
+    ModeControllerWidget * m_next_mode_controller_widget;
 
+    bool m_enable_previous;
+    bool m_enable_next;
+};
 
 #endif // CONTROLLER_WIDGETS_H
