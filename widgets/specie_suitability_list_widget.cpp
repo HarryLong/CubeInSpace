@@ -62,7 +62,7 @@ void SpecieSuitabilityListWidget::filter(QString filter_string)
 
     QList<QListWidgetItem*> matches ( findItems(filter_string, Qt::MatchFlag::MatchContains) );
     for(QListWidgetItem* item : matches)
-        setHidden(false);
+        item->setHidden(false);
 }
 
 void SpecieSuitabilityListWidget::hide_all()

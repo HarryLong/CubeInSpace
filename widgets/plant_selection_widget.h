@@ -7,7 +7,7 @@
 #include "../widgets/histogram_widget.h"
 #include "../clustering/terrain_suitability_score.h"
 #include "../widgets/specie_suitability_list_widget.h"
-#include "../ecosim_run_config.h"
+#include "../ecosim/ecosim_run_config.h"
 
 #include <QLineEdit>
 

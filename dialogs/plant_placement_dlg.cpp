@@ -1,7 +1,6 @@
 #include "plant_placement_dlg.h"
 #include <QGridLayout>
 #include "../widgets/plant_selection_widget.h"
-#include "../widgets/ecosim_tracker_widget.h"
 #include <QPushButton>
 #include <QCloseEvent>
 #include <QKeyEvent>
@@ -11,7 +10,7 @@ PlantPlacementDialog::PlantPlacementDialog(QWidget *parent) : QDialog(parent), m
 {
     init_layout();
 
-    connect(m_ok_btn, SIGNAL(clicked(bool)), this, SLOT(accept()));
+    connect(m_ok_btn, SIGNAL(clicked(bool)), this, SLOT(emit_refresh_plants()));
 
     connect(m_plant_selection_widget, SIGNAL(plantAdded()), this, SLOT(enable_simulate_button()));
     connect(m_plant_selection_widget, SIGNAL(noPlantsSelected()), this, SLOT(disable_simulate_button()));
@@ -64,3 +63,7 @@ void PlantPlacementDialog::closeEvent(QCloseEvent * event)
     event->ignore();
 }
 
+void PlantPlacementDialog::emit_refresh_plants()
+{
+    emit refreshPlants();
+}

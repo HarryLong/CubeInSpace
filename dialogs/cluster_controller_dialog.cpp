@@ -1,4 +1,4 @@
-#include "cluster_info_dialog.h"
+#include "cluster_controller_dialog.h"
 #include <QBoxLayout>
 #include <QHeaderView>
 #include <QPushButton>
@@ -157,14 +157,14 @@ ClusterControllerWidget::~ClusterControllerWidget()
 
 }
 
-int ClusterControllerWidget::getClusterCount()
+int ClusterControllerWidget::clusterCount()
 {
     return m_cluster_count_le->value();
 }
 
 void ClusterControllerWidget::emit_refresh_clusters()
 {
-    emit refreshClusters(getClusterCount());
+    emit refreshClusters(clusterCount());
 }
 
 void ClusterControllerWidget::init_layout()
@@ -179,7 +179,7 @@ void ClusterControllerWidget::init_layout()
 
 //------------------------------------------------------------------------------
 
-ClusterInfoDialog::ClusterInfoDialog(QWidget * parent) : QDialog(parent),
+ClusterControllerDialog::ClusterControllerDialog(QWidget * parent) : QDialog(parent),
     m_cluster_info_table(new ClusterInfoTable(this)),
     m_cluster_controller_widget(new ClusterControllerWidget(this)),
     m_valid(false)
@@ -191,23 +191,23 @@ ClusterInfoDialog::ClusterInfoDialog(QWidget * parent) : QDialog(parent),
     connect(m_cluster_controller_widget, SIGNAL(refreshClusters(int)), this, SLOT(emit_refresh_clusters(int)));
 }
 
-ClusterInfoDialog::~ClusterInfoDialog()
+ClusterControllerDialog::~ClusterControllerDialog()
 {
 
 }
 
-void ClusterInfoDialog::emit_refresh_clusters(int count)
+void ClusterControllerDialog::emit_refresh_clusters(int count)
 {
     emit refresh_clusters(count);
 }
 
-void ClusterInfoDialog::clear()
+void ClusterControllerDialog::clear()
 {
     m_cluster_info_table->clearContents();
     m_valid = false;
 }
 
-void ClusterInfoDialog::init_layout()
+void ClusterControllerDialog::init_layout()
 {
     QVBoxLayout * layout = new QVBoxLayout;
 
@@ -217,12 +217,12 @@ void ClusterInfoDialog::init_layout()
     setLayout(layout);
 }
 
-bool ClusterInfoDialog::containsData()
+bool ClusterControllerDialog::containsData()
 {
     return m_valid;
 }
 
-void ClusterInfoDialog::setClusters(const Clusters &  clusters)
+void ClusterControllerDialog::setClusters(const Clusters &  clusters)
 {
     int cluster_count(clusters.clusterCount());
 
@@ -239,7 +239,7 @@ void ClusterInfoDialog::setClusters(const Clusters &  clusters)
     m_valid = true;
 }
 
-void ClusterInfoDialog::keyPressEvent(QKeyEvent * event)
+void ClusterControllerDialog::keyPressEvent(QKeyEvent * event)
 {
     if(event->key() != Qt::Key_Escape)
         QDialog::keyPressEvent(event);
@@ -247,7 +247,12 @@ void ClusterInfoDialog::keyPressEvent(QKeyEvent * event)
         event->ignore();
 }
 
-void ClusterInfoDialog::closeEvent(QCloseEvent * event)
+void ClusterControllerDialog::closeEvent(QCloseEvent * event)
 {
     event->ignore();
+}
+
+int ClusterControllerDialog::clusterCount()
+{
+    return m_cluster_controller_widget->clusterCount();
 }

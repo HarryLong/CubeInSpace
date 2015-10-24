@@ -225,8 +225,8 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
         for(int hour = 0; hour < 24; hour++, iteration++)
         {
             // First update progress dialog
-            QString description("Month: ");
-            description.append(QString::number(month)).append( " | Hour: ").append(QString::number(hour));
+            QString description("Calculating daily illumination for: ");
+            description.append(QString::number(month)).append( " @ ").append(QString::number(hour)).append("h.");
             emit processDescriptionUpdate(description);
             emit processingUpdate((iteration / n_iterations)*100);
 

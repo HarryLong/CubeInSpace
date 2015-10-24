@@ -38,7 +38,7 @@ class ClusterControllerWidget : public QWidget
 public:
     ClusterControllerWidget(QWidget * parent = 0);
     ~ClusterControllerWidget();
-    int getClusterCount();
+    int clusterCount();
 
 signals:
     void refreshClusters(int);
@@ -53,15 +53,16 @@ private:
     QPushButton * m_refresh_btn;
 };
 
-class ClusterInfoDialog : public QDialog
+class ClusterControllerDialog : public QDialog
 {
 Q_OBJECT
  public:
-    ClusterInfoDialog(QWidget * parent);
-    ~ClusterInfoDialog();
+    ClusterControllerDialog(QWidget * parent);
+    ~ClusterControllerDialog();
 
     void setClusters(const Clusters & clusters);
     bool containsData();
+    int clusterCount();
 
 signals:
     void refresh_clusters(int);

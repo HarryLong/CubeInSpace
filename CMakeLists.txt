@@ -26,7 +26,7 @@ link_directories(
     "lib/"
 )
 
-set(LIBS "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU TerragenFileManager PlantDB)
+set(LIBS "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU TerragenFileManager PlantDB EcoSimulator)
 
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${OpenMP_CXX_FLAGS} -O2 -g -std=c++11")
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -O2 -std=c++11")
@@ -42,7 +42,7 @@ resources/weighted_soil_humidity resources/slope)
 SET(LIGHTING_SOURCE_FILES lighting/lighting_manager lighting/light_properties)
 
 SET(DIALOGS_SOURCE_FILES dialogs/temp_edit_dlg dialogs/settings_dlg dialogs/pointer_info_dlg dialogs/custom_line_edit dialogs/dialogs
-    dialogs/monthly_rainfall_edit_dlg dialogs/cluster_info_dialog dialogs/plant_placement_dlg)
+    dialogs/monthly_rainfall_edit_dlg dialogs/plant_placement_dlg dialogs/cluster_controller_dialog)
 
 SET(SHADER_SOURCE_FILES shaders/rendering_shader_programs shaders/rendering_shaders
 shaders/compute_shader_programs shaders/compute_shaders shaders/uniforms)
@@ -53,7 +53,7 @@ SET(WIDGETS_SOURCE_FILES widgets/progress_bar_widget widgets/controller_widgets 
     widgets/latitude_controller widgets/time_controller widgets/month_controller widgets/soil_infiltration_controller
     widgets/soil_infiltration_shortcuts_widget widgets/water_shortcuts_controller widgets/shortcut_controller_row
     widgets/clustering_controller widgets/specie_suitability_list_widget widgets/histogram_widget widgets/plant_selection_widget
-    widgets/ecosim_tracker_widget widgets/mode_controller)
+    widgets/mode_controller)
 
 SET(GL_ASSETS_SOURCE_FILES gl_assets/asset gl_assets/grid gl_assets/rays gl_assets/shape_factory gl_assets/sun_asset)
 
@@ -64,6 +64,8 @@ SET(GL_TEXTURE_SOURCE_FILES gl_texture/texture_element gl_texture/texture_elemen
 gl_texture/texture_element_2d_array)
 
 SET(CLUSTERING_SOURCE_FILES clustering/k_means_clusterer clustering/cluster clustering/cluster_membership_texture clustering/cluster_data clustering/terrain_suitability_score)
+
+SET(ECOSIM_SOURCE_FILES ecosim/ecosim_run_config ecosim/simulator)
 
 SET(SOURCE_FILES
 ${RESOURCES_SOURCE_FILES}
@@ -76,7 +78,8 @@ ${GL_ASSETS_SOURCE_FILES}
 ${GL_CORE_SOURCE_FILES}
 ${GL_TEXTURE_SOURCE_FILES}
 ${CLUSTERING_SOURCE_FILES}
-window main debug geom actions fixed_size_stack ecosim_run_config)
+${ECOSIM_SOURCE_FILES}
+window main debug geom actions fixed_size_stack)
 
 # Shaders
 add_subdirectory(shaders)

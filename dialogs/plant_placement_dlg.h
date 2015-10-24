@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QLineEdit>
 #include "../clustering/cluster_data.h"
-#include "../ecosim_run_config.h"
+#include "../ecosim/ecosim_run_config.h"
 
 class PlantSelectionWidget;
 class QPushButton;
@@ -20,6 +20,9 @@ public:
 public slots:
     void setClusters(std::vector<ClusterData> clusters);
 
+signals:
+    void refreshPlants();
+
 protected:
     virtual void keyPressEvent(QKeyEvent * event);
     virtual void closeEvent(QCloseEvent * event);
@@ -27,6 +30,7 @@ protected:
 private slots:
     void enable_simulate_button();
     void disable_simulate_button();
+    void emit_refresh_plants();
 
 private:
     void init_layout();

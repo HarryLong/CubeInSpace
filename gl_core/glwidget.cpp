@@ -219,6 +219,8 @@ void GLWidget::establish_connections()
 
     connect(&m_dialogs.m_cluster_info_dlg, SIGNAL(refresh_clusters(int)), this, SLOT(refresh_clusters(int)));
 
+    connect(&m_dialogs.m_plant_placement_dlg, SIGNAL(refreshPlants()), this, SLOT(refresh_plants()));
+
     // CLUSTERING
 //    connect(&m_clusterer, SIGNAL(clustering_start(QString)), this, SLOT(show_progress_bar(QString)));
 //    connect(&m_clusterer, SIGNAL(clustering_update(int)), &m_progress_bar_widget, SLOT(updateProgress(int)));
@@ -894,6 +896,11 @@ void GLWidget::refresh_overlay_texture()
     }
 }
 
+void GLWidget::refresh_clusters()
+{
+    refresh_clusters(m_dialogs.m_cluster_info_dlg.clusterCount());
+}
+
 void GLWidget::refresh_clusters(int k)
 {
     m_fps_callback_timer->stop();
@@ -1405,8 +1412,7 @@ void GLWidget::trigger_clustering_mode()
     if(!illumination_valid)
         refresh_illumination();
 
-    if(!m_dialogs.m_cluster_info_dlg.containsData())
-        refresh_clusters(1);
+    refresh_clusters();
 
     set_overlay(m_actions->m_overlay_actions[OverlayActionFamily::_CLUSTERS]);
 
@@ -1491,7 +1497,7 @@ void GLWidget::standing_water_set(int month)
         set_edit_actions_active(true);
 }
 
-void GLWidget::place_plants()
+void GLWidget::refresh_plants()
 {
     std::vector<EcoSimRunConfig> run_configs(m_dialogs.m_plant_placement_dlg.getRunConfigs());
 

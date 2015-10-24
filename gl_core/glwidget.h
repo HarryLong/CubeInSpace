@@ -135,11 +135,12 @@ private slots:
 
     void refresh_overlay_texture();
     void refresh_clusters(int);
+    void refresh_clusters();
     void reset_clusters();
 
     void standing_water_set(int month);
 
-    void place_plants();
+    void refresh_plants();
     void setMode(Mode mode);
 
 private:
