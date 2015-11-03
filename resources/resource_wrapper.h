@@ -10,9 +10,10 @@
 #include "weighted_soil_humidity.h"
 #include "slope.h"
 #include <atomic>
+#include "../worker.h"
 
 class LightingManager;
-class ResourceWrapper : public QObject{
+class ResourceWrapper : public Worker{
 Q_OBJECT
 public:
     ResourceWrapper();
@@ -36,10 +37,6 @@ public:
     Slope & getSlope();
 
 signals:
-    void processing(QString description);
-    void processingUpdate(int percent_complete);
-    void processingComplete();
-    void processDescriptionUpdate(QString description);
     void tempInvalidated();
     void dailyIlluminationInvalidated();
     void shadeInvalidated();

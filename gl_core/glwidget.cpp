@@ -162,6 +162,11 @@ void GLWidget::establish_connections()
     connect(&m_resources, SIGNAL(processingComplete()), &m_progress_bar_widget, SLOT(finishedProcessing()));
     connect(&m_resources, SIGNAL(processDescriptionUpdate(QString)), &m_progress_bar_widget, SLOT(updateInfoLabel(QString)));
 
+    connect(&m_simulator, SIGNAL(processing(QString)), &m_progress_bar_widget, SLOT(processing(QString)));
+    connect(&m_simulator, SIGNAL(processingUpdate(int)), &m_progress_bar_widget, SLOT(updateProgress(int)));
+    connect(&m_simulator, SIGNAL(processingComplete()), &m_progress_bar_widget, SLOT(finishedProcessing()));
+    connect(&m_simulator, SIGNAL(processDescriptionUpdate(QString)), &m_progress_bar_widget, SLOT(updateInfoLabel(QString)));
+
     // CLEAR RENDERED RAYS
     connect(m_actions->m_render_actions[RenderActionFamily::_RAYS], SIGNAL(triggered(bool)), this, SLOT(clear_rays()));
 
@@ -1499,9 +1504,11 @@ void GLWidget::standing_water_set(int month)
 
 void GLWidget::refresh_plants()
 {
-    std::vector<EcoSimRunConfig> run_configs(m_dialogs.m_plant_placement_dlg.getRunConfigs());
+    m_fps_callback_timer->stop();
 
-    qCritical() << "Starting " << run_configs.size() << " ecosimulations!";
+    m_simulator.start(m_dialogs.m_plant_placement_dlg.getRunConfigs());
+
+    m_fps_callback_timer->start();
 }
 
 void GLWidget::refresh_camera_properties()

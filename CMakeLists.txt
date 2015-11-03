@@ -26,7 +26,8 @@ link_directories(
     "lib/"
 )
 
-set(LIBS "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU TerragenFileManager PlantDB EcoSimulator)
+set(LIBS "/usr/lib/x86_64-linux-gnu/libGLEW.so" "/usr/lib/x86_64-linux-gnu/libGL.so" Qt5::Widgets Qt5::OpenGL Qt5::Core Qt5::Gui GLU TerragenFileManager
+PlantDB EcoSimulator EcoDataTracker)
 
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${OpenMP_CXX_FLAGS} -O2 -g -std=c++11")
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -O2 -std=c++11")
@@ -79,7 +80,7 @@ ${GL_CORE_SOURCE_FILES}
 ${GL_TEXTURE_SOURCE_FILES}
 ${CLUSTERING_SOURCE_FILES}
 ${ECOSIM_SOURCE_FILES}
-window main debug geom actions fixed_size_stack)
+window main debug geom actions fixed_size_stack worker )
 
 # Shaders
 add_subdirectory(shaders)

@@ -6,30 +6,32 @@
 #include "ecosimulator/simulator/core/simulation_configuration.h"
 #include <QObject>
 #include <thread>
+#include "../worker.h"
 
-class EcoSimulator : public QObject, public SimulatorManager::ProgressListener{
+class EcoSimulator : public Worker, public SimulatorManager::ProgressListener{
     Q_OBJECT
 public:
-    EcoSimulator(std::vector<EcoSimRunConfig> configs);
+    EcoSimulator();
     ~EcoSimulator();
 
+    void start(const std::vector<EcoSimRunConfig> & configs);
+
     virtual void progressUpdate(float percent);
+    virtual void progressUpdate(QString info);
     virtual void complete();
 
-signals:
-    void processing(QString description);
-    void processingUpdate(int percent_complete);
-    void processingComplete();
-    void processDescriptionUpdate(QString description);
 
 private:
-    SimulationConfiguration build_simulation_config(EcoSimRunConfig & run_config);
+    SimulationConfiguration to_simulation_config(const EcoSimRunConfig & run_config) const;
     void delete_thread();
     void start_next_simulation();
-    void start_thread();
+    void run_simulation();
+    void reset();
+    bool requires_simulation(const SimulationConfiguration & config);
     int m_current_simulation_idx;
-    SimulationConfiguration m_active_simulation_config;
-    std::vector<EcoSimRunConfig> m_run_configs;
+//    SimulationConfiguration m_active_simulation_config;
+//    std::vector<EcoSimRunConfig> m_run_configs;
+    std::vector<SimulationConfiguration> m_run_configs;
     std::thread * m_thread;
 };
 

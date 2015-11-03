@@ -26,6 +26,7 @@
 #include "../gl_texture/overlay_texture.h"
 #include "../resources/flood_fill_tracker.h"
 #include "clustering/k_means_clusterer.h"
+#include "../ecosim/simulator.h"
 
 class QProgressDialog;
 class QMouseEvent;
@@ -230,6 +231,8 @@ private:
 
     ClusterMembershipTexture m_cluster_membership_texture;
     KMeansClusterer m_clusterer;
+
+    EcoSimulator m_simulator;
 
     const char * m_active_overlay;
 

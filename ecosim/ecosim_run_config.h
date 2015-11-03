@@ -11,7 +11,7 @@ public:
     ~EcoSimRunConfig();
     int getSpecieCount();
     void addSpecie(SpecieProperties specie);
-    std::vector<SpecieProperties> getSpecies();
+    std::vector<SpecieProperties> getSpecies() const;
     const ClusterData m_cluster_data;
 
 private:

@@ -25,6 +25,7 @@ int ModeControllerWidget::alignment()
 void ModeControllerWidget::init_button()
 {
     m_btn = new QPushButton("", this);
+    m_btn->setFocusPolicy(Qt::NoFocus);
 }
 
 void ModeControllerWidget::setLabel(QString lbl)
