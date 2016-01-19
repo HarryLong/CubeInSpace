@@ -158,17 +158,9 @@ template <class T> void TextureElement2DArray<T>::syncFromGPU(int layer, bool st
     if(stack)
         push(layer);
 
-//    m_texture_views[layer]->textureID
-    // HACK ! == IT HAS TO BE A MINIMUM OF 4 BYTES
     GLsizei sz(std::max(4,(int) (m_width*m_height*m_color_element_count*m_layers*sizeof(T)))); CE();
-//    qCritical() << "Size: " << sz;
-//    if(sz % 4 != 0) // Needs to be a multiple of 4 bytes
-//        sz += (sz%4);
-    f->glGetTextureSubImage(textureId(), 0, 0, 0, layer, width(), height(), 1, m_pixel_format, m_pixel_type, sz, (GLvoid*) m_raw_data[layer]);CE();
 
-//    syncFromGPU();
-//    m_texture_views[layer]->bind();
-//    f->glGetTexImage(GL_TEXTURE_2D, 0, m_pixel_format, m_pixel_type, (GLvoid*) m_raw_data[layer] ); CE();
+    f->glGetTextureSubImage(textureId(), 0, 0, 0, layer, width(), height(), 1, m_pixel_format, m_pixel_type, sz, (GLvoid*) m_raw_data[layer]);CE();
 }
 
 template <class T> void TextureElement2DArray<T>::pushToGPU(int layer)

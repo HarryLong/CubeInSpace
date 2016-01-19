@@ -3,6 +3,9 @@
 #include "../terrain/terrain.h"
 #include <cstring>
 
+#include <chrono>
+typedef std::chrono::high_resolution_clock Clock;
+
 ResourceWrapper::ResourceWrapper() :
     m_temp_valid(false),
     m_daily_illumination_valid(false),
@@ -203,6 +206,8 @@ GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_po
 
 void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain)
 {
+    auto start(Clock::now());
+
     int current_month(lighting_manager.currentMonth());
     int current_time(lighting_manager.currentTime());
 
@@ -253,11 +258,14 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
 
     emit processingComplete();
 
+    auto time(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - start).count());
+    qCritical() << "Illumination calculation time: " << time;
+
     setDailyIlluminationValid(true);
 }
 
 void ResourceWrapper::refreshTemperature(const Terrain & terrain, int temp_at_zero_june, int temp_at_zero_dec, float lapse_rate)
-{
+{    
     int terrain_width(terrain.getWidth());
     int terrain_depth(terrain.getDepth());
     int n_iterations(terrain_depth*terrain_width*12);
@@ -291,6 +299,18 @@ void ResourceWrapper::refreshTemperature(const Terrain & terrain, int temp_at_ze
             }
         }
         m_terrain_temp.setData(month-1,temp_data);
+
+        // Set the min and max
+        {
+            float min_altitude( terrain.getMinAltitude());
+            float max_temp(temp_at_zero - ((min_altitude/1000.0f) * lapse_rate));
+            m_terrain_temp.setMax(month, max_temp);
+        }
+        {
+            float max_altitude( terrain.getMaxAltitude());
+            float min_temp(temp_at_zero - ((max_altitude/1000.0f) * lapse_rate));
+            m_terrain_temp.setMin(month, min_temp);
+        }
     }
 
     emit processingComplete();

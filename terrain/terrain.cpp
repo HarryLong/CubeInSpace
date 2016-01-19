@@ -147,6 +147,16 @@ float Terrain::getAltitude(const glm::ivec2 & point) const
     return getHeight(point) * getScale();
 }
 
+float Terrain::getMinAltitude() const
+{
+    return getMinHeight() * getScale();
+}
+
+float Terrain::getMaxAltitude() const
+{
+    return getMaxHeight() * getScale();
+}
+
 float Terrain::getScale() const
 {
     return m_terragen_file.m_header_data.scale;

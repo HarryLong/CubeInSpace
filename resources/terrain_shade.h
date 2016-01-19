@@ -13,6 +13,7 @@ class TerrainShade : public TextureElement2D<GLubyte> {
 public:
     TerrainShade();
     ~TerrainShade();
+
 };
 
 #endif // TERRAIN_SHADE_H

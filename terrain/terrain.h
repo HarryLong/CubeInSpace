@@ -52,6 +52,8 @@ public:
     float getHeight(const glm::ivec2 & point) const;
     float getAltitude(const glm::vec2 & point) const;
     float getAltitude(const glm::ivec2 & point) const;
+    float getMinAltitude() const;
+    float getMaxAltitude() const;
     float getSlope(const glm::vec2 & point) const;
     float getScale() const;
 

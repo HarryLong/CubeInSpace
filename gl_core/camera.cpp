@@ -94,6 +94,11 @@ void Camera::setFOV(double fov) {
     m_fov = fov;
 }
 
+void Camera::increment_fov(double amount)
+{
+    setFOV(m_fov+amount);
+}
+
 void Camera::setAspect(double aspect)
 {
     m_aspect = aspect;

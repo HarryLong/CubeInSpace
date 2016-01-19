@@ -61,7 +61,11 @@ ClusterData Clusters::getClusterData(int cluster_idx) const
         cluster_data.temperatures[i] = (GLint) m_temperature_cluster_data(i, cluster_idx,0);
     }
 
-    cluster_data.member_count = m_memberships_count.at(cluster_idx);
+    auto it(m_memberships_count.find(cluster_idx));
+    if(it != m_memberships_count.end())
+        cluster_data.member_count = it->second;
+    else
+        cluster_data.member_count = 0;
 
     return cluster_data;
 }

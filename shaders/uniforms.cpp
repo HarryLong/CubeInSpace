@@ -82,3 +82,6 @@ const char * Uniforms::WaterEdit::_ABSOLUTE_HEIGHT = "absolute_height";
 // BORDER OVERLAP REDUCTION
 const char * Uniforms::BorderOverlapReduction::_OVERLAP_MODE = "overlap_mode";
 
+// TEMPERATURE
+const char * Uniforms::Temperature::_MIN = "min_temp";
+const char * Uniforms::Temperature::_MAX = "max_temp";

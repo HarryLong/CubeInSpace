@@ -51,7 +51,7 @@ public:
         static const char * _SOIL_INFILTRATION_RATE;
         static const char * _MONTHLY_SOIL_HUMIDITY;
         static const char * _WEIGHTED_AVG_SOIL_HUMIDITY;
-        static const char * _CLUSTERS;
+        static const char * _CLUSTERS;        
     };
 
     struct Clustering{
@@ -98,6 +98,11 @@ public:
     struct BorderOverlapReduction
     {
         static const char * _OVERLAP_MODE;
+    };
+
+    struct Temperature {
+        static const char * _MIN;
+        static const char * _MAX;
     };
 };
 

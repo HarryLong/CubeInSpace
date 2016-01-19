@@ -113,7 +113,7 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id,
                                     ClusterMembershipTexture & cluster_membership_texture,
                                     const char * active_overlay,
                                     int month)
-{
+{    
     QOpenGLFunctions_4_3_Core * f = QOpenGLContext::currentContext()->versionFunctions<QOpenGLFunctions_4_3_Core>();
     if(!f)
         qCritical() << "Could not obtain required OpenGL context version";
@@ -149,6 +149,8 @@ void Computer::createOverlayTexture(GLuint overlay_texture_id,
     else if(active_overlay == Uniforms::Overlay::_TEMPERATURE)
     {
         shader->setUniformValue(Uniforms::Texture::_TEMPERATURE, 0); CE();
+        shader->setUniformValue(Uniforms::Temperature::_MIN, resources.getTerrainTemp().getMin(month)); CE();
+        shader->setUniformValue(Uniforms::Temperature::_MAX, resources.getTerrainTemp().getMax(month)); CE();
         resources.getTerrainTemp()[month-1]->bind();
     }
     else if(active_overlay == Uniforms::Overlay::_ILLUMINATION)

@@ -19,7 +19,6 @@
 #include "../widgets/soil_infiltration_controller.h"
 #include <algorithm>
 #include <functional>
-
 /*****************
  * MOUSE TRACKER *
  *****************/
@@ -246,7 +245,7 @@ void GLWidget::initializeGL() // Override
     glCullFace(GL_BACK);
     glFrontFace(GL_CW);
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(.8f, .8f, .8f, 1.0f);
     setMouseTracking(true);
 
     m_renderer.compileAndLinkShaders();
@@ -605,21 +604,17 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     else if(!deg.isNull()) // mouse wheel instead
         delta = deg.y() / 360.f;
 
-
-    if(m_navigation_enabled)
+    if(edit_infiltration_rate())
     {
-        m_camera.move(delta > 0 ? Camera::Direction::FORWARD : Camera::Direction::BACK);
+        bool ctrl_pressed(m_ctrl_pressed.load());
+        int increment ( ctrl_pressed ? 10 : 1 );
+        if(delta < 0)
+            increment *= -1;
+        m_humidity_rect->increment_size(increment, increment);
     }
     else
     {
-        if(edit_infiltration_rate())
-        {
-            bool ctrl_pressed(m_ctrl_pressed.load());
-            int increment ( ctrl_pressed ? 10 : 1 );
-            if(delta < 0)
-                increment *= -1;
-            m_humidity_rect->increment_size(increment, increment);
-        }
+        m_camera.increment_fov(delta > 0 ? -0.1 : 0.1);
     }
 }
 
@@ -792,7 +787,8 @@ void GLWidget::keyReleaseEvent(QKeyEvent * event)
 
 void GLWidget::load_terrain_file()
 {
-    QFileDialog::Options options;
+    QFileDialog::Options options(QFileDialog::DontUseNativeDialog);
+
     QString selectedFilter;
 
     QString fileName ( QFileDialog::getOpenFileName(this,
@@ -996,6 +992,8 @@ void GLWidget::refresh_water()
                                           m_terrain.getDepth(),
                                           m_terrain.getScale());
     }
+
+    tmp_water_flow_iteration_count = 0;
     terrain_water.setUnbalanced();
     set_edit_actions_active(false); // Disable editing until water is balanced
 
@@ -1047,6 +1045,7 @@ void GLWidget::reset_water()
 void GLWidget::refresh_normals()
 {
     makeCurrent();
+
     m_renderer.calculateNormals(m_terrain);
 
     // First ensure the size is correct
@@ -1484,19 +1483,23 @@ void GLWidget::standing_water_set(int month)
     standing_water.pushToGPU(layer);
 
     // CALCULATE SOIL HUMIDITY
-    m_computer.calculateSoilHumidity(m_resources,
-                                     month,
-                                     m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(month),
-                                     m_dialogs.m_monthly_rainfall_edit_dlg.getRainfallIntensity(month),
-                                     m_terrain.getWidth(),
-                                     m_terrain.getDepth(),
-                                     m_terrain.getScale());
-    m_resources.getSoilHumidity().syncFromGPU(month-1);
+    {
+        m_computer.calculateSoilHumidity(m_resources,
+                                         month,
+                                         m_dialogs.m_monthly_rainfall_edit_dlg.getRainfall(month),
+                                         m_dialogs.m_monthly_rainfall_edit_dlg.getRainfallIntensity(month),
+                                         m_terrain.getWidth(),
+                                         m_terrain.getDepth(),
+                                         m_terrain.getScale());
+        m_resources.getSoilHumidity().syncFromGPU(month-1);
+    }
 
     //  CALCULATE WEIGHTED SOIL HUMIDITY
-    WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
-    m_computer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
-    wsh.syncFromGPU();
+    {        
+        WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
+        m_computer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
+        wsh.syncFromGPU();
+    }
 
     if(standing_water.balanced()) // Reenable all edit actions once the water is "balanced"
         set_edit_actions_active(true);

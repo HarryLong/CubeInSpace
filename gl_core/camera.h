@@ -51,6 +51,7 @@ public:
 public slots:
     void setTranslationSensitivity(float sensitivity);
     void setRotationSensitivity(float sensitivity);
+    void increment_fov(double amount);
     void update();
 
 signals:

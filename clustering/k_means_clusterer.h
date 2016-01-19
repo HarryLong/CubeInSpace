@@ -24,6 +24,20 @@ public:
                             float monthly_temperature_change,
                             std::function<void(Clusters &, ResourceWrapper &, ClusterMembershipTexture &,int)> & clustering_fn);
 
+    // TEMP
+    void calculateMemberships(const Clusters & cluster_means,
+                              ClusterMembershipTexture & memberships,
+                              TerrainTemperature & temp_data,
+                              TerrainDailyIllumination & illumination_data,
+                              Slope & slope_data,
+                              WeightedSoilHumidity & weighted_soil_humidity_data);
+
+    int closest_cluster_idx(int x, int y, const Clusters & cluster_means,
+                            TerrainTemperature & temp_data,
+                            TerrainDailyIllumination & illumination_data,
+                            Slope & slope_data,
+                            WeightedSoilHumidity & weighted_soil_humidity_data);
+
 signals:
     void clustering_start(QString);
     void clustering_update(int);

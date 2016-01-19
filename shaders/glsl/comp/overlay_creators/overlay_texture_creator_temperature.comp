@@ -3,18 +3,24 @@
 layout (local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, rgba32f) uniform coherent image2D resulting_overlay;
-const vec4 color_at_minus_fifty_degrees = vec4(0,0,1,.7);
-const vec4 color_at_plus_fifty_degrees = vec4(1,0,0,.7);
+
+uniform float min_temp;
+uniform float max_temp;
+const vec4 min_color = vec4(0,0,1,.7);
+const vec4 max_color = vec4(1,0,0,.7);
 
 uniform sampler2D temperature_texture;
 
 vec4 temp_to_output_color(in int temperature)
 {
-    float color_at_plus_fifty_degrees_percentage = (temperature+50)/100.0;
-    float color_at_minus_fifty_degrees_percentage = 1-color_at_plus_fifty_degrees_percentage;
+    float range = max_temp - min_temp;
+    float median = min_temp + (range/2);
 
-    return (color_at_plus_fifty_degrees_percentage * color_at_plus_fifty_degrees) +
-                (color_at_minus_fifty_degrees_percentage * color_at_minus_fifty_degrees);
+    float max_color_percentage = (temperature-median)/(range/2);
+    float min_color_percentage = 1-max_color_percentage;
+
+    return (min_color * min_color_percentage) +
+                (max_color * max_color_percentage);
 }
 
 int i_unnormalize(in float normalized)

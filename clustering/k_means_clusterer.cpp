@@ -2,6 +2,9 @@
 #include <algorithm>
 #include "../gl_core/renderer.h"
 
+#include <chrono>
+typedef std::chrono::system_clock Clock;
+
 KMeansClusterer::KMeansClusterer()
 {
 
@@ -76,33 +79,22 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         clusters.push_to_gpu(); // Pushes data to the GPU
     }
 
-//    clusters.summarize();
+//    for(int i(0); i < 50; i++)
+//    {
+//        calculateMemberships(clusters, memberships, temp_data, illumination_data, slope_data, weighted_soil_humidity_data);
+//        std::vector<ClusterData> new_clusters(
+//                    recalculate_cluster_means(clusters.clusterCount(), memberships, temp_data, illumination_data, slope_data, weighted_soil_humidity_data));
+//        for(int cluster_idx (0); cluster_idx < k; cluster_idx++)
+//        {
+//            clusters.set(cluster_idx, new_clusters.at(cluster_idx));
+//        }
+//        memberships.pushToGPU();
+//    }
 
     clustering_fn(clusters, resources, memberships, 50); // Perform clustering
     memberships.syncFromGPU();
     clusters.sync_from_gpu();
 
-//    qCritical() << "Memberships [" << memberships.width() << "," << memberships.height() << "]";
-
-//    int total_iterations(100);
-
-//    for(int i = 0; i < total_iterations; i++)
-//    {
-//        emit clustering_update((((float)i)/total_iterations) * 100);
-//        cluster_membership_fn(clusters, resources, memberships);
-        // Sync memberships from GPU
-//        memberships.syncFromGPU();
-//        std::vector<ClusterData> cluster_data(recalculate_cluster_means(k, memberships, temp_data, illumination_data,
-//                                                                                  slope_data, weighted_soil_humidity_data));
-//        // Update cluster data on GPU
-//        for(int cluster_idx(0); cluster_idx < k; cluster_idx++)
-//        {
-//            clusters.set(cluster_idx, cluster_data[cluster_idx]);
-//        }
-//        clusters.clusters_finalised(); // Pushes data to GPU
-
-//        clusters.summarize();
-//    }
 
     std::vector<int> n_members;
     for(int i(0); i < k; i++)
@@ -139,15 +131,56 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
         clusters.set(cluster_idx, cluster_data);
     }
 
-//    qCritical() << "*** FINAL CLUSTERS ***";
-//    clusters.summarize();
-//    qCritical() << "*** MEMBERSHIP COUNT ***";
-//    for(int i(0); i < k; i++)
-//    {
-//        qCritical() << i << " --> " << n_members[i];
-//    }
-
     emit clustering_complete();
+}
+
+void KMeansClusterer::calculateMemberships(const Clusters & cluster_means,
+                                           ClusterMembershipTexture & memberships,
+                                           TerrainTemperature & temp_data,
+                                           TerrainDailyIllumination & illumination_data,
+                                           Slope & slope_data,
+                                           WeightedSoilHumidity & weighted_soil_humidity_data)
+{
+    for(int x(0); x < slope_data.width(); x++)
+        for(int y(0); y < slope_data.height(); y++)
+        {
+            memberships.set((GLuint) closest_cluster_idx(x,y,cluster_means,temp_data, illumination_data, slope_data, weighted_soil_humidity_data),x,y);
+        }
+}
+
+int KMeansClusterer::closest_cluster_idx(int x, int y, const Clusters & cluster_means,
+                                         TerrainTemperature & temp_data,
+                                         TerrainDailyIllumination & illumination_data,
+                                         Slope & slope_data,
+                                         WeightedSoilHumidity & weighted_soil_humidity_data)
+{
+    int smallest_distance(-1);
+    int closest_cluster_idx(0);
+    for(int cluster_idx(0); cluster_idx < cluster_means.clusterCount(); cluster_idx++)
+    {
+        float dist(0);
+
+        const ClusterData & cluster_data(cluster_means.getClusterData(cluster_idx));
+
+        dist += abs(cluster_data.slope - slope_data(x,y));
+
+        dist += abs(cluster_data.temperatures[0]-temp_data(0,x,y)) * 12; // TEMPERATURE
+
+        // Illumination & SOIL HUMIDITY
+        for(int i = 0; i < 12; i++)
+        {
+            dist += 0.1 * abs(cluster_data.soil_humidities[i]-weighted_soil_humidity_data(i,x,y)); // TEMPERATURE
+            dist += abs(cluster_data.illumination[i]-illumination_data(i,x,y)); // TEMPERATURE
+        }
+
+        if(smallest_distance == -1 || dist < smallest_distance)
+        {
+            smallest_distance = dist;
+            closest_cluster_idx = cluster_idx;
+        }
+    }
+
+    return closest_cluster_idx;
 }
 
 std::vector<ClusterData> KMeansClusterer::recalculate_cluster_means(int n_clusters, ClusterMembershipTexture & memberships,

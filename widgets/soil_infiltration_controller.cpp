@@ -18,7 +18,7 @@ SoilInfiltrationSlider::~SoilInfiltrationSlider()
 const float SoilInfiltrationControllerWidget::_MIN_INFILTRATION_RATE(MIN_SOIL_ABSORPTION);
 const float SoilInfiltrationControllerWidget::_MAX_INFILTRATION_RATE(MAX_SOIL_ABSORPTION);
 SoilInfiltrationControllerWidget::SoilInfiltrationControllerWidget(int alignment, QWidget * parent, Qt::WindowFlags f) :
-    BaseSliderControllerWidget(new SoilInfiltrationSlider, "Soil Absorption Rate", alignment, parent, f)
+    BaseSliderControllerWidget(new SoilInfiltrationSlider, "Soil Infiltration Rate", alignment, parent, f)
 {
     connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(refresh_label(int)));
     refresh_label(m_slider->value());

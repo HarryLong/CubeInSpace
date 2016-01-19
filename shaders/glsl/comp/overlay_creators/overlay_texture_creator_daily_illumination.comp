@@ -8,7 +8,7 @@ uniform sampler2D illumination_texture;
 
 vec4 daily_illumination_to_output_color(in uint daily_illumination)
 {
-    float intensity = float(daily_illumination)/24;
+    float intensity = float(daily_illumination)/12;
     return vec4(intensity,intensity,intensity,.7);
 }
 

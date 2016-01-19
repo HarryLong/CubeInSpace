@@ -20,7 +20,7 @@ const QString RainfallSlider::_STYLESHEET =
         }";
 #define MIN_RAINFALL 0
 #define MAX_RAINFALL 1000
-#define RAINFALL_DEFAULT 25
+#define RAINFALL_DEFAULT 0
 RainfallSlider::RainfallSlider(QWidget * parent) : QSlider(Qt::Orientation::Vertical, parent)
 {
     setStyleSheet(RainfallSlider::_STYLESHEET);

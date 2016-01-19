@@ -241,6 +241,8 @@ private:
     static const QString _PLANT_MODE_LABEL;
 
     static const int _STANDING_WATER_HUMIDITY = 10000;
+
+    int tmp_water_flow_iteration_count;
 };
 
 #endif
