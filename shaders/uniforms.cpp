@@ -53,6 +53,10 @@ const char * Uniforms::Clustering::_SLOPE_CLUSTER_DATA = "slope_cluster_data_tex
 const char * Uniforms::Clustering::_TEMPERATURE_CLUSTER_DATA = "temperature_cluster_data_texture";
 const char * Uniforms::Clustering::_DAILY_ILLUMINATION_CLUSTER_DATA = "daily_illumination_cluster_data_texture";
 const char * Uniforms::Clustering::_WEIGHTED_AVG_SOIL_HUMIDITY_CLUSTER_DATA = "weighted_avg_soil_humidity_cluster_data_texture";
+const char * Uniforms::Clustering::_SLOPE_RANGE = "slope_range";
+const char * Uniforms::Clustering::_TEMP_RANGE = "temperature_range";
+const char * Uniforms::Clustering::_ILLUMINATION_RANGE = "illumination_range";
+const char * Uniforms::Clustering::_SOIL_HUMIDITY_RANGE = "soil_humidity_range";
 
 // LIGHTING
 const char * Uniforms::Lighting::_POSITION = "light_position";

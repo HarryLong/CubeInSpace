@@ -604,9 +604,10 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     else if(!deg.isNull()) // mouse wheel instead
         delta = deg.y() / 360.f;
 
+    bool ctrl_pressed(m_ctrl_pressed.load());
+
     if(edit_infiltration_rate())
     {
-        bool ctrl_pressed(m_ctrl_pressed.load());
         int increment ( ctrl_pressed ? 10 : 1 );
         if(delta < 0)
             increment *= -1;
@@ -614,7 +615,8 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
     }
     else
     {
-        m_camera.increment_fov(delta > 0 ? -0.1 : 0.1);
+        int boost(ctrl_pressed ? 10 : 1);
+        m_camera.increment_fov(delta > 0 ? -0.01 * boost : 0.01 * boost);
     }
 }
 
@@ -1053,6 +1055,20 @@ void GLWidget::refresh_normals()
     slope.reset(m_terrain.getWidth(), m_terrain.getDepth());
     m_computer.convertNormalsToSlope(m_terrain.getNormals(), slope);
     slope.syncFromGPU();
+
+    // CALCULATE MIN/MAX
+    float min(slope(0,0)), max(slope(0,0));
+    for(int x(0); x < m_terrain.getWidth(); x++)
+        for(int y(0); y < m_terrain.getWidth(); y++)
+        {
+            int v( slope(x,y) );
+            if(v < min)
+                min = v;
+            if(v > max)
+                max = v;
+        }
+    slope.setMin(min);
+    slope.setMax(max);
 }
 
 void GLWidget::sunPositionChanged(float pos_x, float pos_y, float pos_z)
@@ -1499,6 +1515,25 @@ void GLWidget::standing_water_set(int month)
         WeightedSoilHumidity & wsh (m_resources.getWeightedSoilHumidity());
         m_computer.calculateWeightedSoilHumidity(m_resources.getSoilHumidity(), wsh);
         wsh.syncFromGPU();
+
+        // Calculate min max
+        for(int m(1); m <13; m++)
+        {
+            int min(wsh(m-1, 0, 0)), max(wsh(m-1, 0, 1));
+
+            for(int x(0); x < wsh.width(); x++)
+                for(int y(0); y < wsh.height(); y++)
+                {
+                    int v(wsh(month-1, x, y) );
+                    if(v < min)
+                        min = v;
+                    if(v > max)
+                        max = v;
+                }
+            wsh.setMin(m, min);
+            wsh.setMax(m, max);
+        }
+
     }
 
     if(standing_water.balanced()) // Reenable all edit actions once the water is "balanced"

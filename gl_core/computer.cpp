@@ -533,6 +533,16 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
     m_temperature_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*2, closest_cluster_group_count.y);
     m_daily_illumination_cluster_reduction.setDimensions(clusters.clusterCount(), closest_cluster_group_count.x*12, closest_cluster_group_count.y);
 
+    float slope_range(std::abs(resources.getSlope().getMax()-resources.getSlope().getMin()));
+    float temp_range(std::abs(resources.getTerrainTemp().getMax()-resources.getTerrainTemp().getMin()));
+    float illumination_range(std::abs(resources.getDailyIllumination().getMax()-resources.getDailyIllumination().getMin()));
+    float soil_humidity_range(std::abs(resources.getWeightedSoilHumidity().getMax()-resources.getWeightedSoilHumidity().getMin()));
+
+    qCritical() << "Slope range: " << slope_range;
+    qCritical() << "Temp range: " << temp_range;
+    qCritical() << "Illumination range: " << illumination_range;
+    qCritical() << "Soil humidity range: " << soil_humidity_range;
+
     for(int cluster_iteration(0); cluster_iteration < clustering_iterations; cluster_iteration++)
     {
         /****************************************
@@ -543,6 +553,11 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
 
             m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_N_CLUSTERS, clusters.clusterCount());
             m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_FINAL_CLUSTERING_ITERATION, cluster_iteration == clustering_iterations-1);
+
+            m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_SLOPE_RANGE, slope_range);
+            m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_TEMP_RANGE, temp_range);
+            m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_ILLUMINATION_RANGE, illumination_range);
+            m_shaders.m_k_means_clusterer.m_closest_cluster_finder.setUniformValue(Uniforms::Clustering::_SOIL_HUMIDITY_RANGE, soil_humidity_range);
 
             // The resulting cluster membership
             f->glBindImageTexture(0, cluster_memberships.textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32UI);  CE();

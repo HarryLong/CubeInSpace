@@ -19,6 +19,12 @@ layout(binding = 5, r32f) uniform coherent image2DArray slope_and_humidity_reduc
 layout(binding = 6, r32f) uniform coherent image2DArray temperature_reducer;
 layout(binding = 7, r32f) uniform coherent image2DArray daily_illumination_reducer;
 
+// RANGES
+uniform float slope_range;
+uniform float temperature_range;
+uniform float illumination_range;
+uniform float soil_humidity_range;
+
 // RESOURCE DATA
 uniform sampler2D slope_texture;
 uniform sampler2D temperature_texture;
@@ -38,15 +44,15 @@ float calculateDistance(in ClusteringEntities cluster_one, in ClusteringEntities
     float dist = 0;
 
     // SLOPE
-    dist += abs(cluster_one.slope-cluster_two.slope);
+    dist += abs((cluster_one.slope-cluster_two.slope)/slope_range)*12;
 
-    dist += abs(cluster_one.temp-cluster_two.temp) * 12; // TEMPERATURE
+    dist += abs((cluster_one.temp-cluster_two.temp)/temperature_range); // TEMPERATURE
 
     // Illumination & SOIL HUMIDITY
     for(int i = 0; i < 12; i++)
     {
-        dist += 0.1* abs(cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i]); // SOIL HUMIDITY
-        dist += abs(cluster_one.illumination[i]-cluster_two.illumination[i]); // ILLUMINATION
+        dist += abs((cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i])/soil_humidity_range); // SOIL HUMIDITY
+        dist += abs((cluster_one.illumination[i]-cluster_two.illumination[i])/illumination_range); // ILLUMINATION
     }
 
     return dist;

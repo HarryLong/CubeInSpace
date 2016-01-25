@@ -10,3 +10,23 @@ Slope::~Slope()
 {
 
 }
+
+void Slope::setMin(float min)
+{
+    min_ = min;
+}
+
+void Slope::setMax(float max)
+{
+    max_ = max;
+}
+
+float Slope::getMin() const
+{
+    return min_;
+}
+
+float Slope::getMax() const
+{
+    return max_;
+}

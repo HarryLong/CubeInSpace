@@ -206,8 +206,6 @@ GLubyte * ResourceWrapper::get_shade(Terrain & terrain, const glm::vec3 & sun_po
 
 void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manager, Terrain & terrain)
 {
-    auto start(Clock::now());
-
     int current_month(lighting_manager.currentMonth());
     int current_time(lighting_manager.currentTime());
 
@@ -250,6 +248,22 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
         }
         // Set data in texture
         m_terrain_daily_illumination.setData(month-1, illumination_data);
+
+        // Calculate min max
+        int min(m_terrain_daily_illumination(month-1, 0, 0)), max(m_terrain_daily_illumination(month-1, 0, 1));
+
+        for(int x(0); x < m_terrain_daily_illumination.width(); x++)
+            for(int y(0); y < m_terrain_daily_illumination.height(); y++)
+            {
+                int v(m_terrain_daily_illumination(month-1, x, y) );
+                if(v < min)
+                    min = v;
+                if(v > max)
+                    max = v;
+            }
+
+        m_terrain_daily_illumination.setMin(month, min);
+        m_terrain_daily_illumination.setMax(month, max);
     }
 
     // Restore time and date
@@ -257,9 +271,6 @@ void ResourceWrapper::refreshDailyIllumination(LightingManager & lighting_manage
     lighting_manager.setTime(current_time);
 
     emit processingComplete();
-
-    auto time(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - start).count());
-    qCritical() << "Illumination calculation time: " << time;
 
     setDailyIlluminationValid(true);
 }

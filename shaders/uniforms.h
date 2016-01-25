@@ -61,6 +61,10 @@ public:
         static const char * _TEMPERATURE_CLUSTER_DATA;
         static const char * _DAILY_ILLUMINATION_CLUSTER_DATA;
         static const char * _WEIGHTED_AVG_SOIL_HUMIDITY_CLUSTER_DATA;
+        static const char * _SLOPE_RANGE;
+        static const char * _TEMP_RANGE;
+        static const char * _ILLUMINATION_RANGE;
+        static const char * _SOIL_HUMIDITY_RANGE;
     };
 
     struct Lighting{
