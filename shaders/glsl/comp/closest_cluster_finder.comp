@@ -44,15 +44,19 @@ float calculateDistance(in ClusteringEntities cluster_one, in ClusteringEntities
     float dist = 0;
 
     // SLOPE
-    dist += abs((cluster_one.slope-cluster_two.slope)/slope_range)*12;
+    if(slope_range > 0)
+        dist += abs((cluster_one.slope-cluster_two.slope)/slope_range)*12;
 
-    dist += abs((cluster_one.temp-cluster_two.temp)/temperature_range); // TEMPERATURE
+    if(temperature_range > 0)
+        dist += abs((cluster_one.temp-cluster_two.temp)/temperature_range); // TEMPERATURE
 
     // Illumination & SOIL HUMIDITY
     for(int i = 0; i < 12; i++)
     {
-        dist += abs((cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i])/soil_humidity_range); // SOIL HUMIDITY
-        dist += abs((cluster_one.illumination[i]-cluster_two.illumination[i])/illumination_range); // ILLUMINATION
+        if(soil_humidity_range > 0)
+            dist += abs((cluster_one.soil_humidities[i]-cluster_two.soil_humidities[i])/soil_humidity_range); // SOIL HUMIDITY
+        if(illumination_range > 0)
+            dist += abs((cluster_one.illumination[i]-cluster_two.illumination[i])/illumination_range); // ILLUMINATION
     }
 
     return dist;

@@ -80,7 +80,7 @@ ${GL_CORE_SOURCE_FILES}
 ${GL_TEXTURE_SOURCE_FILES}
 ${CLUSTERING_SOURCE_FILES}
 ${ECOSIM_SOURCE_FILES}
-window main debug geom actions fixed_size_stack worker )
+window main debug geom actions fixed_size_stack worker dice_roller)
 
 # Shaders
 add_subdirectory(shaders)

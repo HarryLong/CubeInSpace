@@ -3,6 +3,8 @@
 #include "../gl_core/renderer.h"
 
 #include <chrono>
+#include "../dice_roller.h"
+#include <set>
 typedef std::chrono::system_clock Clock;
 
 KMeansClusterer::KMeansClusterer()
@@ -33,44 +35,53 @@ void KMeansClusterer::perform_clustering(int k, ResourceWrapper & resources, Clu
 
     // First generate k random clusters
     {
+        static const int _PSEUDORANDOM_SEED(1578954782);
+
+        DiceRoller x_selector(0, width-1, _PSEUDORANDOM_SEED);
+        DiceRoller y_selector(0, height-1, _PSEUDORANDOM_SEED);
+
+        std::map<int,std::set<int>> selected_points;
         std::vector<ClusterData> all_clusters;
-        int min_side(std::min(width, height));
-        float diagonal_length (std::sqrt(2*min_side*min_side));
-        float diagonal_increments(diagonal_length/k);
-        int x_y_increments(std::sqrt((diagonal_increments*diagonal_increments)/2));
 
-        int x_y (0);
         do{
-            ClusterData cluster_data;
-            cluster_data.slope = slope_data(x_y,x_y) ;
-            for(int i = 0; i < 12; i++)
+            int random_x(x_selector.generate());
+            int random_y(y_selector.generate());
+
+            auto it(selected_points.find(random_x));
+            if(it == selected_points.end() || it->second.find(random_y) == it->second.end())
             {
-                cluster_data.illumination[i] = (GLuint) illumination_data(i, x_y, x_y);
-                cluster_data.soil_humidities[i] = weighted_soil_humidity_data(i, x_y, x_y);
-                cluster_data.temperatures[i] = (GLint) temp_data(i,x_y,x_y);
-            }
+                selected_points[random_x].insert(random_y);
 
-            int increment(1);
-            while(containsCluster(all_clusters, cluster_data))
-            {
-                qCritical() << "Contains cluster!";
-                int multiplier(all_clusters.size() % 2 == 0 ? 1 : -1);
-
-                cluster_data.slope += (multiplier * increment);
-                cluster_data.slope = std::min(90.f, std::max(0.f, cluster_data.slope));
-
+                ClusterData cluster_data;
+                cluster_data.slope = slope_data(random_x,random_y) ;
                 for(int i = 0; i < 12; i++)
                 {
-                    int tmp_illumination = std::min(24, std::max(0, ((int)cluster_data.illumination[i]) + (multiplier * increment)));
-                    cluster_data.illumination[i] = (GLuint)tmp_illumination;
-                    cluster_data.soil_humidities[i] += (multiplier * increment);
-                    cluster_data.soil_humidities[i] = std::max(0.f, cluster_data.soil_humidities[i]);
-                    cluster_data.temperatures[i] = std::max(0, cluster_data.temperatures[i] + (multiplier*increment));
+                    cluster_data.illumination[i] = (GLuint) illumination_data(i, random_x, random_y);
+                    cluster_data.soil_humidities[i] = weighted_soil_humidity_data(i, random_x, random_y);
+                    cluster_data.temperatures[i] = (GLint) temp_data(i,random_x,random_y);
                 }
-                increment++;
+
+                int increment(1);
+                while(containsCluster(all_clusters, cluster_data))
+                {
+                    qCritical() << "Contains cluster!";
+                    int multiplier(all_clusters.size() % 2 == 0 ? 1 : -1);
+
+                    cluster_data.slope += (multiplier * increment);
+                    cluster_data.slope = std::min(90.f, std::max(0.f, cluster_data.slope));
+
+                    for(int i = 0; i < 12; i++)
+                    {
+                        int tmp_illumination = std::min(24, std::max(0, ((int)cluster_data.illumination[i]) + (multiplier * increment)));
+                        cluster_data.illumination[i] = (GLuint)tmp_illumination;
+                        cluster_data.soil_humidities[i] += (multiplier * increment);
+                        cluster_data.soil_humidities[i] = std::max(0.f, cluster_data.soil_humidities[i]);
+                        cluster_data.temperatures[i] = std::max(0, cluster_data.temperatures[i] + (multiplier*increment));
+                    }
+                    increment++;
+                }
+                all_clusters.push_back(cluster_data);
             }
-            all_clusters.push_back(cluster_data);
-            x_y += x_y_increments;
         }while(all_clusters.size() < k);
         for(int cluster_idx (0); cluster_idx < k; cluster_idx++)
         {

@@ -10,11 +10,7 @@ public:
     class Score{
     public:
         Score();
-        int slope;
-        int illumination[12];
-        int min_illumination;
-        int max_illumination;
-        float avg_illumination;
+        float slope;
 
         int temperature[12];
         int min_temp;
@@ -43,8 +39,8 @@ public:
     Score operator[](int cluster_idx);
 
 private:
-    int calculate_lower_end_score(int value, int min, int prime_start);
-    int calculate_upper_end_score(int value, int max, int prime_end);
+    template <class T> T calculate_lower_end_score(T value, T min, T prime_start);
+    template <class T> T  calculate_upper_end_score(T value, T max, T prime_end);
     int getMin(std::vector<int> values);
     Score calculate_score(const SpecieProperties & specie_properties, const ClusterData & cluster_data);
     std::vector<Score> m_per_cluster_scores;

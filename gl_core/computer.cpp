@@ -538,11 +538,6 @@ void Computer::kMeansCluster(Clusters & clusters, ResourceWrapper & resources, C
     float illumination_range(std::abs(resources.getDailyIllumination().getMax()-resources.getDailyIllumination().getMin()));
     float soil_humidity_range(std::abs(resources.getWeightedSoilHumidity().getMax()-resources.getWeightedSoilHumidity().getMin()));
 
-    qCritical() << "Slope range: " << slope_range;
-    qCritical() << "Temp range: " << temp_range;
-    qCritical() << "Illumination range: " << illumination_range;
-    qCritical() << "Soil humidity range: " << soil_humidity_range;
-
     for(int cluster_iteration(0); cluster_iteration < clustering_iterations; cluster_iteration++)
     {
         /****************************************

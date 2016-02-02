@@ -20,7 +20,6 @@ public:
     virtual void progressUpdate(QString info);
     virtual void complete();
 
-
 private:
     SimulationConfiguration to_simulation_config(const EcoSimRunConfig & run_config) const;
     void delete_thread();

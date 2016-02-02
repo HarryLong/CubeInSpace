@@ -18,7 +18,8 @@ bool EcoSimulator::requires_simulation(const SimulationConfiguration & config)
     for(auto it(config.m_plants_to_generate.begin()); it != config.m_plants_to_generate.end(); it++)
         species.insert(it->first);
 
-    EntryData entry_data(config.m_humidity,
+    EntryData entry_data(config.m_slope,
+                         config.m_humidity,
                          config.m_illumination,
                          config.m_temperature,
                          species,
@@ -60,11 +61,21 @@ void EcoSimulator::delete_thread()
 
 void EcoSimulator::start_next_simulation()
 {
-    emit processDescriptionUpdate("Running simulation " + QString::number(m_current_simulation_idx+1) + "/" + QString::number(m_run_configs.size()));
+    for(SimulationConfiguration & config : m_run_configs)
+    {
+        emit processDescriptionUpdate("Running simulation " + QString::number(m_current_simulation_idx+1) + "/" + QString::number(m_run_configs.size()));
+        SimulatorManager::start(config, this);
+    }
+    emit processingComplete();
 
-    delete_thread();
+//    qCritical() << "Ecosim run complete!";
+//    if(++m_current_simulation_idx == m_run_configs.size())
+//    else
+//        start_next_simulation();
 
-    m_thread = new std::thread(&EcoSimulator::run_simulation, this);
+//    delete_thread();
+//    run_simulation();
+//    m_thread = new std::thread(&EcoSimulator::run_simulation, this);
 }
 
 SimulationConfiguration EcoSimulator::to_simulation_config(const EcoSimRunConfig & run_config) const
@@ -95,10 +106,11 @@ void EcoSimulator::progressUpdate(float percent)
 
 void EcoSimulator::complete()
 {
-    if(++m_current_simulation_idx == m_run_configs.size())
-        emit processingComplete();
-    else
-        start_next_simulation();
+//    qCritical() << "Ecosim run complete!";
+//    if(++m_current_simulation_idx == m_run_configs.size())
+//        emit processingComplete();
+//    else
+//        start_next_simulation();
 }
 
 void EcoSimulator::progressUpdate(QString info)
@@ -108,5 +120,5 @@ void EcoSimulator::progressUpdate(QString info)
 
 void EcoSimulator::run_simulation()
 {
-    SimulatorManager::start(m_run_configs.at(m_current_simulation_idx), this);
+//    SimulatorManager::start(m_run_configs.at(m_current_simulation_idx), this);
 }

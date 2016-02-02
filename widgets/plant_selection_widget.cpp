@@ -79,7 +79,6 @@ std::vector<QString> AggregateHistogramWrapperWidget::getTitles()
     std::vector<QString> ret;
     ret.push_back("Slope");
     ret.push_back("Temp");
-    ret.push_back("Illumination");
     ret.push_back("Soil Humidity");
 
     return ret;
@@ -105,7 +104,6 @@ ScoreSummaryWidget::ScoreSummaryWidget(QWidget * parent ) : QWidget(parent),
         m_type_selection_combo_box->insertItem(Type::_MIN, "Min.");
         m_type_selection_combo_box->insertItem(Type::_MAX, "Max.");
         m_type_selection_combo_box->insertItem(Type::_TEMP, "Temp");
-        m_type_selection_combo_box->insertItem(Type::_ILLUMINATION, "Illumination");
         m_type_selection_combo_box->insertItem(Type::_SOIL_HUMIDITY, "Soil Humidity");
     }
 
@@ -190,7 +188,7 @@ void ScoreSummaryWidget::setSelected(QListWidgetItem * selected_plant)
             if(m_score.n_clusters() > 1)
             {
                 TerrainSuitabilityScore::Score score(m_score[i]);
-                if(score.slope == 0 || score.min_humidity == 0 || score.min_illumination == 0 || score.min_temp == 0)
+                if(score.slope == 0 || score.min_humidity == 0 || score.min_temp == 0)
                     m_cluster_selection_combo_box->setItemData(i, QColor(Qt::red), Qt::BackgroundRole);
                 else
                     m_cluster_selection_combo_box->setItemData(i, QColor(Qt::green), Qt::BackgroundRole);
@@ -233,38 +231,31 @@ void ScoreSummaryWidget::refreshHistograms()
 
     // Averages
     {
-        int scores[4];
+        int scores[3];
         scores[AggregateHistogramWrapperWidget::_SLOPE] = score.slope;
         scores[AggregateHistogramWrapperWidget::_TEMP] = std::round(score.avg_temp);
-        scores[AggregateHistogramWrapperWidget::_ILLUMINATION] = std::round(score.avg_illumination);
         scores[AggregateHistogramWrapperWidget::_HUMIDITY] = std::round(score.avg_humidity);
         m_aggregate_histogram_widgets[Type::_AVG]->setScores(scores);
     }
     // Minimums
     {
-        int scores[4];
+        int scores[3];
         scores[AggregateHistogramWrapperWidget::_SLOPE] = score.slope;
         scores[AggregateHistogramWrapperWidget::_TEMP] = score.min_temp;
-        scores[AggregateHistogramWrapperWidget::_ILLUMINATION] = score.min_illumination;
         scores[AggregateHistogramWrapperWidget::_HUMIDITY] = score.min_humidity;
         m_aggregate_histogram_widgets[Type::_MIN]->setScores(scores);
     }
     // Maximums
     {
-        int scores[4];
+        int scores[3];
         scores[AggregateHistogramWrapperWidget::_SLOPE] = score.slope;
         scores[AggregateHistogramWrapperWidget::_TEMP] = score.max_temp;
-        scores[AggregateHistogramWrapperWidget::_ILLUMINATION] = score.max_illumination;
         scores[AggregateHistogramWrapperWidget::_HUMIDITY] = score.max_humidity;
         m_aggregate_histogram_widgets[Type::_MAX]->setScores(scores);
     }
     // Temp
     {
         m_aggregate_histogram_widgets[Type::_TEMP]->setScores(score.temperature);
-    }
-    // Illumination
-    {
-        m_aggregate_histogram_widgets[Type::_ILLUMINATION]->setScores(score.illumination);
     }
     // Soil humidity
     {
@@ -329,7 +320,7 @@ void PlantSelectionWidget::refresh()
     for(auto it(all_species.begin()); it != all_species.end(); it++)
     {
         TerrainSuitabilityScore suitability_score(it->second, m_cluster_data);
-        if(suitability_score.getValidClusters().size() > 0) // No point adding plants that can grow in no clusters
+        if(suitability_score.getValidClusters().size() > 0) // No point adding plants that can't grow in no clusters
             m_available_plants_widget->addItem( new SpeciePropertiesListItem(it->second, suitability_score) );
     }
 

@@ -1,10 +1,8 @@
 #include "terrain_suitability_score.h"
+#include <QDebug>
 
 TerrainSuitabilityScore::Score::Score() :
     slope(0),
-    min_illumination(0),
-    max_illumination(0),
-    avg_illumination(0),
     min_temp(0),
     max_temp(0),
     avg_temp(0),
@@ -59,12 +57,12 @@ int TerrainSuitabilityScore::getMin(std::vector<int> values)
     return min;
 }
 
-int TerrainSuitabilityScore::calculate_lower_end_score(int value, int min, int prime_start)
+template <class T> T TerrainSuitabilityScore::calculate_lower_end_score(T value, T min, T prime_start)
 {
     return std::round(( ((float)value-min) / (prime_start-min)) * 100 );
 }
 
-int TerrainSuitabilityScore::calculate_upper_end_score(int value, int max, int prime_end)
+template <class T> T TerrainSuitabilityScore::calculate_upper_end_score(T value, T max, T prime_end)
 {
     return std::round( (1 - ( ((float)value-prime_end) / (max-prime_end))) * 100 );
 }
@@ -79,27 +77,27 @@ TerrainSuitabilityScore::Score TerrainSuitabilityScore::calculate_score(const Sp
         int soil_humidity(cluster_data.soil_humidities[i]);
         int temperature(cluster_data.temperatures[i]);
 
-        // Illumination
-        {
-            const IlluminationProperties & properties(specie_properties.illumination_properties);
-            int score = 0;
-            if(illumination >= properties.prime_illumination.first &&
-                    illumination <= properties.prime_illumination.second)
-            {
-                score = 100;
-            }
-            else if(illumination < properties.prime_illumination.first &&
-                    illumination >= properties.min_illumination)
-            {
-                score = calculate_lower_end_score(illumination, properties.min_illumination, properties.prime_illumination.first);
-            }
-            else if(illumination > properties.prime_illumination.second &&
-                    illumination <= properties.max_illumination)
-            {
-                score = calculate_upper_end_score(illumination, properties.max_illumination, properties.prime_illumination.second);
-            }
-            cluster_score.illumination[i] = score;
-        }
+//        // Illumination
+//        {
+//            const IlluminationProperties & properties(specie_properties.illumination_properties);
+//            int score = 0;
+//            if(illumination >= properties.prime_illumination.first &&
+//                    illumination <= properties.prime_illumination.second)
+//            {
+//                score = 100;
+//            }
+//            else if(illumination < properties.prime_illumination.first &&
+//                    illumination >= properties.min_illumination)
+//            {
+//                score = calculate_lower_end_score(illumination, properties.min_illumination, properties.prime_illumination.first);
+//            }
+//            else if(illumination > properties.prime_illumination.second &&
+//                    illumination <= properties.max_illumination)
+//            {
+//                score = calculate_upper_end_score(illumination, properties.max_illumination, properties.prime_illumination.second);
+//            }
+//            cluster_score.illumination[i] = score;
+//        }
 
         // Soil Humidity
         {
@@ -152,11 +150,11 @@ TerrainSuitabilityScore::Score TerrainSuitabilityScore::calculate_score(const Sp
         if(i == 0 || cluster_score.temperature[i] > cluster_score.max_temp)
             cluster_score.max_temp = cluster_score.temperature[i];
 
-        cluster_score.avg_illumination += cluster_score.illumination[i];
-        if(i == 0 || cluster_score.illumination[i] < cluster_score.min_illumination)
-            cluster_score.min_illumination = cluster_score.illumination[i];
-        if(i == 0 || cluster_score.illumination[i] > cluster_score.max_illumination)
-            cluster_score.max_illumination = cluster_score.illumination[i];
+//        cluster_score.avg_illumination += cluster_score.illumination[i];
+//        if(i == 0 || cluster_score.illumination[i] < cluster_score.min_illumination)
+//            cluster_score.min_illumination = cluster_score.illumination[i];
+//        if(i == 0 || cluster_score.illumination[i] > cluster_score.max_illumination)
+//            cluster_score.max_illumination = cluster_score.illumination[i];
 
         cluster_score.avg_humidity += cluster_score.soil_humidities[i];
         if(i == 0 || cluster_score.soil_humidities[i] < cluster_score.min_humidity)
@@ -166,28 +164,45 @@ TerrainSuitabilityScore::Score TerrainSuitabilityScore::calculate_score(const Sp
     }
     // Avg aggregates
     cluster_score.avg_temp = cluster_score.avg_temp/12.f;
-    cluster_score.avg_illumination = cluster_score.avg_illumination/12.f;
+//    cluster_score.avg_illumination = cluster_score.avg_illumination/12.f;
     cluster_score.avg_humidity = cluster_score.avg_humidity/12.f;
 
-
-
-    // TODO: Slope
     {
-        cluster_score.slope = 100;
+        const SlopeProperties & properties(specie_properties.slope_properties);
+        float slope(cluster_data.slope);
+        float score = 0;
+        qCritical() << "Cluster slope: " << slope;
+        qCritical() << "Specie slope properties: [" << properties.start_of_decline << "," << properties.max << "]";
+
+        if(slope <= properties.start_of_decline)
+        {
+            score = 100;
+        }
+        else if(slope < properties.max)
+        {
+            score = calculate_upper_end_score(slope, (float) properties.max, (float) properties.start_of_decline);
+        }
+
+        cluster_score.slope = score;
     }
 
     {
         // Check if highest scoring
         std::vector<int> aggregates;
         aggregates.push_back(cluster_score.min_humidity);
-        aggregates.push_back(cluster_score.min_illumination);
+//        aggregates.push_back(cluster_score.min_illumination);
         aggregates.push_back(cluster_score.min_temp);
         aggregates.push_back(cluster_score.slope);
+        qCritical() << "Cluster humidity min score: " << cluster_score.min_humidity;
+//        qCritical() << "Cluster illum min: " << cluster_score.min_illumination;
+        qCritical() << "Cluster temp min: " << cluster_score.min_temp;
+        qCritical() << "Cluster slope: " << cluster_score.slope;
+
         cluster_score.valid = (getMin(aggregates) > 0);
     }
 
     // Aggregate avg
-    cluster_score.aggregate_avg = (cluster_score.avg_temp + cluster_score.avg_illumination + cluster_score.avg_humidity + cluster_score.slope) / 4.f;
+    cluster_score.aggregate_avg = (cluster_score.avg_temp + cluster_score.avg_humidity + cluster_score.slope) / 3.f;
 
 //    qCritical() << "<-- SCORE SUMMARY [" << specie_properties->specie_name << "] --> ";
 //    qCritical() << "--Illumination--";

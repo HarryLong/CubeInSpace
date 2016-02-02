@@ -35,8 +35,7 @@ class AggregateHistogramWrapperWidget : public HistogramWrapperWidget
 public:
     static const int _SLOPE = 0;
     static const int _TEMP= 1;
-    static const int _ILLUMINATION = 2;
-    static const int _HUMIDITY = 3;
+    static const int _HUMIDITY = 2;
     AggregateHistogramWrapperWidget(QWidget * parent = 0);
     ~AggregateHistogramWrapperWidget();
 
@@ -57,7 +56,6 @@ public:
         _MIN,
         _MAX,
         _TEMP,
-        _ILLUMINATION,
         _SOIL_HUMIDITY,
         _COUNT
     };
