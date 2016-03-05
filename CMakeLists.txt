@@ -87,6 +87,11 @@ add_subdirectory(shaders)
 set(SHADER_RESOURCES ${CMAKE_SOURCE_DIR}/shaders/shaders.qrc)
 qt5_add_resources(RESOURCES ${SHADER_RESOURCES})
 
-add_executable(CubeInSpace ${SOURCE_FILES} ${RESOURCES})
+add_executable(vrwg ${SOURCE_FILES} ${RESOURCES})
 # Use the Widgets module from Qt 5.
-target_link_libraries(CubeInSpace ${LIBS})
+target_link_libraries(vrwg ${LIBS})
+
+#INSTALL EXECUTABLE
+install(TARGETS vrwg
+        RUNTIME DESTINATION bin
+        CONFIGURATIONS ${CMAKE_BUILD_TYPE})

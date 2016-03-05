@@ -18,7 +18,8 @@ bool EcoSimulator::requires_simulation(const SimulationConfiguration & config)
     for(auto it(config.m_plants_to_generate.begin()); it != config.m_plants_to_generate.end(); it++)
         species.insert(it->first);
 
-    EntryData entry_data(config.m_slope,
+    EntryData entry_data(0, // TIMESTAMP IGNORED
+                         config.m_slope,
                          config.m_humidity,
                          config.m_illumination,
                          config.m_temperature,
