@@ -4,6 +4,7 @@
 * OpenGL (>=4.5)
 * Qt5.5
 * c++11
+* EcoSimulator (https://github.com/HarryLong/EcoSimulator)
 
 ## Installation:
 - cmake CMakeLists.txt
